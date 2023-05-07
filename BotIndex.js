@@ -242,7 +242,7 @@ async function onWxMessage(msg) {
     const alias = await contact.alias() || await contact.name(); // 发消息人备注
     //DeliverType
 
-    let DType = DTypes.Default;
+    msg.DType = DTypes.Default;
     //提前筛选出自己的消息
     if (room) {
         if (msg.self() && await room.topic() !== "CyTest") return;
@@ -266,7 +266,7 @@ async function onWxMessage(msg) {
         let md5 = result[2];
         content = content.replace(/&lt;msg&gt;(.*?)&lt;\/msg&gt;/, `[CustomEmotion]`);
         wxLogger.debug(`Discovered as CustomEmotion, Got a link: ${emotionHref}`);
-        DType = DTypes.CustomEmotion;
+        msg.DType = DTypes.CustomEmotion;
         //查找是否有重复项,再保存CustomEmotion并以md5命名.消息详情中的filename有文件格式信息
         //Sometimes couldn't get fileExt so deprecate it
         // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
@@ -286,7 +286,7 @@ async function onWxMessage(msg) {
         await fBox.toFile(photoPath);
         if (fs.existsSync(photoPath)) {
             wxLogger.debug(`Discovered as Image, Downloaded as: ${photoPath}`);
-            DType = DTypes.Image;
+            msg.DType = DTypes.Image;
             msg.downloadedPath = photoPath;
         } else wxLogger.info(`Discovered as Image, But download failed. Ignoring.`);
 
@@ -305,21 +305,21 @@ async function onWxMessage(msg) {
         // audioPath+=".ogg";
         if (fs.existsSync(audioPath)) {
             wxLogger.debug(`Discovered as Audio, Downloaded as: ${audioPath}`);
-            DType = DTypes.Audio;
+            msg.DType = DTypes.Audio;
             msg.downloadedPath = audioPath;
         } else {
             wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
-            DType = DTypes.Text;
+            msg.DType = DTypes.Text;
             content = "🎤(Fail to download)";
         }
     } catch (e) {
         wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
     }
     //文字消息判断:
-    if (DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) DType = DTypes.Text;
+    if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
 
     //处理未受支持的emoji表情
-    if (DType === DTypes.Text) {
+    if (msg.DType === DTypes.Text) {
         const UsEmojiRegex = new RegExp(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
         let replaceFlag = 1;
         while (replaceFlag > 0) try {
@@ -335,7 +335,7 @@ async function onWxMessage(msg) {
 
     //正式处理消息--------------
     // ---目前只处理文字消息,后续此代码块同时处理
-    if (DType > 0) {
+    if (msg.DType > 0) {
         if (room) {
             //是群消息 - - - - - - - -
             const topic = await room.topic();
@@ -351,7 +351,7 @@ async function onWxMessage(msg) {
                 return;
             }
             // let tgMsg;
-            // if (DType === DTypes.CustomEmotion) {
+            // if (msg.DType === DTypes.CustomEmotion) {
             //     if (fs.existsSync(msg.downloadedPath)) {
             //         const stream = fs.createReadStream(msg.downloadedPath);
             //         tgMsg = await tgBotSendAnimation(`📬[${name}@${topic}] [CustomEmotion]`, stream, true, true);
@@ -364,7 +364,7 @@ async function onWxMessage(msg) {
             //     // if (topic === "xx三人组") return;
             //     tgMsg = await tgBotSendMessage(`📬<b>[${name}@${topic}]</b> ${content}`, 0, "HTML");
             // }
-            const deliverResult = await deliverWxToTG(true, msg, content, DType);
+            const deliverResult = await deliverWxToTG(true, msg, content);
             await addToMsgMappings(deliverResult.message_id, room);
         } else {
             //不是群消息 - - - - - - - -
@@ -374,14 +374,14 @@ async function onWxMessage(msg) {
             if (alias === "微信运动") {
                 return;
             }
-            const deliverResult = await deliverWxToTG(false, msg, content, DType);
+            const deliverResult = await deliverWxToTG(false, msg, content);
 
             await addToMsgMappings(deliverResult.message_id, msg.talker());
         }
     }
 }
 
-async function deliverWxToTG(isRoom = false, msg, content, DType) {
+async function deliverWxToTG(isRoom = false, msg, content) {
     const contact = msg.talker(); // 发消息人
     const room = msg.room(); // 是否是群消息
     const name = await contact.name();
@@ -390,7 +390,7 @@ async function deliverWxToTG(isRoom = false, msg, content, DType) {
 
     const template = isRoom ? `📬<b>[${name}@${await room.topic()}]</b>` : `📨[${alias}]`;
     let tgMsg;
-    if (DType === DTypes.CustomEmotion) {
+    if (msg.DType === DTypes.CustomEmotion) {
         // 自定义表情, 已添加读取错误处理
         try {
             const stream = fs.createReadStream(msg.downloadedPath);
@@ -399,12 +399,12 @@ async function deliverWxToTG(isRoom = false, msg, content, DType) {
             wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
             tgMsg = await tgBotSendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
         }
-    } else if (DType === DTypes.Audio) {
+    } else if (msg.DType === DTypes.Audio) {
         // 语音
         wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
         const stream = fs.createReadStream(msg.downloadedPath);
         tgMsg = await tgBotSendAudio(`${template} 🎤`, stream, false);
-    } else if (DType === DTypes.Image) {
+    } else if (msg.DType === DTypes.Image) {
         // 正经图片消息
         const stream = fs.createReadStream(msg.downloadedPath);
         tgMsg = await tgBotSendPhoto(`${template} 🖼`, stream, true, false);
