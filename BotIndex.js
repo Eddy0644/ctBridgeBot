@@ -5,6 +5,7 @@ const Config = require('./config/public');
 const TelegramBot = require('node-telegram-bot-api');
 const FileBox = require("file-box");
 const fs = require("fs");
+const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -53,7 +54,7 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
         height: 100,
     };
     if (isSilent) form.disable_notification = true;
-    return await tgbot.sendAudio(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+    return await tgbot.sendVoice(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
 };
 
 tgbot.on('message', onTGMsg);
@@ -227,21 +228,32 @@ async function onWxMessage(msg) {
             wxLogger.debug(`Discovered as Image, Downloaded as: ${photoPath}`);
             DType = DTypes.Image;
             msg.downloadedPath = photoPath;
-        } else wxLogger.debug(`Discovered as Image, But download failed. Ignoring.`);
+        } else wxLogger.info(`Discovered as Image, But download failed. Ignoring.`);
 
     }
 
     if (msg.type() === wxbot.Message.Type.Audio) try {
         const fBox = await msg.toFileBox();
-        const audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
+        let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
         await fBox.toFile(audioPath);
+        await ffmpeg()
+            .input(audioPath)
+            .output(audioPath+".ogg")
+            .outputOptions('-codec:a libopus')
+            .format('ogg')
+            .run();
+        // audioPath+=".ogg";
         if (fs.existsSync(audioPath)) {
             wxLogger.debug(`Discovered as Audio, Downloaded as: ${audioPath}`);
             DType = DTypes.Audio;
             msg.downloadedPath = audioPath;
-        } else wxLogger.debug(`Discovered as Audio, But download failed. Ignoring.`);
+        } else {
+            wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
+            DType = DTypes.Text;
+            content="🎤(Fail to download)";
+        }
     } catch (e) {
-        wxLogger.debug(`Discovered as Audio, But download failed. Ignoring.`);
+        wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
     }
     //文字消息判断:
     if (DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) DType = DTypes.Text;
@@ -335,7 +347,15 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
     // await tgBotSendMessage(`[Cy Notice] Service Started.`,1);
 });
-wxbot.start()
-    .then(() => wxLogger.info('开始登陆大而丑...'))
-    .catch((e) => wxLogger.error(e));
+// wxbot.start()
+//     .then(() => wxLogger.info('开始登陆大而丑...'))
+//     .catch((e) => wxLogger.error(e));
 require('./logger')("startup");
+let audioPath = `./downloaded/audio/cvs_sc-2358873894040191761.mp3`;
+ffmpeg(audioPath)
+    .audioCodec("libopus")
+    .output(audioPath+".ogg")
+    // .outputOptions('-codec:a libopus')
+    .format('ogg')
+    .save("a.ogg");
+    // .run();
