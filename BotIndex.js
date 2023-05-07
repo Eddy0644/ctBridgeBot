@@ -31,7 +31,7 @@ const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true
         has_spoiler: hasSpoiler,
         width: 100,
         height: 100,
-        parse_mode:"HTML",
+        parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
     return await tgbot.sendAnimation(secretConfig.My_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
@@ -43,7 +43,7 @@ const tgBotSendPhoto = async (msg, path, isSilent = false, hasSpoiler = false) =
         has_spoiler: hasSpoiler,
         width: 100,
         height: 100,
-        parse_mode:"HTML",
+        parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
     return await tgbot.sendPhoto(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
@@ -54,7 +54,7 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
         caption: msg,
         width: 100,
         height: 100,
-        parse_mode:"HTML",
+        parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
     return await tgbot.sendVoice(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
@@ -158,7 +158,14 @@ let msgMappings = [];
 let state = {
     lastOpt: null
 };   // as for talker, [1] is Object, [2] is name.
-
+const DTypes = {
+    Default: -1,
+    NotSend: 0,
+    Text: 1,
+    Image: 2,
+    Audio: 3,
+    CustomEmotion: 4,
+};
 
 async function addToMsgMappings(tgMsg, talker) {
     const name = await (talker.name ? talker.name() : talker.topic());
@@ -170,7 +177,7 @@ async function addToMsgMappings(tgMsg, talker) {
 async function onWxMessage(msg) {
 
     // 按照距今时间来排除wechaty重启时的重复消息
-    let isMessageDropped = msg.age() > 30 && process.uptime() < 50;
+    let isMessageDropped = msg.age() > 30 && process.uptime() < 10;
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     LogWxMsg(msg, isMessageDropped);
     if (isMessageDropped) return;
@@ -182,14 +189,7 @@ async function onWxMessage(msg) {
     const name = await contact.name();
     const alias = await contact.alias() || await contact.name(); // 发消息人备注
     //DeliverType
-    const DTypes = {
-        Default: -1,
-        NotSend: 0,
-        Text: 1,
-        Image: 2,
-        Audio: 3,
-        CustomEmotion: 4,
-    };
+
     let DType = DTypes.Default;
 
     //已撤回的消息单独处理
@@ -321,8 +321,14 @@ async function onWxMessage(msg) {
     }
 }
 
-async function deliverWxToTG(isRoom = false) {
-    const template=isRoom?`📬<b>[${name}@${topic}]</b>`:`📨[${alias}]`;
+async function deliverWxToTG(isRoom = false, msg, content, DType) {
+    const contact = msg.talker(); // 发消息人
+    const room = msg.room(); // 是否是群消息
+    const name = await contact.name();
+    const alias = await contact.alias() || await contact.name();
+    const topic = await room.topic();
+
+    const template = isRoom ? `📬<b>[${name}@${topic}]</b>` : `📨[${alias}]`;
     let tgMsg;
     if (DType === DTypes.CustomEmotion) {
         // 自定义表情, 已添加读取错误处理
@@ -346,12 +352,12 @@ async function deliverWxToTG(isRoom = false) {
         // 仅文本或未分类
         // Plain text or not classified
         wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
-        tgMsg = await tgBotSendMessage(`${template} ${content}`,false,"HTML");
+        tgMsg = await tgBotSendMessage(`${template} ${content}`, false, "HTML");
     }
     if (!tgMsg) {
         tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed.");
         return "sendFailure";
-    }else{
+    } else {
         return tgMsg;
     }
 }
