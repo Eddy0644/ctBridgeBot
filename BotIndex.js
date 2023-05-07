@@ -1,15 +1,16 @@
 // noinspection JSUnresolvedVariable
-
+// Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 const secretConfig = require('./config/secret');
 const Config = require('./config/public');
 const TelegramBot = require('node-telegram-bot-api');
-// const FileBox = require("file-box");
+const FileBox = require("file-box").FileBox;
 const fs = require("fs");
+const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const tgbot = new TelegramBot(secretConfig.TGToken,
+const tgbot = new TelegramBot(secretConfig.botToken,
     {polling: true, request: {proxy: require("./config/proxy")},});
 const tgBotSendMessage = async (msg, isSilent = false, parseMode) => {
     /*Debug Only;no TG messages delivered*/
@@ -65,7 +66,24 @@ tgbot.on('message', onTGMsg);
 async function onTGMsg(tgMsg) {
     //Update: added find_location chatAction after sending message back successfully.
     try {
-        if (process.uptime() < 10) return;
+        // if (process.uptime() < 10) return;
+        if (tgMsg.photo) {
+            if (state.lastOpt[0] !== "chat") {
+                // !!unimplemented
+                return;
+            }
+            console.log(tgMsg.photo);
+            const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
+            const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
+            const file_path = `./downloaded/photoTG/${Math.random()}.png`;
+            await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
+            const packed = await FileBox.fromFile(file_path);
+            state.lastOpt[1].say(packed);
+            tgLogger.debug(`Handled a Photo message send-back to speculative talker:${await state.lastOpt[2]}.`);
+            await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
+            return;
+        }
+        // Non-text messages must be filtered ahead of them
         if (tgMsg.reply_to_message) {
             for (const pair of msgMappings) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
@@ -104,7 +122,7 @@ async function onTGMsg(tgMsg) {
                 // Activate chat & env. set
                 // noinspection JSUnresolvedVariable,JSIgnoredPromiseFromCall
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
-                // const setChatMenuButtonState = await tgbot.setChatMenuButton({chat_id:config.TGToken,menu_button:TGBotCommands});
+                // const setChatMenuButtonState = await tgbot.setChatMenuButton({chat_id:config.botToken,menu_button:TGBotCommands});
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
             } else if (state.lastOpt[0] === "/find") {
@@ -152,7 +170,9 @@ async function findSbInWechat(token) {
 async function downloadFile(url, pathName) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
-        require('http').get(url, (response) => {
+        const agentEr = require('https-proxy-agent');
+        const agent = new agentEr.HttpsProxyAgent(require("./config/proxy"));
+        require('https').get(url, {agent: agent}, (response) => {
             // response.setEncoding("binary");
             response.pipe(file);
             file.on('finish', () => {
@@ -202,7 +222,12 @@ async function onWxMessage(msg) {
     //DeliverType
 
     let DType = DTypes.Default;
-
+    //提前筛选出自己的消息
+    if(room){
+        if (msg.self() && await room.topic() !== "CyTest") return;
+    }else{
+        if (msg.self()) return;
+    }
     //已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();
@@ -293,8 +318,8 @@ async function onWxMessage(msg) {
         if (room) {
             //是群消息 - - - - - - - -
             const topic = await room.topic();
-            //筛选出自己的消息
-            if (msg.self() && topic !== "CyTest") return;
+            // //筛选出自己的消息
+            // if (msg.self() && topic !== "CyTest") return;
 
             // 群系统消息,如拍一拍
             if (name === topic) {
@@ -322,7 +347,8 @@ async function onWxMessage(msg) {
             await addToMsgMappings(deliverResult.message_id, room);
         } else {
             //不是群消息 - - - - - - - -
-            if (msg.self()) return;
+            // //筛选出自己的消息
+            // if (msg.self()) return;
             //微信运动-wipe-out(由于客户端不支持微信运动消息的显示，故被归类为text)
             if (alias === "微信运动") {
                 return;
@@ -386,5 +412,7 @@ wxbot.on('login', async user => {
 wxbot.start()
     .then(() => wxLogger.info('开始登陆大而丑...'))
     .catch((e) => wxLogger.error(e));
+
+
 require('./logger')("startup");
 
