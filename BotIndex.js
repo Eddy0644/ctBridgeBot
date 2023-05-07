@@ -5,7 +5,6 @@ const Config = require('./config/public');
 const TelegramBot = require('node-telegram-bot-api');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
-const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -66,7 +65,7 @@ tgbot.on('message', onTGMsg);
 async function onTGMsg(tgMsg) {
     //Update: added find_location chatAction after sending message back successfully.
     try {
-        // if (process.uptime() < 10) return;
+        if (process.uptime() < 10) return;
 
         //Put these two into a separated func though;
         if (tgMsg.photo) {
@@ -74,7 +73,7 @@ async function onTGMsg(tgMsg) {
                 // !!unimplemented
                 return;
             }
-            console.log(tgMsg.photo);
+            // console.log(tgMsg.photo);
             const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
             const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
             const file_path = `./downloaded/photoTG/${Math.random()}.png`;
@@ -91,7 +90,7 @@ async function onTGMsg(tgMsg) {
                 // !!unimplemented
                 return;
             }
-            console.log(tgMsg.document);
+            // console.log(tgMsg.document);
             // const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
             const fileCloudPath = (await tgbot.getFile(tgMsg.document.file_id)).file_path;
             const file_path = `./downloaded/fileTG/${tgMsg.document.file_name}`;
@@ -230,7 +229,7 @@ async function addToMsgMappings(tgMsg, talker) {
 async function onWxMessage(msg) {
 
     // 按照距今时间来排除wechaty重启时的重复消息
-    let isMessageDropped = msg.age() > 30 && process.uptime() < 20;
+    let isMessageDropped = msg.age() > 40 && process.uptime() < 39;
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     LogWxMsg(msg, isMessageDropped);
     if (isMessageDropped) return;
