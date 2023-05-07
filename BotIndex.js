@@ -63,6 +63,7 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
 tgbot.on('message', onTGMsg);
 
 async function onTGMsg(tgMsg) {
+    //Update: added find_location chatAction after sending message back successfully.
     try {
         if (process.uptime() < 10) return;
         if (tgMsg.reply_to_message) {
@@ -70,6 +71,7 @@ async function onTGMsg(tgMsg) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
                     pair[1].say(tgMsg.text);
                     tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
+                    await tgbot.sendChatAction(secretConfig.My_TG_ID, "find_location");
                     return;
                 }
             }
@@ -86,7 +88,7 @@ async function onTGMsg(tgMsg) {
             const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotSendMessage(statusReport, true, "HTML");
         } else if (tgMsg.text === "/placeholder") {
-            await tgbot.sendMessage(tgMsg.chat.id, `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`);
+            await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
             // !!! No valid COMMAND matches to msg
             if (state.lastOpt === null) {
@@ -108,8 +110,8 @@ async function onTGMsg(tgMsg) {
             } else if (state.lastOpt[0] === "chat") {
                 // forward to last talker
                 state.lastOpt[1].say(tgMsg.text);
-
                 tgLogger.debug(`Handled a message send-back to speculative talker:${await state.lastOpt[2]}.`);
+                await tgbot.sendChatAction(secretConfig.My_TG_ID, "find_location");
             } else {
                 // Empty here.
             }

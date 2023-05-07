@@ -5,5 +5,6 @@ module.exports = {
         {command: '/info', description: 'Get current system variables'},
         {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
         // Add more commands as needed
-    ]
+    ],
+    placeholder:`Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 };
