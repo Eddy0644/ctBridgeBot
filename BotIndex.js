@@ -210,14 +210,7 @@ let msgMappings = [];
 let state = {
     lastOpt: null
 };   // as for talker, [1] is Object, [2] is name.
-const DTypes = {
-    Default: -1,
-    NotSend: 0,
-    Text: 1,
-    Image: 2,
-    Audio: 3,
-    CustomEmotion: 4,
-};
+
 
 async function addToMsgMappings(tgMsg, talker) {
     const name = await (talker.name ? talker.name() : talker.topic());
@@ -265,7 +258,6 @@ async function onWxMessage(msg) {
         let emotionHref = result[5].replace(/&amp;amp;/g, "&");
         let md5 = result[2];
         content = content.replace(/&lt;msg&gt;(.*?)&lt;\/msg&gt;/, `[CustomEmotion]`);
-        wxLogger.debug(`Discovered as CustomEmotion, Got a link: ${emotionHref}`);
         msg.DType = DTypes.CustomEmotion;
         //查找是否有重复项,再保存CustomEmotion并以md5命名.消息详情中的filename有文件格式信息
         //Sometimes couldn't get fileExt so deprecate it
@@ -276,6 +268,7 @@ async function onWxMessage(msg) {
             if (await downloadFile(emotionHref, cEPath)) {
                 // downloadFile_old(emotionHref, path + ".backup.gif");
                 msg.downloadedPath = cEPath;
+                wxLogger.debug(`Discovered as CustomEmotion, Downloaded as: ${cEPath}`);
             } else msg.downloadedPath = null;
         } else msg.downloadedPath = cEPath;
     } catch (e) {
@@ -394,7 +387,7 @@ async function deliverWxToTG(isRoom = false, msg, content) {
         // 自定义表情, 已添加读取错误处理
         try {
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotSendAnimation(`${template} [CustomEmotion]`, stream, true, false);
+            tgMsg = await tgBotSendAnimation(`${template} [CustomEmotion]`, stream, true, true);
         } catch (e) {
             wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
             tgMsg = await tgBotSendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
@@ -422,7 +415,8 @@ async function deliverWxToTG(isRoom = false, msg, content) {
     }
 }
 
-wxbot = require('./wxbot-pre')(tgbot, wxLogger);
+// wxbot = require('./wxbot-pre')(tgbot, wxLogger);
+const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
 
 
 wxbot.on('message', onWxMessage);
