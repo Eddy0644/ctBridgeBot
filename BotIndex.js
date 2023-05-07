@@ -3,6 +3,7 @@
 const secretConfig = require('./config/secret');
 const Config = require('./config/public');
 const TelegramBot = require('node-telegram-bot-api');
+const FileBox = require("file-box");
 const fs = require("fs");
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -22,14 +23,39 @@ const tgBotRevokeMessage = async (msgId) => {
     await delay(100);
     return await tgbot.deleteMessage(secretConfig.My_TG_ID, msgId).catch((e) => tgLogger.error(e));
 };
-const tgBotSendPhoto = async (msg, path, isSilent = false) => {
+const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true) => {
     await delay(100);
     let form = {
-        caption: msg
+        caption: msg,
+        has_spoiler: hasSpoiler,
+        width: 100,
+        height: 100,
     };
     if (isSilent) form.disable_notification = true;
-    return await tgbot.sendPhoto(secretConfig.My_TG_ID, path, form).catch((e) => tgLogger.error(e));
+    return await tgbot.sendAnimation(secretConfig.My_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
 };
+const tgBotSendPhoto = async (msg, path, isSilent = false, hasSpoiler = false) => {
+    await delay(100);
+    let form = {
+        caption: msg,
+        has_spoiler: hasSpoiler,
+        width: 100,
+        height: 100,
+    };
+    if (isSilent) form.disable_notification = true;
+    return await tgbot.sendPhoto(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+};
+const tgBotSendAudio = async (msg, path, isSilent = false) => {
+    await delay(100);
+    let form = {
+        caption: msg,
+        width: 100,
+        height: 100,
+    };
+    if (isSilent) form.disable_notification = true;
+    return await tgbot.sendAudio(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+};
+
 tgbot.on('message', onTGMsg);
 
 async function onTGMsg(tgMsg) {
@@ -46,40 +72,40 @@ async function onTGMsg(tgMsg) {
             tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
         } else if (tgMsg.text === "/find") {
             const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.');
-            lastOperation = ["/find", tgMsg2];
+            state.lastOpt = ["/find", tgMsg2];
         } else if (tgMsg.text.indexOf("/find") === 0) {
             // Want to find somebody
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
-            lastOperation = null;
+            state.lastOpt = null;
         } else if (tgMsg.text === "/info") {
-            const statusReport = `---lastOperation: <code>${JSON.stringify(lastOperation)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+            const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotSendMessage(statusReport, true, "HTML");
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`);
         } else {
             // !!! No valid COMMAND matches to msg
-            if (lastOperation === null) {
+            if (state.lastOpt === null) {
                 // Activate chat & env. set
                 // noinspection JSUnresolvedVariable,JSIgnoredPromiseFromCall
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
                 // const setChatMenuButtonState = await tgbot.setChatMenuButton({chat_id:config.TGToken,menu_button:TGBotCommands});
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
-            } else if (lastOperation[0] === "/find") {
-                const msgToRevoke1 = lastOperation[1];
+            } else if (state.lastOpt[0] === "/find") {
+                const msgToRevoke1 = state.lastOpt[1];
                 const result = await findSbInWechat(tgMsg.text);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
                     await tgBotRevokeMessage(msgToRevoke1.message_id);
                     await tgBotRevokeMessage(tgMsg.message_id);
                 }
-                // if (result) lastOperation = null;
-            } else if (lastOperation[0] === "chat") {
+                // if (result) state.lastOpt = null;
+            } else if (state.lastOpt[0] === "chat") {
                 // forward to last talker
-                lastOperation[1].say(tgMsg.text);
+                state.lastOpt[1].say(tgMsg.text);
 
-                tgLogger.debug(`Handled a message send-back to speculative talker:${await lastOperation[2]}.`);
+                tgLogger.debug(`Handled a message send-back to speculative talker:${await state.lastOpt[2]}.`);
             } else {
                 // Empty here.
             }
@@ -90,7 +116,7 @@ async function onTGMsg(tgMsg) {
 }
 
 async function findSbInWechat(token) {
-    await tgbot.sendChatAction(secretConfig.My_TG_ID,"typing");
+    await tgbot.sendChatAction(secretConfig.My_TG_ID, "typing");
     const wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     if (wxFinded1) {
@@ -107,6 +133,7 @@ async function findSbInWechat(token) {
     }
     return true;
 }
+
 async function downloadFile(url, pathName) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
@@ -124,13 +151,15 @@ async function downloadFile(url, pathName) {
 }
 
 let msgMappings = [];
-let lastOperation = null;   // as for talker, [1] is Object, [2] is name.
+let state = {
+    lastOpt: null
+};   // as for talker, [1] is Object, [2] is name.
 
 
 async function addToMsgMappings(tgMsg, talker) {
     const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsg, talker, name]);
-    lastOperation = ["chat", talker, name];
+    state.lastOpt = ["chat", talker, name];
 }
 
 // 监听对话
@@ -181,19 +210,39 @@ async function onWxMessage(msg) {
         //Sometimes couldn't get fileExt so deprecate it
         // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
         const fileExt = ".gif";
-        const path = `./downloaded/customEmotion/${md5 + fileExt}`;
-        if (!fs.existsSync(path)) {
-            if (await downloadFile(emotionHref, path)) {
+        const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+        if (!fs.existsSync(cEPath)) {
+            if (await downloadFile(emotionHref, cEPath)) {
                 // downloadFile_old(emotionHref, path + ".backup.gif");
-                msg.downloadedPath = path;
+                msg.downloadedPath = cEPath;
             } else msg.downloadedPath = null;
-        }
+        } else msg.downloadedPath = cEPath;
     } catch (e) {
         wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
+        //尝试解析为图片
+        const fBox = await msg.toFileBox();
+        const photoPath = `./downloaded/photo/${alias}-${msg.payload.filename}`;
+        await fBox.toFile(photoPath);
+        if (fs.existsSync(photoPath)) {
+            wxLogger.debug(`Discovered as Image, Downloaded as: ${photoPath}`);
+            DType = DTypes.Image;
+            msg.downloadedPath = photoPath;
+        } else wxLogger.debug(`Discovered as Image, But download failed. Ignoring.`);
 
     }
-    //TODO:Implement Image Judge and Saver Here.
 
+    if (msg.type() === wxbot.Message.Type.Audio) try {
+        const fBox = await msg.toFileBox();
+        const audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
+        await fBox.toFile(audioPath);
+        if (fs.existsSync(audioPath)) {
+            wxLogger.debug(`Discovered as Audio, Downloaded as: ${audioPath}`);
+            DType = DTypes.Audio;
+            msg.downloadedPath = audioPath;
+        } else wxLogger.debug(`Discovered as Audio, But download failed. Ignoring.`);
+    } catch (e) {
+        wxLogger.debug(`Discovered as Audio, But download failed. Ignoring.`);
+    }
     //文字消息判断:
     if (DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) DType = DTypes.Text;
 
@@ -219,7 +268,7 @@ async function onWxMessage(msg) {
             //是群消息 - - - - - - - -
             const topic = await room.topic();
             //筛选出自己的消息
-            if (msg.self() && topic !== CyTest) return;
+            if (msg.self() && topic !== "CyTest") return;
 
             // 群系统消息,如拍一拍
             if (name === topic) {
@@ -231,7 +280,7 @@ async function onWxMessage(msg) {
             if (DType === DTypes.CustomEmotion) {
                 if (fs.existsSync(msg.downloadedPath)) {
                     const stream = fs.createReadStream(msg.downloadedPath);
-                    tgMsg = await tgBotSendPhoto(`📬[${alias}] [CustomEmotion]`, stream, true);
+                    tgMsg = await tgBotSendAnimation(`📬[${name}@${topic}] [CustomEmotion]`, stream, true, true);
                 } else {
                     wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
                 }
@@ -239,7 +288,7 @@ async function onWxMessage(msg) {
                 //End up:发送正常文字消息
                 wxLogger.debug(`群聊[From ${name} in ${topic}] ${content}`);
                 // if (topic === "xx三人组") return;
-                tgMsg = await tgBotSendMessage(`📬[${name}@${topic}] ${content}`, 0);
+                tgMsg = await tgBotSendMessage(`📬<b>[${name}@${topic}]</b> ${content}`, 0, "HTML");
             }
             await addToMsgMappings(tgMsg.message_id, room);
         } else {
@@ -253,11 +302,18 @@ async function onWxMessage(msg) {
             if (DType === DTypes.CustomEmotion) {
                 try {
                     const stream = fs.createReadStream(msg.downloadedPath);
-                    tgMsg = await tgBotSendPhoto(`[${alias}] [CustomEmotion]`, stream, true);
+                    tgMsg = await tgBotSendAnimation(`[${alias}] [CustomEmotion]`, stream, true, false);
                 } catch (e) {
                     wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
                     tgMsg = await tgBotSendMessage(`📨[${alias}] [CustomEmotion](Couldn't send)`, true);
                 }
+            } else if (DType === DTypes.Audio) {
+                wxLogger.debug(`发消息人: ${alias} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
+                const stream = fs.createReadStream(msg.downloadedPath);
+                tgMsg = await tgBotSendAudio(`[${alias}] 🎤`, stream, false);
+            } else if (DType === DTypes.Image) {
+                const stream = fs.createReadStream(msg.downloadedPath);
+                tgMsg = await tgBotSendPhoto(`[${alias}] 🖼`, stream, true, false);
             } else {
                 wxLogger.debug(`发消息人: ${alias} 消息内容: ${content}`);
                 tgMsg = await tgBotSendMessage(`📨[${alias}] ${content}`);
