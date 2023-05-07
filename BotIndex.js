@@ -288,7 +288,9 @@ async function onWxMessage(msg) {
             // 群系统消息,如拍一拍
             if (name === topic) {
                 wxLogger.debug(`群聊[in ${topic}] ${content}`);
-                await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
+                if(content.includes("red packet")||content.includes("红包")) {
+                    await tgBotSendMessage(`🧧[in ${topic}] ${content}`, 0);
+                }else await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
                 return;
             }
             // let tgMsg;
@@ -305,7 +307,7 @@ async function onWxMessage(msg) {
             //     // if (topic === "xx三人组") return;
             //     tgMsg = await tgBotSendMessage(`📬<b>[${name}@${topic}]</b> ${content}`, 0, "HTML");
             // }
-            const deliverResult = await deliverWxToTG(true);
+            const deliverResult = await deliverWxToTG(true, msg, content, DType);
             await addToMsgMappings(deliverResult.message_id, room);
         } else {
             //不是群消息 - - - - - - - -
@@ -314,7 +316,7 @@ async function onWxMessage(msg) {
             if (alias === "微信运动") {
                 return;
             }
-            const deliverResult = await deliverWxToTG(false);
+            const deliverResult = await deliverWxToTG(false, msg, content, DType);
 
             await addToMsgMappings(deliverResult.message_id, msg.talker());
         }
@@ -326,9 +328,9 @@ async function deliverWxToTG(isRoom = false, msg, content, DType) {
     const room = msg.room(); // 是否是群消息
     const name = await contact.name();
     const alias = await contact.alias() || await contact.name();
-    const topic = await room.topic();
+    // const topic = await room.topic();
 
-    const template = isRoom ? `📬<b>[${name}@${topic}]</b>` : `📨[${alias}]`;
+    const template = isRoom ? `📬<b>[${name}@${await room.topic()}]</b>` : `📨[${alias}]`;
     let tgMsg;
     if (DType === DTypes.CustomEmotion) {
         // 自定义表情, 已添加读取错误处理
