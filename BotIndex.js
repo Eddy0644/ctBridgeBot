@@ -18,11 +18,11 @@ const tgBotSendMessage = async (msg, isSilent = false, parseMode) => {
     let form = {};
     if (isSilent) form.disable_notification = true;
     if (parseMode) form.parse_mode = parseMode;
-    return await tgbot.sendMessage(secretConfig.My_TG_ID, msg, form).catch((e) => tgLogger.error(e));
+    return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e));
 };
 const tgBotRevokeMessage = async (msgId) => {
     await delay(100);
-    return await tgbot.deleteMessage(secretConfig.My_TG_ID, msgId).catch((e) => tgLogger.error(e));
+    return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => tgLogger.error(e));
 };
 const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true) => {
     await delay(100);
@@ -34,7 +34,7 @@ const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true
         parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
-    return await tgbot.sendAnimation(secretConfig.My_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
+    return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
 };
 const tgBotSendPhoto = async (msg, path, isSilent = false, hasSpoiler = false) => {
     await delay(100);
@@ -46,7 +46,7 @@ const tgBotSendPhoto = async (msg, path, isSilent = false, hasSpoiler = false) =
         parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
-    return await tgbot.sendPhoto(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+    return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
 };
 const tgBotSendAudio = async (msg, path, isSilent = false) => {
     await delay(100);
@@ -57,7 +57,7 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
         parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
-    return await tgbot.sendVoice(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+    return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
 };
 
 tgbot.on('message', onTGMsg);
@@ -71,13 +71,22 @@ async function onTGMsg(tgMsg) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
                     pair[1].say(tgMsg.text);
                     tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
-                    await tgbot.sendChatAction(secretConfig.My_TG_ID, "find_location");
+                    await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
                     return;
                 }
             }
             tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
         } else if (tgMsg.text === "/find") {
-            const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.');
+            let form = {
+                disable_notification: true,
+                reply_markup: JSON.stringify({
+                    keyboard: secretConfig.quickFindList,
+                    is_persistent: false,
+                    resize_keyboard: true,
+                    one_time_keyboard: true
+                })
+            };
+            const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.', form);
             state.lastOpt = ["/find", tgMsg2];
         } else if (tgMsg.text.indexOf("/find") === 0) {
             // Want to find somebody
@@ -90,7 +99,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
-            // !!! No valid COMMAND matches to msg
+            // No valid COMMAND matches to msg
             if (state.lastOpt === null) {
                 // Activate chat & env. set
                 // noinspection JSUnresolvedVariable,JSIgnoredPromiseFromCall
@@ -111,7 +120,7 @@ async function onTGMsg(tgMsg) {
                 // forward to last talker
                 state.lastOpt[1].say(tgMsg.text);
                 tgLogger.debug(`Handled a message send-back to speculative talker:${await state.lastOpt[2]}.`);
-                await tgbot.sendChatAction(secretConfig.My_TG_ID, "find_location");
+                await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
             } else {
                 // Empty here.
             }
@@ -122,7 +131,7 @@ async function onTGMsg(tgMsg) {
 }
 
 async function findSbInWechat(token) {
-    await tgbot.sendChatAction(secretConfig.My_TG_ID, "typing");
+    await tgbot.sendChatAction(secretConfig.target_TG_ID, "typing");
     const wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     if (wxFinded1) {
@@ -179,7 +188,7 @@ async function addToMsgMappings(tgMsg, talker) {
 async function onWxMessage(msg) {
 
     // 按照距今时间来排除wechaty重启时的重复消息
-    let isMessageDropped = msg.age() > 30 && process.uptime() < 10;
+    let isMessageDropped = msg.age() > 30 && process.uptime() < 20;
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     LogWxMsg(msg, isMessageDropped);
     if (isMessageDropped) return;
@@ -198,7 +207,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is {{ ${recalledMessage} }}`);
-        // await tgbot.sendMessage(config.My_TG_ID, `Message: ${recalledMessage} has been recalled.`);
+        // await tgbot.sendMessage(config.target_TG_ID, `Message: ${recalledMessage} has been recalled.`);
         await tgBotSendMessage(`Message: {{ ${recalledMessage} }} has been recalled.`, true);
         return;
     }
@@ -290,9 +299,9 @@ async function onWxMessage(msg) {
             // 群系统消息,如拍一拍
             if (name === topic) {
                 wxLogger.debug(`群聊[in ${topic}] ${content}`);
-                if(content.includes("red packet")||content.includes("红包")) {
+                if (content.includes("red packet") || content.includes("红包")) {
                     await tgBotSendMessage(`🧧[in ${topic}] ${content}`, 0);
-                }else await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
+                } else await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
                 return;
             }
             // let tgMsg;
