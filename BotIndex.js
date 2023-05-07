@@ -3,9 +3,9 @@
 const secretConfig = require('./config/secret');
 const Config = require('./config/public');
 const TelegramBot = require('node-telegram-bot-api');
-const FileBox = require("file-box");
+// const FileBox = require("file-box");
 const fs = require("fs");
-const ffmpeg = require('fluent-ffmpeg');
+// const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -31,6 +31,7 @@ const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true
         has_spoiler: hasSpoiler,
         width: 100,
         height: 100,
+        parse_mode:"HTML",
     };
     if (isSilent) form.disable_notification = true;
     return await tgbot.sendAnimation(secretConfig.My_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
@@ -42,6 +43,7 @@ const tgBotSendPhoto = async (msg, path, isSilent = false, hasSpoiler = false) =
         has_spoiler: hasSpoiler,
         width: 100,
         height: 100,
+        parse_mode:"HTML",
     };
     if (isSilent) form.disable_notification = true;
     return await tgbot.sendPhoto(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
@@ -52,6 +54,7 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
         caption: msg,
         width: 100,
         height: 100,
+        parse_mode:"HTML",
     };
     if (isSilent) form.disable_notification = true;
     return await tgbot.sendVoice(secretConfig.My_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
@@ -236,12 +239,12 @@ async function onWxMessage(msg) {
         const fBox = await msg.toFileBox();
         let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
         await fBox.toFile(audioPath);
-        await ffmpeg()
-            .input(audioPath)
-            .output(audioPath+".ogg")
-            .outputOptions('-codec:a libopus')
-            .format('ogg')
-            .run();
+        // await ffmpeg()
+        //     .input(audioPath)
+        //     .output(audioPath+".ogg")
+        //     .outputOptions('-codec:a libopus')
+        //     .format('ogg')
+        //     .run();
         // audioPath+=".ogg";
         if (fs.existsSync(audioPath)) {
             wxLogger.debug(`Discovered as Audio, Downloaded as: ${audioPath}`);
@@ -250,7 +253,7 @@ async function onWxMessage(msg) {
         } else {
             wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
             DType = DTypes.Text;
-            content="🎤(Fail to download)";
+            content = "🎤(Fail to download)";
         }
     } catch (e) {
         wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
@@ -288,21 +291,22 @@ async function onWxMessage(msg) {
                 await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
                 return;
             }
-            let tgMsg;
-            if (DType === DTypes.CustomEmotion) {
-                if (fs.existsSync(msg.downloadedPath)) {
-                    const stream = fs.createReadStream(msg.downloadedPath);
-                    tgMsg = await tgBotSendAnimation(`📬[${name}@${topic}] [CustomEmotion]`, stream, true, true);
-                } else {
-                    wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                }
-            } else {
-                //End up:发送正常文字消息
-                wxLogger.debug(`群聊[From ${name} in ${topic}] ${content}`);
-                // if (topic === "xx三人组") return;
-                tgMsg = await tgBotSendMessage(`📬<b>[${name}@${topic}]</b> ${content}`, 0, "HTML");
-            }
-            await addToMsgMappings(tgMsg.message_id, room);
+            // let tgMsg;
+            // if (DType === DTypes.CustomEmotion) {
+            //     if (fs.existsSync(msg.downloadedPath)) {
+            //         const stream = fs.createReadStream(msg.downloadedPath);
+            //         tgMsg = await tgBotSendAnimation(`📬[${name}@${topic}] [CustomEmotion]`, stream, true, true);
+            //     } else {
+            //         wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
+            //     }
+            // } else {
+            //     //End up:发送正常文字消息
+            //     wxLogger.debug(`群聊[From ${name} in ${topic}] ${content}`);
+            //     // if (topic === "xx三人组") return;
+            //     tgMsg = await tgBotSendMessage(`📬<b>[${name}@${topic}]</b> ${content}`, 0, "HTML");
+            // }
+            const deliverResult = await deliverWxToTG(true);
+            await addToMsgMappings(deliverResult.message_id, room);
         } else {
             //不是群消息 - - - - - - - -
             if (msg.self()) return;
@@ -310,32 +314,45 @@ async function onWxMessage(msg) {
             if (alias === "微信运动") {
                 return;
             }
-            let tgMsg;
-            if (DType === DTypes.CustomEmotion) {
-                try {
-                    const stream = fs.createReadStream(msg.downloadedPath);
-                    tgMsg = await tgBotSendAnimation(`[${alias}] [CustomEmotion]`, stream, true, false);
-                } catch (e) {
-                    wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                    tgMsg = await tgBotSendMessage(`📨[${alias}] [CustomEmotion](Couldn't send)`, true);
-                }
-            } else if (DType === DTypes.Audio) {
-                wxLogger.debug(`发消息人: ${alias} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
-                const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotSendAudio(`[${alias}] 🎤`, stream, false);
-            } else if (DType === DTypes.Image) {
-                const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotSendPhoto(`[${alias}] 🖼`, stream, true, false);
-            } else {
-                wxLogger.debug(`发消息人: ${alias} 消息内容: ${content}`);
-                tgMsg = await tgBotSendMessage(`📨[${alias}] ${content}`);
-            }
-            if (!tgMsg) {
-                return tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed.");
-            }
+            const deliverResult = await deliverWxToTG(false);
 
-            await addToMsgMappings(tgMsg.message_id, msg.talker());
+            await addToMsgMappings(deliverResult.message_id, msg.talker());
         }
+    }
+}
+
+async function deliverWxToTG(isRoom = false) {
+    const template=isRoom?`📬<b>[${name}@${topic}]</b>`:`📨[${alias}]`;
+    let tgMsg;
+    if (DType === DTypes.CustomEmotion) {
+        // 自定义表情, 已添加读取错误处理
+        try {
+            const stream = fs.createReadStream(msg.downloadedPath);
+            tgMsg = await tgBotSendAnimation(`${template} [CustomEmotion]`, stream, true, false);
+        } catch (e) {
+            wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
+            tgMsg = await tgBotSendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
+        }
+    } else if (DType === DTypes.Audio) {
+        // 语音
+        wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
+        const stream = fs.createReadStream(msg.downloadedPath);
+        tgMsg = await tgBotSendAudio(`${template} 🎤`, stream, false);
+    } else if (DType === DTypes.Image) {
+        // 正经图片消息
+        const stream = fs.createReadStream(msg.downloadedPath);
+        tgMsg = await tgBotSendPhoto(`${template} 🖼`, stream, true, false);
+    } else {
+        // 仅文本或未分类
+        // Plain text or not classified
+        wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
+        tgMsg = await tgBotSendMessage(`${template} ${content}`,false,"HTML");
+    }
+    if (!tgMsg) {
+        tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed.");
+        return "sendFailure";
+    }else{
+        return tgMsg;
     }
 }
 
@@ -347,15 +364,8 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
     // await tgBotSendMessage(`[Cy Notice] Service Started.`,1);
 });
-// wxbot.start()
-//     .then(() => wxLogger.info('开始登陆大而丑...'))
-//     .catch((e) => wxLogger.error(e));
+wxbot.start()
+    .then(() => wxLogger.info('开始登陆大而丑...'))
+    .catch((e) => wxLogger.error(e));
 require('./logger')("startup");
-let audioPath = `./downloaded/audio/cvs_sc-2358873894040191761.mp3`;
-ffmpeg(audioPath)
-    .audioCodec("libopus")
-    .output(audioPath+".ogg")
-    // .outputOptions('-codec:a libopus')
-    .format('ogg')
-    .save("a.ogg");
-    // .run();
+
