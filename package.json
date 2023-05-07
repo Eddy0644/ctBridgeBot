@@ -17,6 +17,7 @@
     "ffmpeg": "^0.0.4",
     "file-box": "^1.5.5",
     "fluent-ffmpeg": "^2.1.2",
+    "https-proxy-agent": "^6.1.0",
     "log4j": "^1.0.0",
     "log4js": "^6.7.1",
     "md5": "^2.2.1",
