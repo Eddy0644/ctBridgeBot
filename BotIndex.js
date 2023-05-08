@@ -30,7 +30,7 @@ async function onTGMsg(tgMsg) {
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_photo");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
-            state.lastOpt[1].say(packed);
+            await state.lastOpt[1].say(packed);
             tgLogger.debug(`Handled a Photo message send-back to speculative talker:${await state.lastOpt[2]}.`);
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             return;
@@ -47,7 +47,7 @@ async function onTGMsg(tgMsg) {
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
-            state.lastOpt[1].say(packed);
+            await state.lastOpt[1].say(packed);
             tgLogger.debug(`Handled a Document message send-back to speculative talker:${await state.lastOpt[2]}.`);
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             return;
@@ -65,7 +65,7 @@ async function onTGMsg(tgMsg) {
                         await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
                         return;
                     } else {
-                        pair[1].say(tgMsg.text);
+                        await pair[1].say(tgMsg.text);
                         tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
                         await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
                         return;
@@ -82,11 +82,10 @@ async function onTGMsg(tgMsg) {
                     one_time_keyboard: true
                 })
             };
-            // const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.', form);
             const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
             state.lastOpt = ["/find", tgMsg2];
         } else if (tgMsg.text.indexOf("/find") === 0) {
-            // Want to find somebody
+            // Want to find somebody, and have inline parameters
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
             state.lastOpt = null;
@@ -99,7 +98,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
-            // No valid COMMAND matches to msg
+            // No valid COMMAND within msg
             if (state.lastOpt === null) {
                 // Activate chat & env. set
                 // noinspection JSUnresolvedVariable,JSIgnoredPromiseFromCall
@@ -124,7 +123,7 @@ async function onTGMsg(tgMsg) {
                     tgLogger.debug(`Handled a message send-back to ${state.lastOpt[2]}.`);
                 } else {
                     // forward to last talker
-                    state.lastOpt[1].say(tgMsg.text);
+                    await state.lastOpt[1].say(tgMsg.text);
                     tgLogger.debug(`Handled a message send-back to speculative talker:${await state.lastOpt[2]}.`);
                     await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
                 }
@@ -133,7 +132,7 @@ async function onTGMsg(tgMsg) {
             }
         }
     } catch (e) {
-        tgLogger.warn(`Uncaught Error while handling TG message: ${e.toString()}`);
+        tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
     }
 }
 
@@ -143,7 +142,7 @@ async function findSbInWechat(token) {
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
-        const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> <tg-spoiler>alias=${await wxFinded1.alias()}</tg-spoiler>`,
+        const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
             true, "HTML");
         await addToMsgMappings(tgMsg.message_id, wxFinded1);
     } else if (wxFinded2) {
@@ -179,12 +178,12 @@ async function downloadFileWx(url, pathName, cookieStr) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
         // const agentEr = require('https-proxy-agent');
-        const agent = new agentEr.HttpsProxyAgent("http://127.0.0.1:8888");
+        // const agent = new agentEr.HttpsProxyAgent("http://127.0.0.1:8888");
         const options = {
             headers: {
                 'Cookie': cookieStr
             },
-            agent: agent,
+            // agent: agent,
             rejectUnauthorized: false
         };
         require('https').get(url, options, (response) => {
