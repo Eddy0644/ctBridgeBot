@@ -13,6 +13,7 @@ const DTypes = {
     Image: 2,
     Audio: 3,
     CustomEmotion: 4,
+    File: 5,
 };
 
 

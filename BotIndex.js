@@ -18,7 +18,7 @@ const tgBotSendMessage = async (msg, isSilent = false, parseMode) => {
     let form = {};
     if (isSilent) form.disable_notification = true;
     if (parseMode) form.parse_mode = parseMode;
-    return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e));
+    return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e.toString()));
 };
 const tgBotRevokeMessage = async (msgId) => {
     await delay(100);
@@ -63,7 +63,7 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
 tgbot.on('message', onTGMsg);
 
 async function onTGMsg(tgMsg) {
-    //Update: added find_location chatAction after sending message back successfully.
+    //Update: added choose_sticker chatAction after sending message back successfully.
     try {
         if (process.uptime() < 10) return;
 
@@ -82,7 +82,7 @@ async function onTGMsg(tgMsg) {
             const packed = await FileBox.fromFile(file_path);
             state.lastOpt[1].say(packed);
             tgLogger.debug(`Handled a Photo message send-back to speculative talker:${await state.lastOpt[2]}.`);
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
+            await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             return;
         }
         if (tgMsg.document) {
@@ -99,7 +99,7 @@ async function onTGMsg(tgMsg) {
             const packed = await FileBox.fromFile(file_path);
             state.lastOpt[1].say(packed);
             tgLogger.debug(`Handled a Document message send-back to speculative talker:${await state.lastOpt[2]}.`);
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
+            await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             return;
         }
 
@@ -110,7 +110,7 @@ async function onTGMsg(tgMsg) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
                     pair[1].say(tgMsg.text);
                     tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
-                    await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
+                    await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
                     return;
                 }
             }
@@ -159,7 +159,7 @@ async function onTGMsg(tgMsg) {
                 // forward to last talker
                 state.lastOpt[1].say(tgMsg.text);
                 tgLogger.debug(`Handled a message send-back to speculative talker:${await state.lastOpt[2]}.`);
-                await tgbot.sendChatAction(secretConfig.target_TG_ID, "find_location");
+                await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             } else {
                 // Empty here.
             }
@@ -171,8 +171,9 @@ async function onTGMsg(tgMsg) {
 
 async function findSbInWechat(token) {
     await tgbot.sendChatAction(secretConfig.target_TG_ID, "typing");
-    const wxFinded1 = await wxbot.Contact.find({name: token});
+    let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
+    wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
         const tgMsg = await tgBotSendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> <tg-spoiler>alias=${await wxFinded1.alias()}</tg-spoiler>`,
             true, "HTML");
@@ -236,7 +237,7 @@ async function onWxMessage(msg) {
     //DeliverType
 
     msg.DType = DTypes.Default;
-    //提前筛选出自己的消息
+    //提前筛选出自己的消息,避免多次下载媒体
     if (room) {
         if (msg.self() && await room.topic() !== "CyTest") return;
     } else {
@@ -308,6 +309,23 @@ async function onWxMessage(msg) {
     } catch (e) {
         wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
     }
+    // 文件及公众号消息类型
+    if (msg.type() === wxbot.Message.Type.Attachment) {
+        if (msg.payload.filename.endsWith(".49")) {
+            wxLogger.trace(`filename has suffix .49, maybe pushes.`);
+        } else {
+            // const result=await deliverWxToTG();
+            const FileRegex = new RegExp(/<totallen>(.*?)<\/totallen>/);
+            try {
+                let regResult = FileRegex.exec(content);
+                msg.filesize = parseInt(regResult[1]);
+                content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSend a single OK to retrieve that.`;
+                msg.DType = DTypes.File;
+            } catch (e) {
+                wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
+            }
+        }
+    }
     //文字消息判断:
     if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
 
@@ -326,44 +344,37 @@ async function onWxMessage(msg) {
         }
     }
 
-    //正式处理消息--------------
-    // ---目前只处理文字消息,后续此代码块同时处理
+    // 正式处理消息--------------
     if (msg.DType > 0) {
         if (room) {
-            //是群消息 - - - - - - - -
+            // 是群消息 - - - - - - - -
             const topic = await room.topic();
-            // //筛选出自己的消息
-            // if (msg.self() && topic !== "CyTest") return;
 
-            // 群系统消息,如拍一拍
+            // 群系统消息中先过滤出红包
             if (name === topic) {
-                wxLogger.debug(`群聊[in ${topic}] ${content}`);
                 if (content.includes("red packet") || content.includes("红包")) {
                     await tgBotSendMessage(`🧧[in ${topic}] ${content}`, 0);
-                } else await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
+                    return;
+                }
+            }
+            // 再筛选掉符合exclude keyword的群聊消息
+            for (const keyword of secretConfig.roomExcludeKeyword) {
+                if (topic.includes(keyword)) {
+                    wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content}`);
+                    return;
+                }
+            }
+            // 系统消息如拍一拍
+            if (name === topic) {
+                wxLogger.debug(`群聊[in ${topic}] ${content}`);
+                await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
                 return;
             }
-            // let tgMsg;
-            // if (msg.DType === DTypes.CustomEmotion) {
-            //     if (fs.existsSync(msg.downloadedPath)) {
-            //         const stream = fs.createReadStream(msg.downloadedPath);
-            //         tgMsg = await tgBotSendAnimation(`📬[${name}@${topic}] [CustomEmotion]`, stream, true, true);
-            //     } else {
-            //         wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-            //     }
-            // } else {
-            //     //End up:发送正常文字消息
-            //     wxLogger.debug(`群聊[From ${name} in ${topic}] ${content}`);
-            //     // if (topic === "xx三人组") return;
-            //     tgMsg = await tgBotSendMessage(`📬<b>[${name}@${topic}]</b> ${content}`, 0, "HTML");
-            // }
             const deliverResult = await deliverWxToTG(true, msg, content);
             await addToMsgMappings(deliverResult.message_id, room);
         } else {
             //不是群消息 - - - - - - - -
-            // //筛选出自己的消息
-            // if (msg.self()) return;
-            //微信运动-wipe-out(由于客户端不支持微信运动消息的显示，故被归类为text)
+            //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
             if (alias === "微信运动") {
                 return;
             }
@@ -374,13 +385,13 @@ async function onWxMessage(msg) {
     }
 }
 
-async function deliverWxToTG(isRoom = false, msg, content) {
-    const contact = msg.talker(); // 发消息人
-    const room = msg.room(); // 是否是群消息
+async function deliverWxToTG(isRoom = false, msg, contentO) {
+    const contact = msg.talker();
+    const room = msg.room();
     const name = await contact.name();
     const alias = await contact.alias() || await contact.name();
     // const topic = await room.topic();
-
+    let content = contentO.replaceAll("<br/>", "\n");
     const template = isRoom ? `📬<b>[${name}@${await room.topic()}]</b>` : `📨[${alias}]`;
     let tgMsg;
     if (msg.DType === DTypes.CustomEmotion) {
@@ -401,6 +412,12 @@ async function deliverWxToTG(isRoom = false, msg, content) {
         // 正经图片消息
         const stream = fs.createReadStream(msg.downloadedPath);
         tgMsg = await tgBotSendPhoto(`${template} 🖼`, stream, true, false);
+    } else if (msg.DType === DTypes.File) {
+        // 文件消息,需要二次确认
+        wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
+        tgMsg = await tgBotSendMessage(`${template} ${content}`, false, "HTML");
+        // TODO: consider to merge it into normal text
+
     } else {
         // 仅文本或未分类
         // Plain text or not classified
