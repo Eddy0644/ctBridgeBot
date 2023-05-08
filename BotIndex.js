@@ -52,12 +52,19 @@ const tgBotSendAudio = async (msg, path, isSilent = false) => {
     await delay(100);
     let form = {
         caption: msg,
-        width: 100,
-        height: 100,
         parse_mode: "HTML",
     };
     if (isSilent) form.disable_notification = true;
-    return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+    return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.error(e));
+};
+const tgBotSendDocument = async (msg, path, isSilent = false) => {
+    await delay(100);
+    let form = {
+        caption: msg,
+        parse_mode: "HTML",
+    };
+    if (isSilent) form.disable_notification = true;
+    return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.error(e));
 };
 
 tgbot.on('message', onTGMsg);
@@ -108,10 +115,18 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.reply_to_message) {
             for (const pair of msgMappings) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
-                    pair[1].say(tgMsg.text);
-                    tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
-                    await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
-                    return;
+                    if (tgMsg.text === "ok" && pair.length === 4 && pair[3].filesize) {
+                        // 对wx文件消息做出了确认
+                        await downloadFileWx(pair[3]);
+                        tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
+                        await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
+                        return;
+                    } else {
+                        pair[1].say(tgMsg.text);
+                        tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
+                        await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
+                        return;
+                    }
                 }
             }
             tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
@@ -213,10 +228,10 @@ let state = {
 };   // as for talker, [1] is Object, [2] is name.
 
 
-async function addToMsgMappings(tgMsg, talker) {
+async function addToMsgMappings(tgMsg, talker, wxMsg) {
     const name = await (talker.name ? talker.name() : talker.topic());
-    msgMappings.push([tgMsg, talker, name]);
-    state.lastOpt = ["chat", talker, name];
+    msgMappings.push([tgMsg, talker, name, wxMsg]);
+    state.lastOpt = ["chat", talker, name, wxMsg];
 }
 
 // 监听对话
@@ -269,7 +284,7 @@ async function onWxMessage(msg) {
             if (await downloadFile(emotionHref, cEPath)) {
                 // downloadFile_old(emotionHref, path + ".backup.gif");
                 msg.downloadedPath = cEPath;
-                wxLogger.debug(`Discovered as CustomEmotion, Downloaded as: ${cEPath}`);
+                wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}`);
             } else msg.downloadedPath = null;
         } else msg.downloadedPath = cEPath;
     } catch (e) {
@@ -279,10 +294,10 @@ async function onWxMessage(msg) {
         const photoPath = `./downloaded/photo/${alias}-${msg.payload.filename}`;
         await fBox.toFile(photoPath);
         if (fs.existsSync(photoPath)) {
-            wxLogger.debug(`Discovered as Image, Downloaded as: ${photoPath}`);
+            wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
             msg.DType = DTypes.Image;
             msg.downloadedPath = photoPath;
-        } else wxLogger.info(`Discovered as Image, But download failed. Ignoring.`);
+        } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
 
     }
 
@@ -298,16 +313,16 @@ async function onWxMessage(msg) {
         //     .run();
         // audioPath+=".ogg";
         if (fs.existsSync(audioPath)) {
-            wxLogger.debug(`Discovered as Audio, Downloaded as: ${audioPath}`);
+            wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
             msg.DType = DTypes.Audio;
             msg.downloadedPath = audioPath;
         } else {
-            wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
+            wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
             msg.DType = DTypes.Text;
             content = "🎤(Fail to download)";
         }
     } catch (e) {
-        wxLogger.info(`Discovered as Audio, But download failed. Ignoring.`);
+        wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
     }
     // 文件及公众号消息类型
     if (msg.type() === wxbot.Message.Type.Attachment) {
@@ -315,7 +330,7 @@ async function onWxMessage(msg) {
             wxLogger.trace(`filename has suffix .49, maybe pushes.`);
         } else {
             // const result=await deliverWxToTG();
-            const FileRegex = new RegExp(/<totallen>(.*?)<\/totallen>/);
+            const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
             try {
                 let regResult = FileRegex.exec(content);
                 msg.filesize = parseInt(regResult[1]);
@@ -371,7 +386,7 @@ async function onWxMessage(msg) {
                 return;
             }
             const deliverResult = await deliverWxToTG(true, msg, content);
-            await addToMsgMappings(deliverResult.message_id, room);
+            await addToMsgMappings(deliverResult.message_id, room, msg);
         } else {
             //不是群消息 - - - - - - - -
             //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
@@ -380,7 +395,7 @@ async function onWxMessage(msg) {
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
 
-            await addToMsgMappings(deliverResult.message_id, msg.talker());
+            await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
         }
     }
 }
@@ -429,6 +444,31 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         return "sendFailure";
     } else {
         return tgMsg;
+    }
+}
+
+async function downloadFileWx(msg) {
+    try {
+        const fBox = await msg.toFileBox();
+        let filePath = `${msg.payload.filename}`;
+        while (fs.existsSync(filePath)) {
+            filePath = "@" + filePath;
+        }
+        filePath = `./downloaded/file/` + filePath;
+        await fBox.toFile(filePath);
+        if (fs.existsSync(filePath)) {
+            wxLogger.debug(`Downloaded previous file as: ${filePath}`);
+            const stream = fs.createReadStream(filePath);
+            let tgMsg = await tgBotSendDocument("", stream, true, false);
+            if (!tgMsg) {
+                tgLogger.warn("Didn't get valid TG receipt,resend wx file failed.");
+                return "sendFailure";
+            } else return "Success";
+        } else {
+            wxLogger.info(`Detected as File, But download failed. Ignoring.`);
+        }
+    } catch (e) {
+        wxLogger.info(`Detected as File, But download failed. Ignoring.`);
     }
 }
 
