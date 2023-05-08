@@ -2,73 +2,13 @@
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 const secretConfig = require('./config/secret');
 const Config = require('./config/public');
-const TelegramBot = require('node-telegram-bot-api');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const tgbot = new TelegramBot(secretConfig.botToken,
-    {polling: true, request: {proxy: require("./config/proxy")},});
-const tgBotSendMessage = async (msg, isSilent = false, parseMode = null, form = {}) => {
-    /*Debug Only;no TG messages delivered*/
-    // return tgLogger.info(`Blocked Msg: ${msg}`);
-    await delay(100);
-    // let form = {};
-    if (isSilent) form.disable_notification = true;
-    if (parseMode) form.parse_mode = parseMode;
-    return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e.toString()));
-};
-const tgBotRevokeMessage = async (msgId) => {
-    await delay(100);
-    return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => {
-        tgLogger.error(e.toString());
-    });
-};
-const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true) => {
-    await delay(100);
-    let form = {
-        caption: msg,
-        has_spoiler: hasSpoiler,
-        width: 100,
-        height: 100,
-        parse_mode: "HTML",
-    };
-    if (isSilent) form.disable_notification = true;
-    return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
-};
-const tgBotSendPhoto = async (msg, path, isSilent = false, hasSpoiler = false) => {
-    await delay(100);
-    let form = {
-        caption: msg,
-        has_spoiler: hasSpoiler,
-        width: 100,
-        height: 100,
-        parse_mode: "HTML",
-    };
-    if (isSilent) form.disable_notification = true;
-    return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
-};
-const tgBotSendAudio = async (msg, path, isSilent = false) => {
-    await delay(100);
-    let form = {
-        caption: msg,
-        parse_mode: "HTML",
-    };
-    if (isSilent) form.disable_notification = true;
-    return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.error(e));
-};
-const tgBotSendDocument = async (msg, path, isSilent = false) => {
-    await delay(100);
-    let form = {
-        caption: msg,
-        parse_mode: "HTML",
-    };
-    if (isSilent) form.disable_notification = true;
-    return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.error(e));
-};
+const {tgbot,tgBotDo}=require('./tgbot-pre');
 
 tgbot.on('message', onTGMsg);
 
@@ -143,19 +83,19 @@ async function onTGMsg(tgMsg) {
                 })
             };
             // const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.', form);
-            const tgMsg2 = await tgBotSendMessage('Entering find mode; enter token to find it.', true, null, form);
+            const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
             state.lastOpt = ["/find", tgMsg2];
         } else if (tgMsg.text.indexOf("/find") === 0) {
             // Want to find somebody
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
             state.lastOpt = null;
-            await tgBotSendMessage(`Status Cleared.`, true, null, {
+            await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
                 reply_markup: {}
             });
         } else if (tgMsg.text === "/info") {
             const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-            await tgBotSendMessage(statusReport, true, "HTML");
+            await tgBotDo.SendMessage(statusReport, true, "HTML");
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
@@ -172,8 +112,8 @@ async function onTGMsg(tgMsg) {
                 const result = await findSbInWechat(tgMsg.text);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
-                    await tgBotRevokeMessage(msgToRevoke1.message_id);
-                    await tgBotRevokeMessage(tgMsg.message_id);
+                    await tgBotDo.RevokeMessage(msgToRevoke1.message_id);
+                    await tgBotDo.RevokeMessage(tgMsg.message_id);
                 }
                 // if (result) state.lastOpt = null;
             } else if (state.lastOpt[0] === "chat") {
@@ -203,15 +143,15 @@ async function findSbInWechat(token) {
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
-        const tgMsg = await tgBotSendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> <tg-spoiler>alias=${await wxFinded1.alias()}</tg-spoiler>`,
+        const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> <tg-spoiler>alias=${await wxFinded1.alias()}</tg-spoiler>`,
             true, "HTML");
         await addToMsgMappings(tgMsg.message_id, wxFinded1);
     } else if (wxFinded2) {
-        const tgMsg = await tgBotSendMessage(`🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
+        const tgMsg = await tgBotDo.SendMessage(`🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
             true, "HTML");
         await addToMsgMappings(tgMsg.message_id, wxFinded2);
     } else {
-        await tgBotSendMessage(`🔍Found Failed. Please enter token again or /clear.`);
+        await tgBotDo.SendMessage(`🔍Found Failed. Please enter token again or /clear.`);
         return false;
     }
     return true;
@@ -304,7 +244,7 @@ async function onWxMessage(msg) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is {{ ${recalledMessage} }}`);
         // await tgbot.sendMessage(config.target_TG_ID, `Message: ${recalledMessage} has been recalled.`);
-        await tgBotSendMessage(`Message: {{ ${recalledMessage} }} has been recalled.`, true);
+        await tgBotDo.SendMessage(`Message: {{ ${recalledMessage} }} has been recalled.`, true);
         return;
     }
 
@@ -409,7 +349,7 @@ async function onWxMessage(msg) {
             // 群系统消息中先过滤出红包
             if (name === topic) {
                 if (content.includes("red packet") || content.includes("红包")) {
-                    await tgBotSendMessage(`🧧[in ${topic}] ${content}`, 0);
+                    await tgBotDo.SendMessage(`🧧[in ${topic}] ${content}`, 0);
                     return;
                 }
             }
@@ -423,7 +363,7 @@ async function onWxMessage(msg) {
             // 系统消息如拍一拍
             if (name === topic) {
                 wxLogger.debug(`群聊[in ${topic}] ${content}`);
-                await tgBotSendMessage(`[in ${topic}] ${content}`, 1);
+                await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
                 return;
             }
             const deliverResult = await deliverWxToTG(true, msg, content);
@@ -454,24 +394,24 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         // 自定义表情, 已添加读取错误处理
         try {
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotSendAnimation(`${template} [CustomEmotion]`, stream, true, true);
+            tgMsg = await tgBotDo.SendAnimation(`${template} [CustomEmotion]`, stream, true, true);
         } catch (e) {
             wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-            tgMsg = await tgBotSendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
+            tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
         }
     } else if (msg.DType === DTypes.Audio) {
         // 语音
         wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
         const stream = fs.createReadStream(msg.downloadedPath);
-        tgMsg = await tgBotSendAudio(`${template} 🎤`, stream, false);
+        tgMsg = await tgBotDo.SendAudio(`${template} 🎤`, stream, false);
     } else if (msg.DType === DTypes.Image) {
         // 正经图片消息
         const stream = fs.createReadStream(msg.downloadedPath);
-        tgMsg = await tgBotSendPhoto(`${template} 🖼`, stream, true, false);
+        tgMsg = await tgBotDo.SendPhoto(`${template} 🖼`, stream, true, false);
     } else if (msg.DType === DTypes.File) {
         // 文件消息,需要二次确认
         wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
-        tgMsg = await tgBotSendMessage(`${template} ${content}`, false, "HTML");
+        tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
         // TODO: consider to merge it into normal text
 
         // this is directly accept the file transaction
@@ -481,7 +421,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         // 仅文本或未分类
         // Plain text or not classified
         wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
-        tgMsg = await tgBotSendMessage(`${template} ${content}`, false, "HTML");
+        tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
     }
     if (!tgMsg) {
         tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed.");
@@ -506,7 +446,7 @@ async function getFileFromWx(msg) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
             const stream = fs.createReadStream(filePath);
-            let tgMsg = await tgBotSendDocument("", stream, true, false);
+            let tgMsg = await tgBotDo.SendDocument("", stream, true, false);
             if (!tgMsg) {
                 tgLogger.warn("Didn't get valid TG receipt,resend wx file failed.");
                 return "sendFailure";
@@ -526,7 +466,7 @@ const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
 wxbot.on('message', onWxMessage);
 wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
-    // await tgBotSendMessage(`[Cy Notice] Service Started.`,1);
+    // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
 wxbot.start()
     .then(() => wxLogger.info('开始登陆大而丑...'))
