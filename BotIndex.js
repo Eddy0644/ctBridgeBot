@@ -12,22 +12,20 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const tgbot = new TelegramBot(secretConfig.botToken,
     {polling: true, request: {proxy: require("./config/proxy")},});
-const tgBotSendMessage = async (msg, isSilent = false, parseMode) => {
+const tgBotSendMessage = async (msg, isSilent = false, parseMode=null,form={}) => {
     /*Debug Only;no TG messages delivered*/
     // return tgLogger.info(`Blocked Msg: ${msg}`);
     await delay(100);
-    let form = {};
+    // let form = {};
     if (isSilent) form.disable_notification = true;
     if (parseMode) form.parse_mode = parseMode;
     return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e.toString()));
 };
 const tgBotRevokeMessage = async (msgId) => {
     await delay(100);
-    return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => tgLogger.error(e));
-};
-const tgBotRevokeKeyboard = async () => {
-    await delay(100);
-    return await tgbot.editMessageReplyMarkup({},{chat_id:secretConfig.target_TG_ID}).catch((e) => tgLogger.error(e));
+    return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => {
+        tgLogger.error(e.toString());
+    });
 };
 const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true) => {
     await delay(100);
@@ -137,7 +135,6 @@ async function onTGMsg(tgMsg) {
             tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
         } else if (tgMsg.text === "/find") {
             let form = {
-                disable_notification: true,
                 reply_markup: JSON.stringify({
                     keyboard: secretConfig.quickFindList,
                     is_persistent: false,
@@ -145,14 +142,17 @@ async function onTGMsg(tgMsg) {
                     one_time_keyboard: true
                 })
             };
-            const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.', form);
+            // const tgMsg2 = await tgbot.sendMessage(tgMsg.chat.id, 'Entering find mode; enter token to find it.', form);
+            const tgMsg2 = await tgBotSendMessage( 'Entering find mode; enter token to find it.',true,null,form);
             state.lastOpt = ["/find", tgMsg2];
         } else if (tgMsg.text.indexOf("/find") === 0) {
             // Want to find somebody
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
             state.lastOpt = null;
-            await tgBotRevokeKeyboard();
+            await tgBotSendMessage(`Status Cleared.`,true,null,{
+                reply_markup:{}
+            });
         } else if (tgMsg.text === "/info") {
             const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotSendMessage(statusReport, true, "HTML");
@@ -172,7 +172,6 @@ async function onTGMsg(tgMsg) {
                 const result = await findSbInWechat(tgMsg.text);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
-                    await tgBotRevokeKeyboard();
                     await tgBotRevokeMessage(msgToRevoke1.message_id);
                     await tgBotRevokeMessage(tgMsg.message_id);
                 }
