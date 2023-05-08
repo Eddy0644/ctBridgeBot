@@ -5,6 +5,7 @@ const Config = require('./config/public');
 const TelegramBot = require('node-telegram-bot-api');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
+const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -117,7 +118,7 @@ async function onTGMsg(tgMsg) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
                     if (tgMsg.text === "ok" && pair.length === 4 && pair[3].filesize) {
                         // 对wx文件消息做出了确认
-                        await downloadFileWx(pair[3]);
+                        await getFileFromWx(pair[3]);
                         tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
                         await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
                         return;
@@ -207,7 +208,7 @@ async function findSbInWechat(token) {
 async function downloadFile(url, pathName) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
-        const agentEr = require('https-proxy-agent');
+        // const agentEr = require('https-proxy-agent');
         const agent = new agentEr.HttpsProxyAgent(require("./config/proxy"));
         require('https').get(url, {agent: agent}, (response) => {
             // response.setEncoding("binary");
@@ -220,6 +221,38 @@ async function downloadFile(url, pathName) {
             fs.unlink(pathName, () => reject(error));
         });
     });
+}
+
+async function downloadFileWx(url, pathName, cookieStr) {
+    return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(pathName);
+        // const agentEr = require('https-proxy-agent');
+        const agent = new agentEr.HttpsProxyAgent("http://127.0.0.1:8888");
+        const options = {
+            headers: {
+                'Cookie': cookieStr
+            },
+            agent: agent,
+            rejectUnauthorized: false
+        };
+        require('https').get(url, options, (response) => {
+            if (response.statusCode !== 200) {
+                reject(new Error(`Failed to download file: ${response.statusCode} ${response.statusMessage}`));
+                return;
+            }
+            response.pipe(file);
+            file.on('finish', () => {
+                file.close();
+                resolve("SUCCESS");
+            });
+        }).on('error', (error) => {
+            fs.unlink(pathName, () => reject(error));
+        }).end();
+    });
+}
+
+function getCookieString(cookies) {
+    return cookies.map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
 }
 
 let msgMappings = [];
@@ -386,7 +419,7 @@ async function onWxMessage(msg) {
                 return;
             }
             const deliverResult = await deliverWxToTG(true, msg, content);
-            await addToMsgMappings(deliverResult.message_id, room, msg);
+            if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg);
         } else {
             //不是群消息 - - - - - - - -
             //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
@@ -430,9 +463,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     } else if (msg.DType === DTypes.File) {
         // 文件消息,需要二次确认
         wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
-        tgMsg = await tgBotSendMessage(`${template} ${content}`, false, "HTML");
+        // tgMsg = await tgBotSendMessage(`${template} ${content}`, false, "HTML");
         // TODO: consider to merge it into normal text
-
+        await getFileFromWx(msg);
+        return;
     } else {
         // 仅文本或未分类
         // Plain text or not classified
@@ -447,7 +481,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     }
 }
 
-async function downloadFileWx(msg) {
+async function getFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
         let filePath = `${msg.payload.filename}`;
@@ -455,7 +489,10 @@ async function downloadFileWx(msg) {
             filePath = "@" + filePath;
         }
         filePath = `./downloaded/file/` + filePath;
-        await fBox.toFile(filePath);
+        const URL = fBox.remoteUrl;
+        const wechatyMemory = JSON.parse(fs.readFileSync("WechatBotV1.memory-card.json").toString());
+        await downloadFileWx(URL, filePath, getCookieString(wechatyMemory["\rpuppet\nPUPPET_WECHAT"]));
+        // await fBox.toFile(filePath);
         if (fs.existsSync(filePath)) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
             const stream = fs.createReadStream(filePath);
