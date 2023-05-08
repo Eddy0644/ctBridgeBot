@@ -25,6 +25,10 @@ const tgBotRevokeMessage = async (msgId) => {
     await delay(100);
     return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => tgLogger.error(e));
 };
+const tgBotRevokeKeyboard = async () => {
+    await delay(100);
+    return await tgbot.editMessageReplyMarkup({},{chat_id:secretConfig.target_TG_ID}).catch((e) => tgLogger.error(e));
+};
 const tgBotSendAnimation = async (msg, path, isSilent = false, hasSpoiler = true) => {
     await delay(100);
     let form = {
@@ -148,6 +152,7 @@ async function onTGMsg(tgMsg) {
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
             state.lastOpt = null;
+            await tgBotRevokeKeyboard();
         } else if (tgMsg.text === "/info") {
             const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotSendMessage(statusReport, true, "HTML");
@@ -167,6 +172,7 @@ async function onTGMsg(tgMsg) {
                 const result = await findSbInWechat(tgMsg.text);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
+                    await tgBotRevokeKeyboard();
                     await tgBotRevokeMessage(msgToRevoke1.message_id);
                     await tgBotRevokeMessage(tgMsg.message_id);
                 }
