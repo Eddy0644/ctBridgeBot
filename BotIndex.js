@@ -8,7 +8,7 @@ const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
 
-const {tgbot,tgBotDo}=require('./tgbot-pre');
+const {tgbot, tgBotDo} = require('./tgbot-pre');
 
 tgbot.on('message', onTGMsg);
 

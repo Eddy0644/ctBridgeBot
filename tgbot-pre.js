@@ -4,12 +4,12 @@ const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger} = require('./logger')();
 const tgbot = new TelegramBot(secretConfig.botToken,
-    {polling: true, request: {proxy: require("./config/proxy")},});
+    {polling: {interval: 750}, request: {proxy: require("./config/proxy")},});
 
 module.exports = {
-    tgbot:tgbot,
-    tgBotDo:{
-        SendMessage:async (msg, isSilent = false, parseMode = null, form = {}) => {
+    tgbot: tgbot,
+    tgBotDo: {
+        SendMessage: async (msg, isSilent = false, parseMode = null, form = {}) => {
             /*Debug Only;no TG messages delivered*/
             // return tgLogger.info(`Blocked Msg: ${msg}`);
             await delay(100);
@@ -18,13 +18,13 @@ module.exports = {
             if (parseMode) form.parse_mode = parseMode;
             return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e.toString()));
         },
-        RevokeMessage:async (msgId) => {
+        RevokeMessage: async (msgId) => {
             await delay(100);
             return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => {
                 tgLogger.error(e.toString());
             });
         },
-        SendAnimation:async (msg, path, isSilent = false, hasSpoiler = true) => {
+        SendAnimation: async (msg, path, isSilent = false, hasSpoiler = true) => {
             await delay(100);
             let form = {
                 caption: msg,
@@ -36,7 +36,7 @@ module.exports = {
             if (isSilent) form.disable_notification = true;
             return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
         },
-        SendPhoto:async (msg, path, isSilent = false, hasSpoiler = false) => {
+        SendPhoto: async (msg, path, isSilent = false, hasSpoiler = false) => {
             await delay(100);
             let form = {
                 caption: msg,
@@ -48,7 +48,7 @@ module.exports = {
             if (isSilent) form.disable_notification = true;
             return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
         },
-        SendAudio:async (msg, path, isSilent = false) => {
+        SendAudio: async (msg, path, isSilent = false) => {
             await delay(100);
             let form = {
                 caption: msg,
@@ -57,7 +57,7 @@ module.exports = {
             if (isSilent) form.disable_notification = true;
             return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.error(e));
         },
-        SendDocument:async (msg, path, isSilent = false) => {
+        SendDocument: async (msg, path, isSilent = false) => {
             await delay(100);
             let form = {
                 caption: msg,
