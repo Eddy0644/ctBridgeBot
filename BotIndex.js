@@ -58,7 +58,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.reply_to_message) {
             for (const pair of msgMappings) {
                 if (pair[0] === tgMsg.reply_to_message.message_id) {
-                    if (tgMsg.text === "ok" && pair.length === 4 && pair[3].filesize) {
+                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && pair.length === 4 && pair[3].filesize) {
                         // 对wx文件消息做出了确认
                         await getFileFromWx(pair[3]);
                         tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
@@ -116,7 +116,7 @@ async function onTGMsg(tgMsg) {
                 }
                 // if (result) state.lastOpt = null;
             } else if (state.lastOpt[0] === "chat") {
-                if (tgMsg.text === "ok" && state.lastOpt.length === 4 && state.lastOpt[3].filesize) {
+                if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.lastOpt.length === 4 && state.lastOpt[3].filesize) {
                     // 对wx文件消息做出了确认
                     await tgbot.sendChatAction(secretConfig.target_TG_ID, "typing");
                     await getFileFromWx(state.lastOpt[3]);
@@ -314,7 +314,13 @@ async function onWxMessage(msg) {
             try {
                 let regResult = FileRegex.exec(content);
                 msg.filesize = parseInt(regResult[1]);
-                content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSend a single OK to retrieve that.`;
+                if (msg.filesize < Config.wxAutoDownloadThreshold) {
+                    msg.autoDownload = true;
+                    content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSmaller than threshold, so we would try download that automatically for you.`/*Remember to change the prompt in two locations!*/;
+                } else {
+                    msg.autoDownload = false;
+                    content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSend a single <code>OK</code> to retrieve that.`;
+                }
                 msg.DType = DTypes.File;
             } catch (e) {
                 wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
@@ -414,7 +420,12 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         // TODO: consider to merge it into normal text
 
         // this is directly accept the file transaction
-        // await getFileFromWx(msg);
+        if (msg.autoDownload) {
+            const result = await getFileFromWx(msg);
+            if (result === "Success") {
+                tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Smaller than threshold, so we would try download that automatically for you.", "Auto Downloaded Already."),tgMsg);
+            }
+        }
         // return;
     } else {
         // 仅文本或未分类

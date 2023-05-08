@@ -48,6 +48,15 @@ module.exports = {
             if (isSilent) form.disable_notification = true;
             return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
         },
+        EditMessageText: async (text,formerMsg) => {
+            await delay(100);
+            let form = {
+                chat_id:secretConfig.target_TG_ID,
+                message_id:formerMsg.message_id,
+                parse_mode:"HTML"
+            };
+            return await tgbot.editMessageText(text,form).catch((e) => tgLogger.error(e));
+        },
         SendAudio: async (msg, path, isSilent = false) => {
             await delay(100);
             let form = {
