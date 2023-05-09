@@ -6,7 +6,7 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
-const {wxLogger, tgLogger, conLogger, cyLogger, LogWxMsg} = require('./logger')();
+const {wxLogger, tgLogger, LogWxMsg} = require('./logger')();
 
 const {tgbot, tgBotDo} = require('./tgbot-pre');
 
@@ -108,7 +108,14 @@ async function onTGMsg(tgMsg) {
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
             } else if (state.lastOpt[0] === "/find") {
                 const msgToRevoke1 = state.lastOpt[1];
-                const result = await findSbInWechat(tgMsg.text);
+                let findToken=tgMsg.text;
+                for(const pair of secretConfig.findReplaceList){
+                    if(findToken===pair[0]) {
+                        findToken = pair[1];
+                        break;
+                    }
+                }
+                const result = await findSbInWechat(findToken);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
                     await tgBotDo.RevokeMessage(msgToRevoke1.message_id);
@@ -209,7 +216,7 @@ let state = {
 
 
 async function addToMsgMappings(tgMsg, talker, wxMsg) {
-    const name = await (talker.name ? talker.name() : talker.topic());
+    // const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsg, talker, name, wxMsg]);
     state.lastOpt = ["chat", talker, name, wxMsg];
 }
