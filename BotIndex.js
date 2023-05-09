@@ -7,7 +7,7 @@ const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
-const {wxLogger, tgLogger, LogWxMsg, _T, Config} = require('./common')();
+const {wxLogger, tgLogger, LogWxMsg, Config, STypes} = require('./common')();
 
 
 let msgMappings = [];
@@ -35,7 +35,7 @@ async function onTGMsg(tgMsg) {
 
         //TODO: Put these two into a separated func though;
         if (tgMsg.photo) {
-            if (state.last.s !== _T.State.Chat) {
+            if (state.last.s !== STypes.Chat) {
                 // !!unimplemented
                 return;
             }
@@ -52,7 +52,7 @@ async function onTGMsg(tgMsg) {
             return;
         }
         if (tgMsg.document) {
-            if (state.last.s !== _T.State.Chat) {
+            if (state.last.s !== STypes.Chat) {
                 // !!unimplemented
                 return;
             }
@@ -101,7 +101,7 @@ async function onTGMsg(tgMsg) {
             const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
             // state.lastOpt = ["/find", tgMsg2];
             state.last = {
-                s: _T.State.FindMode,
+                s: STypes.FindMode,
                 userPrompt1: tgMsg,
                 botPrompt1: tgMsg2,
             };
@@ -129,7 +129,7 @@ async function onTGMsg(tgMsg) {
                 // const setChatMenuButtonState = await tgbot.setChatMenuButton({chat_id:config.botToken,menu_button:TGBotCommands});
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
-            } else if (state.last.s === _T.State.FindMode) {
+            } else if (state.last.s === STypes.FindMode) {
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
                 for (const pair of secretConfig.findReplaceList) {
@@ -146,7 +146,7 @@ async function onTGMsg(tgMsg) {
                     await tgBotDo.RevokeMessage(lastState.botPrompt1.message_id);
                     await tgBotDo.RevokeMessage(tgMsg.message_id);
                 }
-            } else if (state.last.s === _T.State.Chat) {
+            } else if (state.last.s === STypes.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
                     await tgBotDo.SendChatAction("typing");
@@ -242,7 +242,7 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
     msgMappings.push([tgMsg, talker, name, wxMsg]);
     // state.lastOpt = ["chat", talker, name, wxMsg];
     state.last = {
-        s: _T.State.Chat,
+        s: STypes.Chat,
         target: talker,
         name: name,
         wxMsg: wxMsg || null,
@@ -267,7 +267,6 @@ async function onWxMessage(msg) {
     const alias = await contact.alias() || await contact.name(); // 发消息人备注
     let msgDef = {
         isSilent: false,
-
     }
 
     msg.DType = DTypes.Default;
@@ -316,6 +315,7 @@ async function onWxMessage(msg) {
             wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
             msg.DType = DTypes.Image;
             msg.downloadedPath = photoPath;
+            msgDef.isSilent = true;
         } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
 
     }
@@ -329,6 +329,7 @@ async function onWxMessage(msg) {
             wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
             msg.DType = DTypes.Audio;
             msg.downloadedPath = audioPath;
+            msgDef.isSilent = false;
         } else {
             wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
             msg.DType = DTypes.Text;
@@ -350,6 +351,7 @@ async function onWxMessage(msg) {
                 const caption = msg.payload.filename.replace(".url", "");
                 msg.DType = DTypes.Text;
                 content = `🔗 [<a href="${url}">${caption}</a>]`;
+                msgDef.isSilent = false;
             } catch (e) {
                 wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
             }
@@ -367,6 +369,7 @@ async function onWxMessage(msg) {
                     content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSend a single <code>OK</code> to retrieve that.`;
                 }
                 msg.DType = DTypes.File;
+                msgDef.isSilent = false;
             } catch (e) {
                 wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
             }

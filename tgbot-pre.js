@@ -3,7 +3,7 @@ const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger,Config} = require('./common')();
 const tgbot = new TelegramBot(secretConfig.botToken,
-    {polling: {interval: 750}, request: {proxy: require("./config/proxy")},});
+    {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
 
 module.exports = {
     tgbot: tgbot,

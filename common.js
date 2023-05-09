@@ -85,10 +85,11 @@ module.exports = (param) => {
 
 
         _T: {
-            State: {
-                Chat: 1,
-                FindMode: 2,
-            }
+
+        },
+        STypes:{
+            Chat: 1,
+            FindMode: 2,
         },
         Config: {
             TGBotCommands: [
