@@ -25,7 +25,7 @@ const {tgbot, tgBotDo} = require('./tgbot-pre');
 
 tgbot.on('message', onTGMsg);
 tgbot.on('polling_error', async (e) => {
-    tgLogger.warn("An polling error happened." + e.message);
+    tgLogger.warn("Polling - " + e.message.replace("Error: ", ""));
 });
 
 async function onTGMsg(tgMsg) {
@@ -33,7 +33,7 @@ async function onTGMsg(tgMsg) {
     try {
         if (process.uptime() < 10) return;
 
-        //Put these two into a separated func though;
+        //TODO: Put these two into a separated func though;
         if (tgMsg.photo) {
             if (state.last.s !== _T.State.Chat) {
                 // !!unimplemented
@@ -265,7 +265,10 @@ async function onWxMessage(msg) {
     const room = msg.room(); // 是否是群消息
     const name = await contact.name();
     const alias = await contact.alias() || await contact.name(); // 发消息人备注
-    //DeliverType
+    let msgDef = {
+        isSilent: false,
+
+    }
 
     msg.DType = DTypes.Default;
     //提前筛选出自己的消息,避免多次下载媒体
@@ -338,6 +341,18 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
             wxLogger.trace(`filename has suffix .49, maybe pushes.`);
+        } else if (msg.payload.filename.endsWith(".url")) {
+            wxLogger.trace(`filename has suffix .url, maybe LINK.`);
+            const LinkRegex = new RegExp(/&lt;url&gt;(.*?)&lt;\/url&gt;/);
+            try {
+                let regResult = LinkRegex.exec(content);
+                const url = regResult[1].replace(/&amp;amp;/g, "&");
+                const caption = msg.payload.filename.replace(".url", "");
+                msg.DType = DTypes.Text;
+                content = `🔗 [<a href="${url}">${caption}</a>]`;
+            } catch (e) {
+                wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
+            }
         } else {
             // const result=await deliverWxToTG();
             const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
