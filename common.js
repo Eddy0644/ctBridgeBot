@@ -44,8 +44,8 @@ log4js.configure({
         "wxMsg": {appenders: ["wxMsgDetail_dateLog"], level: "info"},
         "tg": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
     }
-})
-// module.exports=log4js.getLogger;
+});
+
 module.exports = (param) => {
     if (param === "startup") log4js.getLogger("default").debug(`Program Starting...
   ______             __       __            _______              __     
@@ -65,21 +65,20 @@ module.exports = (param) => {
     else return {
         wxLogger: log4js.getLogger("wx"),
         tgLogger: log4js.getLogger("tg"),
-        conLogger: log4js.getLogger("con"),
-        cyLogger: log4js.getLogger("cy"),
-
+        // conLogger: log4js.getLogger("con"),
+        // cyLogger: log4js.getLogger("cy"),
         wxMsgLogger: log4js.getLogger("wxMsg"),
+
         LogWxMsg: (msg, isMessageDropped) => {
+
             log4js.getLogger("wx").trace(`---Raw ${msg}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
                 `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`
                 + (isMessageDropped ? '\n' : ''));
-            log4js.getLogger("wxMsg").info(
-                `[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
+            log4js.getLogger("wxMsg").info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
     [🗣talkerId=${msg.payload.talkerId}][👥roomId=${msg.payload.roomId}]
     [filename=${msg.payload.filename}]
     ${msg.payload.text}
     ---------------------`);
-
         },
 
         //////-----------Above is mostly logger ---------------------//////

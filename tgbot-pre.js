@@ -9,10 +9,7 @@ module.exports = {
     tgbot: tgbot,
     tgBotDo: {
         SendMessage: async (msg, isSilent = false, parseMode = null, form = {}) => {
-            /*Debug Only;no TG messages delivered*/
-            // return tgLogger.info(`Blocked Msg: ${msg}`);
             await delay(100);
-            // let form = {};
             if (isSilent) form.disable_notification = true;
             if (parseMode) form.parse_mode = parseMode;
             return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e.toString()));
