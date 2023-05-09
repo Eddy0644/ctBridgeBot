@@ -39,7 +39,7 @@ log4js.configure({
     categories: {
         "default": {appenders: ["dateLog"], level: "debug"},
         "con": {appenders: ["console"], level: "debug"},
-        "cy": {appenders: ["dateLog","console"], level: "debug"},
+        "cy": {appenders: ["dateLog", "console"], level: "debug"},
         "wx": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
         "wxMsg": {appenders: ["wxMsgDetail_dateLog"], level: "info"},
         "tg": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
@@ -80,6 +80,23 @@ module.exports = (param) => {
     ${msg.payload.text}
     ---------------------`);
 
-        }
+        },
+        _T: {
+            State: {
+                Chat: 1,
+                FindMode: 2,
+            }
+        },
+        Config: {
+            TGBotCommands: [
+                {command: '/find', description: 'Find Person or Group Chat'},
+                {command: '/clear', description: 'Clear Selection'},
+                {command: '/info', description: 'Get current system variables'},
+                {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
+                // Add more commands as needed
+            ],
+            placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
+            wxAutoDownloadThreshold: 3 * 1048576
+        },
     }
 };

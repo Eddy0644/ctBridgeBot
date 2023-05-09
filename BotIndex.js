@@ -1,12 +1,12 @@
 // noinspection JSUnresolvedVariable
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 const secretConfig = require('./config/secret');
-const Config = require('./config/public');
+// const Config = require('./config/public');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
-const {wxLogger, tgLogger, LogWxMsg} = require('./logger')();
+const {wxLogger, tgLogger, LogWxMsg, _T, Config} = require('./common')();
 
 const {tgbot, tgBotDo} = require('./tgbot-pre');
 
@@ -56,17 +56,17 @@ async function onTGMsg(tgMsg) {
         // Non-text messages must be filtered ahead of them
         // tgMsg.text = "";
         if (tgMsg.reply_to_message) {
-            for (const pair of msgMappings) {
-                if (pair[0] === tgMsg.reply_to_message.message_id) {
-                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && pair.length === 4 && pair[3].filesize) {
+            for (const mapPair of msgMappings) {
+                if (mapPair[0] === tgMsg.reply_to_message.message_id) {
+                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
-                        await getFileFromWx(pair[3]);
-                        tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
+                        await getFileFromWx(mapPair[3]);
+                        tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                         await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
                         return;
                     } else {
-                        await pair[1].say(tgMsg.text);
-                        tgLogger.debug(`Handled a message send-back to ${pair[2]}.`);
+                        await mapPair[1].say(tgMsg.text);
+                        tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                         await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
                         return;
                     }
@@ -108,9 +108,9 @@ async function onTGMsg(tgMsg) {
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
             } else if (state.lastOpt[0] === "/find") {
                 const msgToRevoke1 = state.lastOpt[1];
-                let findToken=tgMsg.text;
-                for(const pair of secretConfig.findReplaceList){
-                    if(findToken===pair[0]) {
+                let findToken = tgMsg.text;
+                for (const pair of secretConfig.findReplaceList) {
+                    if (findToken === pair[0]) {
                         findToken = pair[1];
                         break;
                     }
@@ -211,14 +211,22 @@ async function downloadFileWx(url, pathName, cookieStr) {
 
 let msgMappings = [];
 let state = {
-    lastOpt: null
+    lastOpt: null,
+    last: {}
 };   // as for talker, [1] is Object, [2] is name.
 
 
 async function addToMsgMappings(tgMsg, talker, wxMsg) {
-    // const name = await (talker.name ? talker.name() : talker.topic());
+    // if(talker instanceof wxbot.Message)
+    const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsg, talker, name, wxMsg]);
     state.lastOpt = ["chat", talker, name, wxMsg];
+    state.last = {
+        s: _T.State.Chat,
+        target: talker,
+        name: name,
+        wxMsg: wxMsg || null
+    }
 }
 
 // 监听对话
@@ -430,7 +438,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         if (msg.autoDownload) {
             const result = await getFileFromWx(msg);
             if (result === "Success") {
-                tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Smaller than threshold, so we would try download that automatically for you.", "Auto Downloaded Already."),tgMsg);
+                tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Smaller than threshold, so we would try download that automatically for you.", "Auto Downloaded Already."), tgMsg);
             }
         }
         // return;
@@ -490,5 +498,5 @@ wxbot.start()
     .catch((e) => wxLogger.error(e));
 
 
-require('./logger')("startup");
+require('./common')("startup");
 

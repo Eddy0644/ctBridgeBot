@@ -2,7 +2,7 @@ const secretConfig = require('./config/secret');
 const Config = require('./config/public');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const {tgLogger} = require('./logger')();
+const {tgLogger} = require('./common')();
 const tgbot = new TelegramBot(secretConfig.botToken,
     {polling: {interval: 750}, request: {proxy: require("./config/proxy")},});
 
