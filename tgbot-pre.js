@@ -1,8 +1,7 @@
 const secretConfig = require('./config/secret');
-const Config = require('./config/public');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const {tgLogger} = require('./common')();
+const {tgLogger,Config} = require('./common')();
 const tgbot = new TelegramBot(secretConfig.botToken,
     {polling: {interval: 750}, request: {proxy: require("./config/proxy")},});
 
@@ -21,6 +20,12 @@ module.exports = {
         RevokeMessage: async (msgId) => {
             await delay(100);
             return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => {
+                tgLogger.error(e.toString());
+            });
+        },
+        SendChatAction: async (action) => {
+            await delay(100);
+            return await tgbot.sendChatAction(secretConfig.target_TG_ID, action).catch((e) => {
                 tgLogger.error(e.toString());
             });
         },

@@ -27,12 +27,12 @@ async function onTGMsg(tgMsg) {
             const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
             const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
             const file_path = `./downloaded/photoTG/${Math.random()}.png`;
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_photo");
+            await tgBotDo.SendChatAction("upload_photo");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
-            await state.last.talker.say(packed);
+            await state.last.target.say(packed);
             tgLogger.debug(`Handled a Photo message send-back to speculative talker:${state.last.name}.`);
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
+            await tgBotDo.SendChatAction("choose_sticker");
             return;
         }
         if (tgMsg.document) {
@@ -44,12 +44,12 @@ async function onTGMsg(tgMsg) {
             // const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
             const fileCloudPath = (await tgbot.getFile(tgMsg.document.file_id)).file_path;
             const file_path = `./downloaded/fileTG/${tgMsg.document.file_name}`;
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
+            await tgBotDo.SendChatAction("upload_document");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
             await state.last.talker.say(packed);
             tgLogger.debug(`Handled a Document message send-back to speculative talker:${state.last.name}.`);
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
+            await tgBotDo.SendChatAction("choose_sticker");
             return;
         }
 
@@ -62,12 +62,12 @@ async function onTGMsg(tgMsg) {
                         // 对wx文件消息做出了确认
                         await getFileFromWx(mapPair[3]);
                         tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
-                        await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
+                        await tgBotDo.SendChatAction("upload_document");
                         return;
                     } else {
                         await mapPair[1].say(tgMsg.text);
                         tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
-                        await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
+                        await tgBotDo.SendChatAction("choose_sticker");
                         return;
                     }
                 }
@@ -122,24 +122,25 @@ async function onTGMsg(tgMsg) {
                         break;
                     }
                 }
+                const lastState = state.last;
                 const result = await findSbInWechat(findToken);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
-                    await tgBotDo.RevokeMessage(state.last.userPrompt1.message_id);
-                    await tgBotDo.RevokeMessage(state.last.botPrompt1.message_id);
+                    await tgBotDo.RevokeMessage(lastState.userPrompt1.message_id);
+                    await tgBotDo.RevokeMessage(lastState.botPrompt1.message_id);
                     await tgBotDo.RevokeMessage(tgMsg.message_id);
                 }
             } else if (state.last.s === _T.State.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
-                    await tgbot.sendChatAction(secretConfig.target_TG_ID, "typing");
+                    await tgBotDo.SendChatAction("typing");
                     await getFileFromWx(state.last.wxMsg);
-                    tgLogger.debug(`Handled a message send-back to ${state.last.name}.`);
+                    tgLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
                 } else {
                     // forward to last talker
                     await state.last.target.say(tgMsg.text);
                     tgLogger.debug(`Handled a message send-back to speculative talker:${state.last.name}.`);
-                    await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
+                    await tgBotDo.SendChatAction("choose_sticker");
                 }
             } else {
                 // Empty here.
@@ -151,7 +152,7 @@ async function onTGMsg(tgMsg) {
 }
 
 async function findSbInWechat(token) {
-    await tgbot.sendChatAction(secretConfig.target_TG_ID, "typing");
+    await tgBotDo.SendChatAction("typing");
     let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
@@ -218,8 +219,13 @@ async function downloadFileWx(url, pathName, cookieStr) {
 
 let msgMappings = [];
 let state = {
-    lastOpt: null,
-    last: {}
+    last: {},
+    pre: {
+        c: null,
+        ct: 0,
+        r: null,
+        rt: 0,
+    }
 };   // as for talker, [1] is Object, [2] is name.
 
 
@@ -233,7 +239,7 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
         target: talker,
         name: name,
         wxMsg: wxMsg || null,
-        isFile: wxMsg.filesize || null
+        isFile: (wxMsg && wxMsg.filesize) || null
     }
 }
 
@@ -477,7 +483,7 @@ async function getFileFromWx(msg) {
         await downloadFileWx(fBox.remoteUrl, filePath, cookieStr);
         if (fs.existsSync(filePath)) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
-            await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
+            await tgBotDo.SendChatAction("upload_document");
             const stream = fs.createReadStream(filePath);
             let tgMsg = await tgBotDo.SendDocument("", stream, true, false);
             if (!tgMsg) {
