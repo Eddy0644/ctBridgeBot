@@ -4,13 +4,29 @@ const secretConfig = require('./config/secret');
 // const Config = require('./config/public');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
+const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, LogWxMsg, _T, Config} = require('./common')();
 
+
+let msgMappings = [];
+let state = {
+    last: {},
+    pre: {
+        c: null,
+        ct: 0,
+        r: null,
+        rt: 0,
+    }
+};
+
 const {tgbot, tgBotDo} = require('./tgbot-pre');
 
 tgbot.on('message', onTGMsg);
+tgbot.on('polling_error', async (e) => {
+    tgLogger.warn("An polling error happened." + e.message);
+});
 
 async function onTGMsg(tgMsg) {
     //Update: added choose_sticker chatAction after sending message back successfully.
@@ -47,7 +63,7 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendChatAction("upload_document");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
-            await state.last.talker.say(packed);
+            await state.last.target.say(packed);
             tgLogger.debug(`Handled a Document message send-back to speculative talker:${state.last.name}.`);
             await tgBotDo.SendChatAction("choose_sticker");
             return;
@@ -149,6 +165,7 @@ async function onTGMsg(tgMsg) {
     } catch (e) {
         tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
     }
+
 }
 
 async function findSbInWechat(token) {
@@ -169,6 +186,7 @@ async function findSbInWechat(token) {
         return false;
     }
     return true;
+
 }
 
 async function downloadFile(url, pathName) {
@@ -187,6 +205,7 @@ async function downloadFile(url, pathName) {
             fs.unlink(pathName, () => reject(error));
         });
     });
+
 }
 
 async function downloadFileWx(url, pathName, cookieStr) {
@@ -216,18 +235,6 @@ async function downloadFileWx(url, pathName, cookieStr) {
         }).end();
     });
 }
-
-let msgMappings = [];
-let state = {
-    last: {},
-    pre: {
-        c: null,
-        ct: 0,
-        r: null,
-        rt: 0,
-    }
-};   // as for talker, [1] is Object, [2] is name.
-
 
 async function addToMsgMappings(tgMsg, talker, wxMsg) {
     // if(talker instanceof wxbot.Message)
@@ -276,7 +283,7 @@ async function onWxMessage(msg) {
         return;
     }
 
-    //处理自定义表情
+    // 处理自定义表情,若失败再处理图片
     const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
     if (msg.type() === wxbot.Message.Type.Image) try {
         let result = CustomEmotionRegex.exec(content);
@@ -309,18 +316,12 @@ async function onWxMessage(msg) {
         } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
 
     }
-
+    // 尝试下载语音
     if (msg.type() === wxbot.Message.Type.Audio) try {
         const fBox = await msg.toFileBox();
-        let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
+        // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
+        let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
-        // await ffmpeg()
-        //     .input(audioPath)
-        //     .output(audioPath+".ogg")
-        //     .outputOptions('-codec:a libopus')
-        //     .format('ogg')
-        //     .run();
-        // audioPath+=".ogg";
         if (fs.existsSync(audioPath)) {
             wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
             msg.DType = DTypes.Audio;
@@ -409,8 +410,7 @@ async function onWxMessage(msg) {
                 return;
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
-
-            await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
+            if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
         }
     }
 }
@@ -422,7 +422,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     const alias = await contact.alias() || await contact.name();
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
-    const template = isRoom ? `📬<b>[${name}@${await room.topic()}]</b>` : `📨[${alias}]`;
+    const template = isRoom ? `📬[<b>${name}</b>@${await room.topic()}]` : `📨[<b>${alias}</b>]`;
     let tgMsg;
     if (msg.DType === DTypes.CustomEmotion) {
         // 自定义表情, 已添加读取错误处理
@@ -498,9 +498,7 @@ async function getFileFromWx(msg) {
     }
 }
 
-// wxbot = require('./wxbot-pre')(tgbot, wxLogger);
 const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
-
 
 wxbot.on('message', onWxMessage);
 wxbot.on('login', async user => {
@@ -510,7 +508,6 @@ wxbot.on('login', async user => {
 wxbot.start()
     .then(() => wxLogger.info('开始登陆大而丑...'))
     .catch((e) => wxLogger.error(e));
-
 
 require('./common')("startup");
 

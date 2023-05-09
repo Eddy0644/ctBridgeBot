@@ -17,26 +17,35 @@ const DTypes = {
 };
 
 
-module.exports = (tgbot,wxLogger)=>{
+module.exports = (tgbot, wxLogger) => {
 
     // 二维码生成
-    wxbot.on('scan', async (qrcode, status)=>{
-        qrcodeTerminal.generate(qrcode, {small: true}); // 在console端显示二维码
+    wxbot.on('scan', async (qrcode, status) => {
         const qrcodeImageUrl = [
             'https://api.qrserver.com/v1/create-qr-code/?data=',
             encodeURIComponent(qrcode),
         ].join('');
-        console.log(qrcodeImageUrl);
+        if (status === 2) {
+            qrcodeTerminal.generate(qrcode, {small: true}); // 在console端显示二维码
+            console.log(qrcodeImageUrl);
+        }else if (status === 3) {
+            console.log(`The code is already scanned.\n${qrcodeImageUrl}`);
+        }else{
+            console.log(`User accepted login. Proceeding...`);
+        }
     });
 
 
-    wxbot.on('logout', async (user)=>{
-        wxLogger.info(`${user} 已经登出.`);
+    wxbot.on('logout', async (user) => {
+        wxLogger.info(`${user} 已经主动登出.`);
     });
 
-    // return wxbot;
+    wxbot.on('error', async (e) => {
+        wxLogger.warn(e.toString());
+    });
+
     return {
-        wxbot:wxbot,
-        DTypes:DTypes
+        wxbot: wxbot,
+        DTypes: DTypes
     };
 };

@@ -14,6 +14,7 @@
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
+    "dayjs": "^1.11.7",
     "ffmpeg": "^0.0.4",
     "file-box": "^1.5.5",
     "fluent-ffmpeg": "^2.1.2",
