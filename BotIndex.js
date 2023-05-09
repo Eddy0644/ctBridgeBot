@@ -19,7 +19,7 @@ async function onTGMsg(tgMsg) {
 
         //Put these two into a separated func though;
         if (tgMsg.photo) {
-            if (state.lastOpt[0] !== "chat") {
+            if (state.last.s !== _T.State.Chat) {
                 // !!unimplemented
                 return;
             }
@@ -30,13 +30,13 @@ async function onTGMsg(tgMsg) {
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_photo");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
-            await state.lastOpt[1].say(packed);
-            tgLogger.debug(`Handled a Photo message send-back to speculative talker:${await state.lastOpt[2]}.`);
+            await state.last.talker.say(packed);
+            tgLogger.debug(`Handled a Photo message send-back to speculative talker:${state.last.name}.`);
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             return;
         }
         if (tgMsg.document) {
-            if (state.lastOpt[0] !== "chat") {
+            if (state.last.s !== _T.State.Chat) {
                 // !!unimplemented
                 return;
             }
@@ -47,8 +47,8 @@ async function onTGMsg(tgMsg) {
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "upload_document");
             await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
             const packed = await FileBox.fromFile(file_path);
-            await state.lastOpt[1].say(packed);
-            tgLogger.debug(`Handled a Document message send-back to speculative talker:${await state.lastOpt[2]}.`);
+            await state.last.talker.say(packed);
+            tgLogger.debug(`Handled a Document message send-back to speculative talker:${state.last.name}.`);
             await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
             return;
         }
@@ -83,31 +83,38 @@ async function onTGMsg(tgMsg) {
                 })
             };
             const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
-            state.lastOpt = ["/find", tgMsg2];
+            // state.lastOpt = ["/find", tgMsg2];
+            state.last = {
+                s: _T.State.FindMode,
+                userPrompt1: tgMsg,
+                botPrompt1: tgMsg2,
+            };
         } else if (tgMsg.text.indexOf("/find") === 0) {
             // Want to find somebody, and have inline parameters
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
-            state.lastOpt = null;
+            // state.lastOpt = null;
+            state.last = {};
             await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
                 reply_markup: {}
             });
         } else if (tgMsg.text === "/info") {
-            const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+            // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+            const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotDo.SendMessage(statusReport, true, "HTML");
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
             // No valid COMMAND within msg
-            if (state.lastOpt === null) {
+            if (state.last === {}) {
                 // Activate chat & env. set
                 // noinspection JSUnresolvedVariable,JSIgnoredPromiseFromCall
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
                 // const setChatMenuButtonState = await tgbot.setChatMenuButton({chat_id:config.botToken,menu_button:TGBotCommands});
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
-            } else if (state.lastOpt[0] === "/find") {
-                const msgToRevoke1 = state.lastOpt[1];
+            } else if (state.last.s === _T.State.FindMode) {
+                // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
                 for (const pair of secretConfig.findReplaceList) {
                     if (findToken === pair[0]) {
@@ -118,20 +125,20 @@ async function onTGMsg(tgMsg) {
                 const result = await findSbInWechat(findToken);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
-                    await tgBotDo.RevokeMessage(msgToRevoke1.message_id);
+                    await tgBotDo.RevokeMessage(state.last.userPrompt1.message_id);
+                    await tgBotDo.RevokeMessage(state.last.botPrompt1.message_id);
                     await tgBotDo.RevokeMessage(tgMsg.message_id);
                 }
-                // if (result) state.lastOpt = null;
-            } else if (state.lastOpt[0] === "chat") {
-                if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.lastOpt.length === 4 && state.lastOpt[3].filesize) {
+            } else if (state.last.s === _T.State.Chat) {
+                if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
                     await tgbot.sendChatAction(secretConfig.target_TG_ID, "typing");
-                    await getFileFromWx(state.lastOpt[3]);
-                    tgLogger.debug(`Handled a message send-back to ${state.lastOpt[2]}.`);
+                    await getFileFromWx(state.last.wxMsg);
+                    tgLogger.debug(`Handled a message send-back to ${state.last.name}.`);
                 } else {
                     // forward to last talker
-                    await state.lastOpt[1].say(tgMsg.text);
-                    tgLogger.debug(`Handled a message send-back to speculative talker:${await state.lastOpt[2]}.`);
+                    await state.last.target.say(tgMsg.text);
+                    tgLogger.debug(`Handled a message send-back to speculative talker:${state.last.name}.`);
                     await tgbot.sendChatAction(secretConfig.target_TG_ID, "choose_sticker");
                 }
             } else {
@@ -220,12 +227,13 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsg, talker, name, wxMsg]);
-    state.lastOpt = ["chat", talker, name, wxMsg];
+    // state.lastOpt = ["chat", talker, name, wxMsg];
     state.last = {
         s: _T.State.Chat,
         target: talker,
         name: name,
-        wxMsg: wxMsg || null
+        wxMsg: wxMsg || null,
+        isFile: wxMsg.filesize || null
     }
 }
 
