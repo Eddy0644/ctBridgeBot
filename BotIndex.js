@@ -361,7 +361,15 @@ async function onWxMessage(msg) {
             try {
                 let regResult = FileRegex.exec(content);
                 msg.filesize = parseInt(regResult[1]);
-                if (msg.filesize < Config.wxAutoDownloadThreshold) {
+                msgDef.isSilent = false;
+                if (msg.filesize < 50) {
+                    // 小于50字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
+                    // 比如块级链接和服务消息
+                    msg.autoDownload = false;
+                    content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nToo small, so it maybe not a valid file.`
+                    msgDef.isSilent = true;
+                    wxLogger.info(`Got a very-small wx file here, please check manually.Sender:{${alias}`);
+                }else if (msg.filesize < Config.wxAutoDownloadThreshold) {
                     msg.autoDownload = true;
                     content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSmaller than threshold, so we would try download that automatically for you.`/*Remember to change the prompt in two locations!*/;
                 } else {
@@ -369,7 +377,6 @@ async function onWxMessage(msg) {
                     content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSend a single <code>OK</code> to retrieve that.`;
                 }
                 msg.DType = DTypes.File;
-                msgDef.isSilent = false;
             } catch (e) {
                 wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
             }
