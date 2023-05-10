@@ -21,11 +21,14 @@ let state = {
     }
 };
 
-const {init_tgbot,tgbot, tgBotDo} = require('./tgbot-pre');
-// const tgbot = await init_tgbot();
+const {tgbot, tgBotDo} = require('./tgbot-pre');
+
 tgbot.on('message', onTGMsg);
 tgbot.on('polling_error', async (e) => {
     tgLogger.warn("Polling - " + e.message.replace("Error: ", ""));
+});
+tgbot.on('webhook_error', async (e) => {
+    tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
 
 async function onTGMsg(tgMsg) {
@@ -325,18 +328,36 @@ async function onWxMessage(msg) {
         // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
         let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
-        if (fs.existsSync(audioPath)) {
-            wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
-            msg.DType = DTypes.Audio;
-            msg.downloadedPath = audioPath;
-            msgDef.isSilent = false;
-        } else {
-            wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
-            msg.DType = DTypes.Text;
-            content = "🎤(Fail to download)";
-        }
+        if (!fs.existsSync(audioPath)) throw new Error();
+        wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
+        msg.DType = DTypes.Audio;
+        msg.downloadedPath = audioPath;
+        msgDef.isSilent = false;
     } catch (e) {
         wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
+        msg.DType = DTypes.Text;
+        content = "🎤(Fail to download)";
+    }
+    // 视频消息处理或自动下载
+    if (msg.type() === wxbot.Message.Type.Video) {
+        const VideoRegex = new RegExp(/length="(.*?)" playlength="(.*?)"/);
+        try {
+            let regResult = VideoRegex.exec(content);
+            msg.filesize = parseInt(regResult[1]);
+            const videoLength = parseInt(regResult[2]);
+            msgDef.isSilent = false;
+            content = `🎦, length:${videoLength}s, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+            if (msg.filesize < Config.wxAutoDownloadThreshold) {
+                msg.autoDownload = true;
+                content += `Smaller than threshold, so we would try download that automatically for you.`;
+            } else {
+                msg.autoDownload = false;
+                content += `Send a single <code>OK</code> to retrieve that.`;
+            }
+            msg.DType = DTypes.File;
+        } catch (e) {
+            wxLogger.debug(`Detected as Video, but error occurred while getting filesize.`);
+        }
     }
     // 文件及公众号消息类型
     if (msg.type() === wxbot.Message.Type.Attachment) {
@@ -362,19 +383,20 @@ async function onWxMessage(msg) {
                 let regResult = FileRegex.exec(content);
                 msg.filesize = parseInt(regResult[1]);
                 msgDef.isSilent = false;
+                content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
                 if (msg.filesize < 50) {
-                    // 小于50字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
+                    // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
                     // 比如块级链接和服务消息
                     msg.autoDownload = false;
-                    content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nToo small, so it maybe not a valid file.`
                     msgDef.isSilent = true;
+                    content += `Too small, so it maybe not a valid file.`
                     wxLogger.info(`Got a very-small wx file here, please check manually.Sender:{${alias}`);
-                }else if (msg.filesize < Config.wxAutoDownloadThreshold) {
+                } else if (msg.filesize < Config.wxAutoDownloadThreshold) {
                     msg.autoDownload = true;
-                    content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSmaller than threshold, so we would try download that automatically for you.`/*Remember to change the prompt in two locations!*/;
+                    content += `Smaller than threshold, so we would try download that automatically for you.`/*Remember to change the prompt in two locations!*/;
                 } else {
                     msg.autoDownload = false;
-                    content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\nSend a single <code>OK</code> to retrieve that.`;
+                    content += `Send a single <code>OK</code> to retrieve that.`;
                 }
                 msg.DType = DTypes.File;
             } catch (e) {
@@ -382,6 +404,7 @@ async function onWxMessage(msg) {
             }
         }
     }
+
     //文字消息判断:
     if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
 
