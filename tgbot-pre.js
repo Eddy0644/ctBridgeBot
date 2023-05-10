@@ -20,7 +20,10 @@ if (isPolling) {
         }
     });
     tgbot.deleteWebHook();
-    tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`);
+    tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`,{
+        drop_pending_updates:true
+        /* Please, remove this line after the bot have ability to control messages between instances!!! */
+    });
     tgbot.openWebHook();
 }
 

@@ -71,7 +71,10 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendChatAction("choose_sticker");
             return;
         }
-
+        if (tgMsg.video) {
+            await tgBotDo.SendMessage("Sorry, but video sending is not implemented.",true);
+            return;
+        }
         // Non-text messages must be filtered ahead of them
         // tgMsg.text = "";
         if (tgMsg.reply_to_message) {
