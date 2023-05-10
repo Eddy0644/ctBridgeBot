@@ -1,9 +1,28 @@
 const secretConfig = require('./config/secret');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const {tgLogger,Config} = require('./common')();
-const tgbot = new TelegramBot(secretConfig.botToken,
-    {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
+const {tgLogger, Config} = require('./common')();
+// const tgbot = new TelegramBot(secretConfig.botToken,
+//     {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
+const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
+let tgbot;
+if (isPolling) {
+    tgbot = new TelegramBot(secretConfig.botToken,
+        {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
+    tgbot.deleteWebHook();
+} else {
+    tgbot = new TelegramBot(secretConfig.botToken, {
+        webHook: {
+            port: 8443,
+            healthEndpoint: "/health",
+            key: "config/srv.pem",
+            cert: "config/cli.pem",
+        }
+    });
+    tgbot.deleteWebHook();
+    tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`);
+    tgbot.openWebHook();
+}
 
 module.exports = {
     tgbot: tgbot,
@@ -50,14 +69,14 @@ module.exports = {
             if (isSilent) form.disable_notification = true;
             return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
         },
-        EditMessageText: async (text,formerMsg) => {
+        EditMessageText: async (text, formerMsg) => {
             await delay(100);
             let form = {
-                chat_id:secretConfig.target_TG_ID,
-                message_id:formerMsg.message_id,
-                parse_mode:"HTML"
+                chat_id: secretConfig.target_TG_ID,
+                message_id: formerMsg.message_id,
+                parse_mode: "HTML"
             };
-            return await tgbot.editMessageText(text,form).catch((e) => tgLogger.error(e));
+            return await tgbot.editMessageText(text, form).catch((e) => tgLogger.error(e));
         },
         SendAudio: async (msg, path, isSilent = false) => {
             await delay(100);

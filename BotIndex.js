@@ -21,8 +21,8 @@ let state = {
     }
 };
 
-const {tgbot, tgBotDo} = require('./tgbot-pre');
-
+const {init_tgbot,tgbot, tgBotDo} = require('./tgbot-pre');
+// const tgbot = await init_tgbot();
 tgbot.on('message', onTGMsg);
 tgbot.on('polling_error', async (e) => {
     tgLogger.warn("Polling - " + e.message.replace("Error: ", ""));

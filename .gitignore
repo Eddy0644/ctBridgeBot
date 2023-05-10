@@ -20,3 +20,5 @@ package-lock.json
 /config/proxy.js
 /config/secret.js
 /.idea/*
+/config/cli.pem
+/config/srv.pem
