@@ -1,10 +1,12 @@
 {
-  "name": "ctBridgeBot",
-  "version": "1.1.0",
+  "name": "ctbridgebot",
+  "version": "1.2.1",
   "description": "reopened.",
   "superagent": "BotIndex.js",
   "scripts": {
-    "start": "node BotIndex.js",
+    "p": "node BotIndex.js poll",
+    "h1": "node BotIndex.js hook 1",
+    "h2": "node BotIndex.js hook 2",
     "puppet-install": "node node_modules/.bin/wechaty-puppet-install"
   },
   "keywords": [
