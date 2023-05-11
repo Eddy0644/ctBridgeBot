@@ -37,34 +37,33 @@ async function onTGMsg(tgMsg) {
         if (process.uptime() < 10) return;
 
         if (tgMsg.photo) {
-            await deliverTGToWx(tgMsg, tgMsg.photo);
+            await deliverTGToWx(tgMsg, tgMsg.photo,"photo");
             return;
         }
         if (tgMsg.document) {
-            await deliverTGToWx(tgMsg, tgMsg.document);
+            await deliverTGToWx(tgMsg, tgMsg.document,"document");
             return;
         }
         if (tgMsg.video) {
-            await deliverTGToWx(tgMsg, tgMsg.video);
+            await deliverTGToWx(tgMsg, tgMsg.video,"video");
             return;
         }
         // Non-text messages must be filtered ahead of them
         // tgMsg.text = "";
         if (tgMsg.reply_to_message) {
+            tgLogger.trace(`This message has reply flag, searching mapping...`);
             for (const mapPair of msgMappings) {
                 if (mapPair[0] === tgMsg.reply_to_message.message_id) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         await getFileFromWx(mapPair[3]);
-                        tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                         await tgBotDo.SendChatAction("upload_document");
-                        return;
                     } else {
                         await mapPair[1].say(tgMsg.text);
-                        tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                         await tgBotDo.SendChatAction("choose_sticker");
-                        return;
                     }
+                    tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
+                    return;
                 }
             }
             tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
@@ -85,15 +84,18 @@ async function onTGMsg(tgMsg) {
                 botPrompt1: tgMsg2,
             };
         } else if (tgMsg.text.indexOf("/find") === 0) {
+            tgLogger.trace(`Got an attempt to find [${tgMsg.text}] in WeChat.`);
             // Want to find somebody, and have inline parameters
             await findSbInWechat(tgMsg.text.replace("/find ", ""));
         } else if (tgMsg.text === "/clear") {
+            tgLogger.trace(`Cleared tgBot status by user operation.`);
             // state.lastOpt = null;
             state.last = {};
             await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
                 reply_markup: {}
             });
         } else if (tgMsg.text === "/info") {
+            tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotDo.SendMessage(statusReport, true, "HTML");
@@ -103,12 +105,11 @@ async function onTGMsg(tgMsg) {
             // No valid COMMAND within msg
             if (state.last === {}) {
                 // Activate chat & env. set
-                // noinspection JSUnresolvedVariable,JSIgnoredPromiseFromCall
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
-                // const setChatMenuButtonState = await tgbot.setChatMenuButton({chat_id:config.botToken,menu_button:TGBotCommands});
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
             } else if (state.last.s === STypes.FindMode) {
+                tgLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
                 for (const pair of secretConfig.findReplaceList) {
@@ -147,12 +148,13 @@ async function onTGMsg(tgMsg) {
 
 }
 
-async function deliverTGToWx(tgMsg, tg_media) {
+async function deliverTGToWx(tgMsg, tg_media, media_type) {
     if (state.last.s !== STypes.Chat) {
         await tgBotDo.SendMessage("🛠 Sorry, but media sending without last chatter is not implemented.", true);
         // TODO: to be implemented.
         return;
     }
+    tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
     const file_path = './downloaded/' + (tgMsg.photo) ?
@@ -160,7 +162,8 @@ async function deliverTGToWx(tgMsg, tg_media) {
             (`fileTG/${tg_media.file_name}`) :
             (`videoTG/${Math.random()}.mp4`));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
-    const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
+    // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
+    const action = `upload_${media_type}`;
     await tgBotDo.SendChatAction(action);
 
     await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
@@ -215,13 +218,10 @@ async function downloadFile(url, pathName) {
 async function downloadFileWx(url, pathName, cookieStr) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
-        // const agentEr = require('https-proxy-agent');
-        // const agent = new agentEr.HttpsProxyAgent("http://127.0.0.1:8888");
         const options = {
             headers: {
                 'Cookie': cookieStr
             },
-            // agent: agent,
             rejectUnauthorized: false
         };
         require('https').get(url, options, (response) => {
@@ -244,14 +244,14 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsg, talker, name, wxMsg]);
-    // state.lastOpt = ["chat", talker, name, wxMsg];
     state.last = {
         s: STypes.Chat,
         target: talker,
         name: name,
         wxMsg: wxMsg || null,
         isFile: (wxMsg && wxMsg.filesize) || null
-    }
+    };
+    tgLogger.trace(`Added mapping from TG msg #${tgMsg.message_id} to WX ${talker}`);
 }
 
 // 监听对话
@@ -364,6 +364,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
             wxLogger.trace(`filename has suffix .49, maybe pushes.`);
+            //TODO add this to msg pool and return
         } else if (msg.payload.filename.endsWith(".url")) {
             wxLogger.trace(`filename has suffix .url, maybe LINK.`);
             const LinkRegex = new RegExp(/&lt;url&gt;(.*?)&lt;\/url&gt;/);
@@ -537,7 +538,7 @@ async function getFileFromWx(msg) {
             filePath = "@" + filePath;
         }
         filePath = `./downloaded/file/` + filePath;
-        const wechatyMemory = JSON.parse(fs.readFileSync("WechatBotV1.memory-card.json").toString());
+        const wechatyMemory = JSON.parse(fs.readFileSync("ctbridgebot.memory-card.json").toString());
         const cookieStr = wechatyMemory["\rpuppet\nPUPPET_WECHAT"].map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
         await downloadFileWx(fBox.remoteUrl, filePath, cookieStr);
         if (fs.existsSync(filePath)) {
