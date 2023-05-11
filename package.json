@@ -4,9 +4,9 @@
   "description": "reopened.",
   "superagent": "BotIndex.js",
   "scripts": {
-    "p": "node BotIndex.js poll",
-    "h1": "node BotIndex.js hook 1",
-    "h2": "node BotIndex.js hook 2",
+    "p": "node src/BotIndex.js poll",
+    "h1": "node src/BotIndex.js hook 1",
+    "h2": "node src/BotIndex.js hook 2",
     "puppet-install": "node node_modules/.bin/wechaty-puppet-install"
   },
   "keywords": [

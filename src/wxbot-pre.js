@@ -1,8 +1,8 @@
 const {WechatyBuilder} = require('wechaty');
 const qrcodeTerminal = require("qrcode-terminal");
-const config = require("./config/secret");
+const config = require("../config/secret");
 const wxbot = WechatyBuilder.build({
-    name: 'WechatBotV1',
+    name: 'ctbridgebot',
     puppet: 'wechaty-puppet-wechat', // 如果有token，记得更换对应的puppet
     puppetOptions: {uos: true}
 });
@@ -28,10 +28,10 @@ module.exports = (tgbot, wxLogger) => {
         if (status === 2) {
             qrcodeTerminal.generate(qrcode, {small: true}); // 在console端显示二维码
             console.log(qrcodeImageUrl);
-        }else if (status === 3) {
+        } else if (status === 3) {
             console.log(`The code is already scanned.\n${qrcodeImageUrl}`);
-        }else{
-            console.log(`User accepted login. Proceeding...`);
+        } else {
+            console.log(`User may accepted login. Proceeding...`);
         }
     });
 

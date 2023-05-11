@@ -1,6 +1,6 @@
 // noinspection JSUnresolvedVariable
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
-const secretConfig = require('./config/secret');
+const secretConfig = require('../config/secret');
 // const Config = require('./config/public');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
@@ -197,7 +197,7 @@ async function downloadFile(url, pathName) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
         // const agentEr = require('https-proxy-agent');
-        const agent = new agentEr.HttpsProxyAgent(require("./config/proxy"));
+        const agent = new agentEr.HttpsProxyAgent(require("../config/proxy"));
         require('https').get(url, {agent: agent}, (response) => {
             // response.setEncoding("binary");
             response.pipe(file);

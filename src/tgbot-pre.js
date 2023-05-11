@@ -1,27 +1,27 @@
-const secretConfig = require('./config/secret');
+const secretConfig = require('../config/secret');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const {tgLogger, Config} = require('./common')();
+const {tgLogger} = require('./common')();
 // const tgbot = new TelegramBot(secretConfig.botToken,
 //     {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken,
-        {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
+        {polling: {interval: 1000}, request: {proxy: require("../config/proxy")},});
     tgbot.deleteWebHook();
 } else {
     tgbot = new TelegramBot(secretConfig.botToken, {
         webHook: {
             port: 8443,
+            max_connections: 2,
             healthEndpoint: "/health",
             key: "config/srv.pem",
             cert: "config/cli.pem",
         }
     });
-    tgbot.deleteWebHook();
-    tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`,{
-        drop_pending_updates:true
+    tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`, {
+        drop_pending_updates: true
         /* Please, remove this line after the bot have ability to control messages between instances!!! */
     });
     tgbot.openWebHook();
