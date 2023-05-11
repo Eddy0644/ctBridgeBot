@@ -40,15 +40,15 @@ async function onTGMsg(tgMsg) {
         if (process.uptime() < 10) return;
 
         if (tgMsg.photo) {
-            await deliverTGToWx(tgMsg, tgMsg.photo,"photo");
+            await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
             return;
         }
         if (tgMsg.document) {
-            await deliverTGToWx(tgMsg, tgMsg.document,"document");
+            await deliverTGToWx(tgMsg, tgMsg.document, "document");
             return;
         }
         if (tgMsg.video) {
-            await deliverTGToWx(tgMsg, tgMsg.video,"video");
+            await deliverTGToWx(tgMsg, tgMsg.video, "video");
             return;
         }
         // Non-text messages must be filtered ahead of them
@@ -333,7 +333,7 @@ async function onWxMessage(msg) {
         let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
         if (!fs.existsSync(audioPath)) throw new Error("save file error");
-        try{
+        try {
             // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于tx）
             const client = new AsrClient({
                 credential: secretConfig.txyun_credential,
@@ -345,18 +345,19 @@ async function onWxMessage(msg) {
                 },
             });
             const base64Data = (await fs.promises.readFile(audioPath)).toString('base64');
-            const fileSize=(await fs.promises.stat(filePath)).size;
-            const result=await client.SentenceRecognition({
+            const fileSize = (await fs.promises.stat(audioPath)).size;
+            const result = await client.SentenceRecognition({
                 "SubServiceType": 2,
                 "EngSerViceType": "16k_zh_dialect",
                 "SourceType": 1,
                 "VoiceFormat": "mp3",
-                "Data":base64Data,
-                "DataLen":fileSize
+                "Data": base64Data,
+                "DataLen": fileSize
             });
-
-        }catch (e) {
-
+            msg.audioParsed = `, recognition:\n"${result.Result}"`;
+        } catch (e) {
+            wxLogger.debug(`Try to send audio file to Txyun but failed in the process.`);
+            msg.audioParsed = "";
         }
         wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
         msg.DType = DTypes.Audio;
@@ -521,7 +522,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             // 语音
             wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAudio(`${template} 🎤`, stream, false);
+            tgMsg = await tgBotDo.SendAudio(`${template} 🎤` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
             // 正经图片消息
             const stream = fs.createReadStream(msg.downloadedPath);
@@ -566,7 +567,7 @@ async function getFileFromWx(msg) {
             filePath = "@" + filePath;
         }
         filePath = `./downloaded/file/` + filePath;
-        const wechatyMemory = JSON.parse(fs.readFileSync("ctbridgebot.memory-card.json").toString());
+        const wechatyMemory = JSON.parse((await fs.promises.readFile("ctbridgebot.memory-card.json")).toString());
         const cookieStr = wechatyMemory["\rpuppet\nPUPPET_WECHAT"].map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
         await downloadFileWx(fBox.remoteUrl, filePath, cookieStr);
         if (fs.existsSync(filePath)) {
