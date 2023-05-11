@@ -427,6 +427,9 @@ async function onWxMessage(msg) {
     // 正式处理消息--------------
 
     if (msg.DType > 0) {
+        if (content.includes("[收到了一个表情，请在手机上查看]")) {
+            msgDef.isSilent = true;
+        }
         if (room) {
             // 是群消息 - - - - - - - -
             const topic = await room.topic();
