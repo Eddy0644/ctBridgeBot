@@ -7,7 +7,7 @@ const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
-const {wxLogger, tgLogger, LogWxMsg, Config, STypes} = require('./common')();
+const {wxLogger, tgLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
 
 
 let msgMappings = [];
@@ -37,15 +37,15 @@ async function onTGMsg(tgMsg) {
         if (process.uptime() < 10) return;
 
         if (tgMsg.photo) {
-            await deliverTGToWx(tgMsg,tgMsg.photo);
+            await deliverTGToWx(tgMsg, tgMsg.photo);
             return;
         }
         if (tgMsg.document) {
-            await deliverTGToWx(tgMsg,tgMsg.document);
+            await deliverTGToWx(tgMsg, tgMsg.document);
             return;
         }
         if (tgMsg.video) {
-            await deliverTGToWx(tgMsg,tgMsg.video);
+            await deliverTGToWx(tgMsg, tgMsg.video);
             return;
         }
         // Non-text messages must be filtered ahead of them
@@ -155,12 +155,12 @@ async function deliverTGToWx(tgMsg, tg_media) {
     }
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-    const file_path = './downloaded/' + (tgMsg.photo)?
-        (`photoTG/${Math.random()}.png`): (tgMsg.document?
-            (`fileTG/${tg_media.file_name}`):
+    const file_path = './downloaded/' + (tgMsg.photo) ?
+        (`photoTG/${Math.random()}.png`) : (tgMsg.document ?
+            (`fileTG/${tg_media.file_name}`) :
             (`videoTG/${Math.random()}.mp4`));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
-    const action=(tgMsg.photo)?(`upload_photo`):(tgMsg.document?(`upload_document`):(`upload_video`));
+    const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     await tgBotDo.SendChatAction(action);
 
     await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
@@ -258,7 +258,7 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
 async function onWxMessage(msg) {
 
     // 按照距今时间来排除wechaty重启时的重复消息
-    let isMessageDropped = msg.age() > 40 && process.uptime() < 39;
+    let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 120);
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     LogWxMsg(msg, isMessageDropped);
     if (isMessageDropped) return;
@@ -303,14 +303,14 @@ async function onWxMessage(msg) {
         const fileExt = ".gif";
         const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
         if (!fs.existsSync(cEPath)) {
-            if (await downloadFile(emotionHref, cEPath)) {
+            if (await downloadFileHttp(emotionHref, cEPath)) {
                 // downloadFile_old(emotionHref, path + ".backup.gif");
                 msg.downloadedPath = cEPath;
                 wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}`);
             } else msg.downloadedPath = null;
         } else msg.downloadedPath = cEPath;
     } catch (e) {
-        wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
+        wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);
         //尝试解析为图片
         const fBox = await msg.toFileBox();
         const photoPath = `./downloaded/photo/${alias}-${msg.payload.filename}`;
@@ -329,7 +329,7 @@ async function onWxMessage(msg) {
         // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
         let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
-        if (!fs.existsSync(audioPath)) throw new Error();
+        if (!fs.existsSync(audioPath)) throw new Error("save file error");
         wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
         msg.DType = DTypes.Audio;
         msg.downloadedPath = audioPath;
@@ -425,6 +425,7 @@ async function onWxMessage(msg) {
     }
 
     // 正式处理消息--------------
+
     if (msg.DType > 0) {
         if (room) {
             // 是群消息 - - - - - - - -
@@ -447,6 +448,7 @@ async function onWxMessage(msg) {
             // 系统消息如拍一拍
             if (name === topic) {
                 wxLogger.debug(`群聊[in ${topic}] ${content}`);
+                // TODO: put such message into Pool
                 await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
                 return;
             }
@@ -472,50 +474,55 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
     const template = isRoom ? `📬[<b>${name}</b>@${await room.topic()}]` : `📨[<b>${alias}</b>]`;
-    let tgMsg;
-    if (msg.DType === DTypes.CustomEmotion) {
-        // 自定义表情, 已添加读取错误处理
-        try {
-            const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAnimation(`${template} [CustomEmotion]`, stream, true, true);
-        } catch (e) {
-            wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-            tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
-        }
-    } else if (msg.DType === DTypes.Audio) {
-        // 语音
-        wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
-        const stream = fs.createReadStream(msg.downloadedPath);
-        tgMsg = await tgBotDo.SendAudio(`${template} 🎤`, stream, false);
-    } else if (msg.DType === DTypes.Image) {
-        // 正经图片消息
-        const stream = fs.createReadStream(msg.downloadedPath);
-        tgMsg = await tgBotDo.SendPhoto(`${template} 🖼`, stream, true, false);
-    } else if (msg.DType === DTypes.File) {
-        // 文件消息,需要二次确认
-        wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
-        tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
-        // TODO: consider to merge it into normal text
-
-        // this is directly accept the file transaction
-        if (msg.autoDownload) {
-            const result = await getFileFromWx(msg);
-            if (result === "Success") {
-                tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Smaller than threshold, so we would try download that automatically for you.", "Auto Downloaded Already."), tgMsg);
+    let tgMsg, retrySend = 1;
+    while (retrySend > 0) {
+        if (msg.DType === DTypes.CustomEmotion) {
+            // 自定义表情, 已添加读取错误处理
+            try {
+                const stream = fs.createReadStream(msg.downloadedPath);
+                tgMsg = await tgBotDo.SendAnimation(`${template} [CustomEmotion]`, stream, true, true);
+            } catch (e) {
+                wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
+                tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
             }
+        } else if (msg.DType === DTypes.Audio) {
+            // 语音
+            wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
+            const stream = fs.createReadStream(msg.downloadedPath);
+            tgMsg = await tgBotDo.SendAudio(`${template} 🎤`, stream, false);
+        } else if (msg.DType === DTypes.Image) {
+            // 正经图片消息
+            const stream = fs.createReadStream(msg.downloadedPath);
+            tgMsg = await tgBotDo.SendPhoto(`${template} 🖼`, stream, true, false);
+        } else if (msg.DType === DTypes.File) {
+            // 文件消息,需要二次确认
+            wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
+            tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
+            // TODO: consider to merge it into normal text
+
+            // this is directly accept the file transaction
+            if (msg.autoDownload) {
+                const result = await getFileFromWx(msg);
+                if (result === "Success") {
+                    tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Smaller than threshold, so we would try download that automatically for you.", "Auto Downloaded Already."), tgMsg);
+                }
+            }
+            // return;
+        } else {
+            // 仅文本或未分类
+            // Plain text or not classified
+            wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
+            tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
         }
-        // return;
-    } else {
-        // 仅文本或未分类
-        // Plain text or not classified
-        wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
-        tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
-    }
-    if (!tgMsg) {
-        tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed.");
-        return "sendFailure";
-    } else {
-        return tgMsg;
+
+        if (!tgMsg) {
+            tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed. " +
+            (retrySend > 0) ? `[Trying resend #${retrySend} to solve network error]` : `[No retries left]`);
+            if (retrySend-- > 0) continue;
+            return "sendFailure";
+        } else {
+            return tgMsg;
+        }
     }
 }
 

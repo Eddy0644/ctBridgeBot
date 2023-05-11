@@ -58,7 +58,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e));
+            return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e.toString()));
         },
         SendPhoto: async (msg, path, isSilent = false, hasSpoiler = false) => {
             await delay(100);
@@ -70,7 +70,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e));
+            return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e.toString()));
         },
         EditMessageText: async (text, formerMsg) => {
             await delay(100);
@@ -79,7 +79,7 @@ module.exports = {
                 message_id: formerMsg.message_id,
                 parse_mode: "HTML"
             };
-            return await tgbot.editMessageText(text, form).catch((e) => tgLogger.error(e));
+            return await tgbot.editMessageText(text, form).catch((e) => tgLogger.error(e.toString()));
         },
         SendAudio: async (msg, path, isSilent = false) => {
             await delay(100);
@@ -88,7 +88,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.error(e));
+            return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.error(e.toString()));
         },
         SendDocument: async (msg, path, isSilent = false) => {
             await delay(100);
@@ -97,7 +97,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.error(e));
+            return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.error(e.toString()));
         }
     }
 }

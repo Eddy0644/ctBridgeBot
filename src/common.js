@@ -1,4 +1,6 @@
 const log4js = require('log4js');
+const fs = require("fs");
+const agentEr = require("https-proxy-agent");
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "[%d{yy/MM/dd hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
 log4js.configure({
@@ -84,10 +86,8 @@ module.exports = (param) => {
         //////-----------Above is mostly logger ---------------------//////
 
 
-        _T: {
-
-        },
-        STypes:{
+        _T: {},
+        STypes: {
             Chat: 1,
             FindMode: 2,
         },
@@ -102,5 +102,21 @@ module.exports = (param) => {
             placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
             wxAutoDownloadThreshold: 3 * 1048576
         },
+
+        downloadFileHttp: async function (url, pathName) {
+            return new Promise((resolve, reject) => {
+                const file = fs.createWriteStream(pathName);
+                require('http').get(url, {}, (response) => {
+                    // response.setEncoding("binary");
+                    response.pipe(file);
+                    file.on('finish', () => {
+                        file.close();
+                        resolve("SUCCESS");
+                    });
+                }).on('error', (error) => {
+                    fs.unlink(pathName, () => reject(error));
+                });
+            });
+        }
     }
 };
