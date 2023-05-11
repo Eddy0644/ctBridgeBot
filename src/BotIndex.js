@@ -9,6 +9,9 @@ const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
 
+const tencentcloud = require("tencentcloud-sdk-nodejs-asr");
+
+const AsrClient = tencentcloud.asr.v20190614.Client;
 
 let msgMappings = [];
 let state = {
@@ -330,6 +333,31 @@ async function onWxMessage(msg) {
         let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
         if (!fs.existsSync(audioPath)) throw new Error("save file error");
+        try{
+            // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于tx）
+            const client = new AsrClient({
+                credential: secretConfig.txyun_credential,
+                region: "",
+                profile: {
+                    httpProfile: {
+                        endpoint: "asr.tencentcloudapi.com",
+                    },
+                },
+            });
+            const base64Data = (await fs.promises.readFile(audioPath)).toString('base64');
+            const fileSize=(await fs.promises.stat(filePath)).size;
+            const result=await client.SentenceRecognition({
+                "SubServiceType": 2,
+                "EngSerViceType": "16k_zh_dialect",
+                "SourceType": 1,
+                "VoiceFormat": "mp3",
+                "Data":base64Data,
+                "DataLen":fileSize
+            });
+
+        }catch (e) {
+
+        }
         wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
         msg.DType = DTypes.Audio;
         msg.downloadedPath = audioPath;
