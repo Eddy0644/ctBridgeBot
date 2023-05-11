@@ -36,43 +36,16 @@ async function onTGMsg(tgMsg) {
     try {
         if (process.uptime() < 10) return;
 
-        //TODO: Put these two into a separated func though;
         if (tgMsg.photo) {
-            if (state.last.s !== STypes.Chat) {
-                // !!unimplemented
-                return;
-            }
-            // console.log(tgMsg.photo);
-            const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
-            const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-            const file_path = `./downloaded/photoTG/${Math.random()}.png`;
-            await tgBotDo.SendChatAction("upload_photo");
-            await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
-            const packed = await FileBox.fromFile(file_path);
-            await state.last.target.say(packed);
-            tgLogger.debug(`Handled a Photo message send-back to speculative talker:${state.last.name}.`);
-            await tgBotDo.SendChatAction("choose_sticker");
+            await deliverTGToWx(tgMsg,tgMsg.photo);
             return;
         }
         if (tgMsg.document) {
-            if (state.last.s !== STypes.Chat) {
-                // !!unimplemented
-                return;
-            }
-            // console.log(tgMsg.document);
-            // const file_id = tgMsg.photo[tgMsg.photo.length - 1].file_id;
-            const fileCloudPath = (await tgbot.getFile(tgMsg.document.file_id)).file_path;
-            const file_path = `./downloaded/fileTG/${tgMsg.document.file_name}`;
-            await tgBotDo.SendChatAction("upload_document");
-            await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
-            const packed = await FileBox.fromFile(file_path);
-            await state.last.target.say(packed);
-            tgLogger.debug(`Handled a Document message send-back to speculative talker:${state.last.name}.`);
-            await tgBotDo.SendChatAction("choose_sticker");
+            await deliverTGToWx(tgMsg,tgMsg.document);
             return;
         }
         if (tgMsg.video) {
-            await tgBotDo.SendMessage("Sorry, but video sending is not implemented.",true);
+            await deliverTGToWx(tgMsg,tgMsg.video);
             return;
         }
         // Non-text messages must be filtered ahead of them
@@ -172,6 +145,31 @@ async function onTGMsg(tgMsg) {
         tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
     }
 
+}
+
+async function deliverTGToWx(tgMsg, tg_media) {
+    if (state.last.s !== STypes.Chat) {
+        await tgBotDo.SendMessage("🛠 Sorry, but media sending without last chatter is not implemented.", true);
+        // TODO: to be implemented.
+        return;
+    }
+    const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
+    const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
+    const file_path = './downloaded/' + (tgMsg.photo)?
+        (`photoTG/${Math.random()}.png`): (tgMsg.document?
+            (`fileTG/${tg_media.file_name}`):
+            (`videoTG/${Math.random()}.mp4`));
+    // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
+    const action=(tgMsg.photo)?(`upload_photo`):(tgMsg.document?(`upload_document`):(`upload_video`));
+    await tgBotDo.SendChatAction(action);
+
+    await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
+    const packed = await FileBox.fromFile(file_path);
+    await tgBotDo.SendChatAction("record_video");
+    await state.last.target.say(packed);
+    tgLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
+    await tgBotDo.SendChatAction("choose_sticker");
+    return true;
 }
 
 async function findSbInWechat(token) {
