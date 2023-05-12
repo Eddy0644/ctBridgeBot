@@ -446,7 +446,7 @@ async function onWxMessage(msg) {
             // 再筛选掉符合exclude keyword的群聊消息
             for (const keyword of secretConfig.roomExcludeKeyword) {
                 if (topic.includes(keyword)) {
-                    wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content}`);
+                    wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
                 }
             }
@@ -459,7 +459,7 @@ async function onWxMessage(msg) {
                     // noinspection JSObjectNullOrUndefined
                     if (_.firstWord === "") {
                         // 已经合并过，标题已经更改，直接追加新内容
-                        const newString = `${_.tgMsg.text}\n[${name}] ${content}`.replace(topic, `<b>${topic}</b>`);
+                        const newString = `${_.tgMsg.text}\n📨[${name}] ${content}`.replace(topic, `<b>${topic}</b>`);
                         // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
                         // TODO 把此前的消息都存入state中，从而不再需要替换
                         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
@@ -467,10 +467,10 @@ async function onWxMessage(msg) {
                         return;
                     } else {
                         // 准备修改先前的消息，去除头部
-                        const newString = `📬⛓️ [<b>${topic}</b>]\n${_.firstWord}\n[${name}] ${content}`;
+                        const newString = `📬⛓️ [<b>${topic}</b>]\n📨${_.firstWord}\n📨[${name}] ${content}`;
                         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
                         _.firstWord = "";
-                        tgLogger.debug(`Delivered new message "${content}" from ${topic} into former message.`);
+                        tgLogger.debug(`Delivered new message "${content}" from Room:${topic} into former message.`);
                         return;
                     }
                 } else msg.preRoomUpdate = true;
@@ -501,7 +501,7 @@ async function onWxMessage(msg) {
                     // 准备修改先前的消息，去除头部
                     const newString = `${_.tgMsg.text}\n[${dayjs().format("H:mm:ss")}] ${content}`;
                     _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                    tgLogger.debug(`Delivered new message "${content}" from ${name} into former message.`);
+                    tgLogger.debug(`Delivered new message "${content}" from Person:${name} into former message.`);
                     return;
                 } else
                     msg.prePersonUpdate = true;
