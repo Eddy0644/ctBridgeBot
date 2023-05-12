@@ -1,4 +1,4 @@
-// noinspection JSUnresolvedVariable
+// noinspection JSUnresolvedVariable,JSObjectNullOrUndefined
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 const secretConfig = require('../config/secret');
 // const Config = require('./config/public');
@@ -16,7 +16,11 @@ let state = {
         firstWord: "",
         tgMsg: null,
         topic: "",
-    }
+    },
+    prePerson: {
+        tgMsg: null,
+        name: "",
+    },
 };
 
 const {tgbot, tgBotDo} = require('./tgbot-pre');
@@ -452,6 +456,7 @@ async function onWxMessage(msg) {
                 if (_.topic === topic && lastDate - dayjs().unix() < 60 && msg.DType === DTypes.Text) {
                     msg.preRoomUpdate = false;
                     // from same group, ready to merge
+                    // noinspection JSObjectNullOrUndefined
                     if (_.firstWord === "") {
                         // 已经合并过，标题已经更改，直接追加新内容
                         const newString = `${_.tgMsg.text}\n[${name}] ${content}`.replace(topic, `<b>${topic}</b>`);
@@ -486,6 +491,22 @@ async function onWxMessage(msg) {
             //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
             if (alias === "微信运动") {
                 return;
+            }
+            try {
+                const _ = state.prePerson;
+                const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+                if (_.name === name && lastDate - dayjs().unix() < 15 && msg.DType === DTypes.Text) {
+                    msg.prePersonUpdate = false;
+                    // from same person, ready to merge
+                    // 准备修改先前的消息，去除头部
+                    const newString = `${_.tgMsg.text}\n[${dayjs().format("H:mm:ss")}] ${content}`;
+                    _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
+                    tgLogger.debug(`Delivered new message "${content}" from ${name} into former message.`);
+                    return;
+                } else
+                    msg.prePersonUpdate = true;
+            } catch (e) {
+                wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.`);
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
@@ -545,6 +566,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
                 state.preRoom.topic = topic;
                 state.preRoom.tgMsg = tgMsg;
                 state.preRoom.firstWord = `[${name}] ${content}`;
+            }
+            if (!isRoom && msg.prePersonUpdate) {
+                state.prePerson.name = name;
+                state.prePerson.tgMsg = tgMsg;
             }
         }
 
