@@ -97,6 +97,7 @@ module.exports = (param) => {
                 {command: '/clear', description: 'Clear Selection'},
                 {command: '/info', description: 'Get current system variables'},
                 {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
+                {command: '/SLET', description: 'Set last explicit talker as last talker.'},
                 // Add more commands as needed
             ],
             placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,

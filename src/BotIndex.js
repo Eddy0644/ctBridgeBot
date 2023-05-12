@@ -12,6 +12,7 @@ const {wxLogger, tgLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require
 let msgMappings = [];
 let state = {
     last: {},
+    lastExplicitTalker: null,
     preRoom: {
         firstWord: "",
         tgMsg: null,
@@ -61,6 +62,7 @@ async function onTGMsg(tgMsg) {
                         await getFileFromWx(mapPair[3]);
                         await tgBotDo.SendChatAction("upload_document");
                     } else {
+                        state.lastExplicitTalker = await mapPair[1].from();
                         await mapPair[1].say(tgMsg.text);
                         await tgBotDo.SendChatAction("choose_sticker");
                     }
@@ -96,6 +98,19 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
                 reply_markup: {}
             });
+        } else if (tgMsg.text === "/SLET") {
+            const talker = state.lastExplicitTalker;
+            const name = await (talker.name ? talker.name() : talker.topic());
+            tgLogger.trace(`forking `);
+            state.last = {
+                s: STypes.Chat,
+                target: state.lastExplicitTalker,
+                name: name,
+                wxMsg: null,
+                isFile: null
+            };
+            await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
+            await tgBotDo.RevokeMessage(tgMsg.message_id);
         } else if (tgMsg.text === "/info") {
             tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
@@ -453,7 +468,8 @@ async function onWxMessage(msg) {
             try {
                 const _ = state.preRoom;
                 const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
-                if (_.topic === topic && lastDate - dayjs().unix() < 60 && msg.DType === DTypes.Text) {
+                const nowDate = dayjs().unix();
+                if (_.topic === topic && nowDate - lastDate < 60 && msg.DType === DTypes.Text) {
                     msg.preRoomUpdate = false;
                     // from same group, ready to merge
                     // noinspection JSObjectNullOrUndefined
@@ -495,7 +511,8 @@ async function onWxMessage(msg) {
             try {
                 const _ = state.prePerson;
                 const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
-                if (_.name === name && lastDate - dayjs().unix() < 15 && msg.DType === DTypes.Text) {
+                const nowDate = dayjs().unix();
+                if (_.name === name && nowDate - lastDate < 15 && msg.DType === DTypes.Text) {
                     msg.prePersonUpdate = false;
                     // from same person, ready to merge
                     // 准备修改先前的消息，去除头部
