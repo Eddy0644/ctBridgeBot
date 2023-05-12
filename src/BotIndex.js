@@ -9,18 +9,13 @@ const agentEr = require("https-proxy-agent");
 // const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
 
-const tencentcloud = require("tencentcloud-sdk-nodejs-asr");
-
-const AsrClient = tencentcloud.asr.v20190614.Client;
-
 let msgMappings = [];
 let state = {
     last: {},
-    pre: {
-        c: null,
-        ct: 0,
-        r: null,
-        rt: 0,
+    preRoom: {
+        firstWord: "",
+        tgMsg: null,
+        topic: "",
     }
 };
 
@@ -138,7 +133,7 @@ async function onTGMsg(tgMsg) {
                 } else {
                     // forward to last talker
                     await state.last.target.say(tgMsg.text);
-                    tgLogger.debug(`Handled a message send-back to speculative talker:${state.last.name}.`);
+                    tgLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
                     await tgBotDo.SendChatAction("choose_sticker");
                 }
             } else {
@@ -259,7 +254,6 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
 
 // 监听对话
 async function onWxMessage(msg) {
-
     // 按照距今时间来排除wechaty重启时的重复消息
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 120);
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
@@ -333,32 +327,7 @@ async function onWxMessage(msg) {
         let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
         if (!fs.existsSync(audioPath)) throw new Error("save file error");
-        try {
-            // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于tx）
-            const client = new AsrClient({
-                credential: secretConfig.txyun_credential,
-                region: "",
-                profile: {
-                    httpProfile: {
-                        endpoint: "asr.tencentcloudapi.com",
-                    },
-                },
-            });
-            const base64Data = (await fs.promises.readFile(audioPath)).toString('base64');
-            const fileSize = (await fs.promises.stat(audioPath)).size;
-            const result = await client.SentenceRecognition({
-                "SubServiceType": 2,
-                "EngSerViceType": "16k_zh_dialect",
-                "SourceType": 1,
-                "VoiceFormat": "mp3",
-                "Data": base64Data,
-                "DataLen": fileSize
-            });
-            msg.audioParsed = `, recognition:\n"${result.Result}"`;
-        } catch (e) {
-            wxLogger.debug(`Try to send audio file to Txyun but failed in the process.`);
-            msg.audioParsed = "";
-        }
+        await recogniseAudio(msg, audioPath);
         wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
         msg.DType = DTypes.Audio;
         msg.downloadedPath = audioPath;
@@ -455,7 +424,6 @@ async function onWxMessage(msg) {
     }
 
     // 正式处理消息--------------
-
     if (msg.DType > 0) {
         if (content.includes("[收到了一个表情，请在手机上查看]")) {
             msgDef.isSilent = true;
@@ -477,6 +445,32 @@ async function onWxMessage(msg) {
                     wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content}`);
                     return;
                 }
+            }
+            try {
+                const _ = state.preRoom;
+                const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+                if (_.topic === topic && lastDate - dayjs().unix() < 60 && msg.DType === DTypes.Text) {
+                    msg.preRoomUpdate = false;
+                    // from same group, ready to merge
+                    if (_.firstWord === "") {
+                        // 已经合并过，标题已经更改，直接追加新内容
+                        const newString = `${_.tgMsg.text}\n[${name}] ${content}`.replace(topic, `<b>${topic}</b>`);
+                        // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
+                        // TODO 把此前的消息都存入state中，从而不再需要替换
+                        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
+                        tgLogger.debug(`Delivered new message "${content}" from ${topic} into first message.`);
+                        return;
+                    } else {
+                        // 准备修改先前的消息，去除头部
+                        const newString = `📬⛓️ [<b>${topic}</b>]\n${_.firstWord}\n[${name}] ${content}`;
+                        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
+                        _.firstWord = "";
+                        tgLogger.debug(`Delivered new message "${content}" from ${topic} into former message.`);
+                        return;
+                    }
+                } else msg.preRoomUpdate = true;
+            } catch (e) {
+                wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.`);
             }
             // 系统消息如拍一拍
             if (name === topic) {
@@ -506,7 +500,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     const alias = await contact.alias() || await contact.name();
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
-    const template = isRoom ? `📬[<b>${name}</b>@${await room.topic()}]` : `📨[<b>${alias}</b>]`;
+    const topic = isRoom ? await room.topic() : "";
+    const template = isRoom ? `📬[<b>${name}</b>@${topic}]` : `📨[<b>${alias}</b>]`;
     let tgMsg, retrySend = 1;
     while (retrySend > 0) {
         if (msg.DType === DTypes.CustomEmotion) {
@@ -546,6 +541,11 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             // Plain text or not classified
             wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
             tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
+            if (isRoom && msg.preRoomUpdate) {
+                state.preRoom.topic = topic;
+                state.preRoom.tgMsg = tgMsg;
+                state.preRoom.firstWord = `[${name}] ${content}`;
+            }
         }
 
         if (!tgMsg) {
@@ -587,7 +587,7 @@ async function getFileFromWx(msg) {
     }
 }
 
-const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
+const {wxbot, DTypes, recogniseAudio} = require('./wxbot-pre')(tgbot, wxLogger);
 
 wxbot.on('message', onWxMessage);
 wxbot.on('login', async user => {

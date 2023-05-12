@@ -1,6 +1,12 @@
 const {WechatyBuilder} = require('wechaty');
 const qrcodeTerminal = require("qrcode-terminal");
 const config = require("../config/secret");
+const secretConfig = require("../config/secret");
+const fs = require("fs");
+
+const tencentcloud = require("tencentcloud-sdk-nodejs-asr");
+const AsrClient = tencentcloud.asr.v20190614.Client;
+
 const wxbot = WechatyBuilder.build({
     name: 'ctbridgebot',
     puppet: 'wechaty-puppet-wechat', // 如果有token，记得更换对应的puppet
@@ -46,6 +52,34 @@ module.exports = (tgbot, wxLogger) => {
 
     return {
         wxbot: wxbot,
-        DTypes: DTypes
+        DTypes: DTypes,
+        recogniseAudio: async (msg, audioPath) => {
+            try {
+                // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于wx）
+                const client = new AsrClient({
+                    credential: secretConfig.txyun_credential,
+                    region: "",
+                    profile: {
+                        httpProfile: {
+                            endpoint: "asr.tencentcloudapi.com",
+                        },
+                    },
+                });
+                const base64Data = (await fs.promises.readFile(audioPath)).toString('base64');
+                const fileSize = (await fs.promises.stat(audioPath)).size;
+                const result = await client.SentenceRecognition({
+                    "SubServiceType": 2,
+                    "EngSerViceType": "16k_zh_dialect",
+                    "SourceType": 1,
+                    "VoiceFormat": "mp3",
+                    "Data": base64Data,
+                    "DataLen": fileSize
+                });
+                msg.audioParsed = `, recognition:\n"${result.Result}"`;
+            } catch (e) {
+                wxLogger.debug(`Try to send audio file to Txyun but failed in the process.`);
+                msg.audioParsed = "";
+            }
+        }
     };
 };

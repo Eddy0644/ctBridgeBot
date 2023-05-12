@@ -73,7 +73,7 @@ module.exports = {
             return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e.toString()));
         },
         EditMessageText: async (text, formerMsg) => {
-            await delay(100);
+            // await delay(100);
             let form = {
                 chat_id: secretConfig.target_TG_ID,
                 message_id: formerMsg.message_id,
