@@ -471,7 +471,7 @@ async function onWxMessage(msg) {
                 }
             }
             // 再筛选掉符合exclude keyword的群聊消息
-            for (const keyword of secretConfig.roomExcludeKeyword) {
+            for (const keyword of secretConfig.nameExcludeKeyword) {
                 if (topic.includes(keyword)) {
                     wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -519,6 +519,13 @@ async function onWxMessage(msg) {
             //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
             if (alias === "微信运动") {
                 return;
+            }
+            // 筛选掉符合exclude keyword的个人消息
+            for (const keyword of secretConfig.nameExcludeKeyword) {
+                if (name.includes(keyword)) {
+                    wxLogger.debug(`来自此人[in ${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
+                    return;
+                }
             }
             try {
                 const _ = state.prePerson;
