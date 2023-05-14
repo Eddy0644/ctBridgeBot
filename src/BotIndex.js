@@ -87,10 +87,20 @@ async function onTGMsg(tgMsg) {
                 userPrompt1: tgMsg,
                 botPrompt1: tgMsg2,
             };
-        } else if (tgMsg.text.indexOf("/find") === 0) {
+        } else if (tgMsg.text === "/keyboard") {
+            let form = {
+                reply_markup: JSON.stringify({
+                    keyboard: secretConfig.quickKeyboard,
+                    is_persistent: false,
+                    resize_keyboard: true,
+                    one_time_keyboard: false
+                })
+            };
+            await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+        } else if (tgMsg.text.indexOf("F$") === 0) {
             tgLogger.trace(`Got an attempt to find [${tgMsg.text}] in WeChat.`);
             // Want to find somebody, and have inline parameters
-            await findSbInWechat(tgMsg.text.replace("/find ", ""));
+            await findSbInWechat(tgMsg.text.replace("F$", ""));
         } else if (tgMsg.text === "/clear") {
             tgLogger.trace(`Cleared tgBot status by user operation.`);
             // state.lastOpt = null;
@@ -101,7 +111,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/SLET") {
             const talker = state.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
-            tgLogger.trace(`forking `);
+            tgLogger.trace(`forking lastExplicitTalker...`);
             state.last = {
                 s: STypes.Chat,
                 target: state.lastExplicitTalker,
