@@ -14,7 +14,7 @@ if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken, {
         webHook: {
             port: 8443,
-            max_connections: 2,
+            max_connections: 3,
             healthEndpoint: "/health",
             key: "config/srv.pem",
             cert: "config/cli.pem",
