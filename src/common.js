@@ -98,7 +98,8 @@ module.exports = (param) => {
                 {command: '/info', description: 'Get current system variables'},
                 {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
                 {command: '/slet', description: 'Set last explicit talker as last talker.'},
-                {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'}
+                {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
+                {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
                 // Add more commands as needed
             ],
             placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,

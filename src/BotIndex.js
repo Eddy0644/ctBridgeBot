@@ -121,6 +121,14 @@ async function onTGMsg(tgMsg) {
             };
             await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
             await tgBotDo.RevokeMessage(tgMsg.message_id);
+        } else if (tgMsg.text.indexOf("/log") === 0) {
+            const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
+            let log = (await fs.promises.readFile(path)).toString();
+            let chars = 1000;
+            if (tgMsg.text.length > 5) {
+                chars = parseInt(tgMsg.text.replace("/log ", ""));
+            }
+            await tgBotDo.SendMessage(`\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
         } else if (tgMsg.text === "/info") {
             tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
