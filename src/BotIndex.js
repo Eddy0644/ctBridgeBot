@@ -108,7 +108,7 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
                 reply_markup: {}
             });
-        } else if (tgMsg.text === "/SLET") {
+        } else if (tgMsg.text === "/slet") {
             const talker = state.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
             tgLogger.trace(`forking lastExplicitTalker...`);
@@ -126,6 +126,8 @@ async function onTGMsg(tgMsg) {
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             await tgBotDo.SendMessage(statusReport, true, "HTML");
+            const result = await tgbot.setMyCommands(Config.TGBotCommands);
+            tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
