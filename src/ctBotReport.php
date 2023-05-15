@@ -4,17 +4,18 @@ $c = [
     "_last" => [],
     "runningTime" => 0,
     "logText" => "",
-    "generationDate"=>""
+    "generationDate" => ""
 ];
 // echo "11111";
 if (isset($_REQUEST["s"])) {
     if ($_REQUEST["s"] === "create") try {
         $recvJson = file_get_contents("php://input");
         $recvArr = json_decode($recvJson, true);
+        //echo $recvJson;
         if (!$recvArr["status"]) throw new Exception("Invalid incoming JSON");
         $fName = date("Ymd-His") . "." . rand(100, 700) . ".json";
-        $recvArr["generationDate"]=date("Ymd-His");
-        file_put_contents($fName, json_encode($recvArr,JSON_PRETTY_PRINT));
+        $recvArr["generationDate"] = date("Ymd-His");
+        file_put_contents($fName, json_encode($recvArr, JSON_PRETTY_PRINT));
 //        echo json_encode([
 //            "success" => "1",
 //            "filename" => $fName
@@ -34,14 +35,15 @@ if (isset($_REQUEST["s"])) {
     // read former saved JSON then output it.
     try {
         $readJson = file_get_contents($_REQUEST["n"]);
-        $c = json_decode($readJson,true);
+        $c = json_decode($readJson, true);
     } catch (Exception $e) {
         header("500 Internal Error");
         die();
     }
 } else {
     // no any valid flag, display default page
-//    json_encode()
+    header("HTTP/1.1 400 Bad Request");
+    die("STOPSTOPSTOP.STOPSTOPSTOP.STOPSTOPSTOP.STOPSTOPSTOP.STOPSTOPSTOP");
 }
 ?>
 <html lang="en-us">
@@ -73,14 +75,14 @@ if (isset($_REQUEST["s"])) {
     </li>
     <li>
         <details open>
-            <summary>Last 2400 chars of log</summary>
+            <summary>Last 3600 chars of log</summary>
             <pre><?= $c["logText"] ?></pre>
         </details>
     </li>
 </ul>
 </body>
 <style>
-    pre{
+    pre {
 
     }
 </style>

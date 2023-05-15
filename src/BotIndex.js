@@ -157,7 +157,7 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
             const statusReport = await generateInfo();
-            await tgBotDo.SendMessage(statusReport, true, "HTML");
+            await tgBotDo.SendMessage(statusReport, true, null);
             const result = await tgbot.setMyCommands(Config.TGBotCommands);
             tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
 
@@ -167,7 +167,7 @@ async function onTGMsg(tgMsg) {
         } else {
 
             // No valid COMMAND within msg
-            if (state.last === {}) {
+            if (Object.keys(state.last).length === 0) {
                 // Activate chat & env. set
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
@@ -218,9 +218,9 @@ async function generateInfo() {
     const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
     const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
     let log = (await fs.promises.readFile(path)).toString();
-    const logText = log.substring(log.length - 2400, log.length);
+    const logText = log.substring(log.length - 3600, log.length);
     const dtInfo = {
-        status: 1,
+        status: true,
         lastOperation: state.last ? state.last[0] : 0,
         _last: state.last,
         runningTime: process.uptime(),
@@ -234,7 +234,7 @@ async function generateInfo() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Content-Length': postData.length
+            // 'Content-Length': postData.length
         }
     };
     let url;
@@ -260,7 +260,7 @@ async function generateInfo() {
             req.end();
         });
 
-        url = `https://${options.hostname}${options.path}?n=${res}`;
+        url = `https://${options.hostname}${secretConfig.statusReport[1]}?n=${res}`;
         if (res.indexOf('<html') > -1) throw new Error("Upload error");
     } catch (e) {
         url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
