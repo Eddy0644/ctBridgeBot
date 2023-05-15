@@ -12,6 +12,7 @@ let msgMappings = [];
 let state = {
     last: {},
     lastExplicitTalker: null,
+    lockTarget: 0,
     preRoom: {
         firstWord: "",
         tgMsg: null,
@@ -104,7 +105,9 @@ async function onTGMsg(tgMsg) {
                 })
             };
             await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
-
+        } else if (tgMsg.text === "/lock") {
+            state.lockTarget = state.lockTarget ? 0 : 1;
+            await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true, null, form);
         } else if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
             let findToken = tgMsg.text.replace("F$", "");
@@ -363,7 +366,7 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsg, talker, name, wxMsg]);
-    state.last = {
+    if (state.lockTarget === 0) state.last = {
         s: STypes.Chat,
         target: talker,
         name: name,
@@ -745,9 +748,9 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
     // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
-// wxbot.start()
-//     .then(() => wxLogger.info('开始登陆大而丑...'))
-//     .catch((e) => wxLogger.error(e));
+wxbot.start()
+    .then(() => wxLogger.info('开始登陆大而丑...'))
+    .catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 

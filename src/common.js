@@ -100,6 +100,7 @@ module.exports = (param) => {
                 {command: '/slet', description: 'Set last explicit talker as last talker.'},
                 {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
                 {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
+                {command: '/lock', description: 'Lock the target talker to avoid being interrupted.'},
                 // Add more commands as needed
             ],
             placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
