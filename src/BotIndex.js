@@ -107,7 +107,7 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
         } else if (tgMsg.text === "/lock") {
             state.lockTarget = state.lockTarget ? 0 : 1;
-            await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true, null, form);
+            await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
         } else if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
             let findToken = tgMsg.text.replace("F$", "");
@@ -124,7 +124,15 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`Cleared tgBot status by user operation.`);
             // state.lastOpt = null;
             state.last = {};
-            await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
+            state.prePerson = {
+                tgMsg: null,
+                name: "",
+            };state.preRoom = {
+                firstWord: "",
+                tgMsg: null,
+                name: "",
+            };
+            await tgBotDo.SendMessage(`<Last> & <preMessage> status Cleared.`, true, null, {
                 reply_markup: {}
             });
 
@@ -263,6 +271,7 @@ async function generateInfo() {
         url = `https://${options.hostname}${secretConfig.statusReport[1]}?n=${res}`;
         if (res.indexOf('<html') > -1) throw new Error("Upload error");
     } catch (e) {
+        ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
         url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
     }
     return url;
@@ -597,7 +606,7 @@ async function onWxMessage(msg) {
                     }
                 } else msg.preRoomUpdate = true;
             } catch (e) {
-                wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.`);
+                wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}`);
             }
             // 系统消息如拍一拍
             if (name === topic) {
@@ -636,7 +645,7 @@ async function onWxMessage(msg) {
                 } else
                     msg.prePersonUpdate = true;
             } catch (e) {
-                wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.`);
+                wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}`);
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
