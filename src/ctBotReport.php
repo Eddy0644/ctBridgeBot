@@ -4,18 +4,21 @@ $c = [
     "_last" => [],
     "runningTime" => 0,
     "logText" => "",
+    "generationDate"=>""
 ];
 if (isset($_REQUEST["s"])) {
     if ($_REQUEST["s"] === "create") try {
         $recvJson = file_get_contents("php://input");
         $recvArr = json_decode($recvJson, true);
         if (!$recvArr["status"]) throw new Exception("Invalid incoming JSON");
-        $fName = date("YmdHis") . "-" . rand(100, 700) . ".json";
-        file_put_contents($fName, $recvJson);
-        echo json_encode([
-            "success" => "1",
-            "filename" => $fName
-        ]);
+        $fName = date("Ymd-His") . "." . rand(100, 700) . ".json";
+        $recvArr["generationDate"]=date("Ymd-His");
+        file_put_contents($fName, json_encode($recvArr,JSON_PRETTY_PRINT));
+//        echo json_encode([
+//            "success" => "1",
+//            "filename" => $fName
+//        ]);
+        echo $fName;
         die();
     } catch (Exception $e) {
         header("Bad Request", true, 400);
@@ -46,7 +49,7 @@ if (isset($_REQUEST["s"])) {
 </head>
 <body>
 <ul>
-    <li></li>
+    <li>Generation Date: <input type="text" disabled value="<?= $c["generationDate"] ?>"></li>
     <li>Last Operation:
         Chat: <label>
             <input type="checkbox" disabled <?= ($c["lastOperation"] === 1) ? "checked" : "" ?>/>

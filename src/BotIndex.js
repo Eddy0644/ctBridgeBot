@@ -153,7 +153,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/info") {
             tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-            const statusReport = generateInfo();
+            const statusReport = await generateInfo();
             await tgBotDo.SendMessage(statusReport, true, "HTML");
             const result = await tgbot.setMyCommands(Config.TGBotCommands);
             tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
@@ -211,9 +211,58 @@ async function onTGMsg(tgMsg) {
 
 }
 
-function generateInfo() {
+async function generateInfo() {
     const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-    return statusReport;
+    const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
+    let log = (await fs.promises.readFile(path)).toString();
+    const logText = log.substring(log.length - 2400, log.length);
+    const dtInfo = {
+        lastOperation: state.last ? state.last[0] : 0,
+        _last: state.last,
+        runningTime: process.uptime(),
+        logText: logText
+    };
+    const postData = JSON.stringify(dtInfo);
+    const options = {
+        hostname: secretConfig.statusReport[0],
+        port: 443,
+        path: secretConfig.statusReport[1] + '?s=create',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': postData.length
+        }
+    };
+    let url;
+    try {
+        const res = await new Promise((resolve, reject) => {
+            const req = require('https').request(options, (res) => {
+                let data = '';
+
+                res.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                res.on('end', () => {
+                    resolve(data);
+                });
+            });
+
+            req.on('error', (err) => {
+                reject(err);
+            });
+
+            req.write(postData);
+            req.end();
+        });
+
+        url = `https://${options.hostname}${options.path}?n=${res}`;
+        if (res.indexOf('<html') > -1) throw new Error("Upload error");
+    } catch (e) {
+        url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
+    }
+    return url;
+    // return statusReport;
 }
 
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
@@ -696,9 +745,9 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
     // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
-wxbot.start()
-    .then(() => wxLogger.info('开始登陆大而丑...'))
-    .catch((e) => wxLogger.error(e));
+// wxbot.start()
+//     .then(() => wxLogger.info('开始登陆大而丑...'))
+//     .catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 
