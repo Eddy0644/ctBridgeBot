@@ -220,6 +220,7 @@ async function generateInfo() {
     let log = (await fs.promises.readFile(path)).toString();
     const logText = log.substring(log.length - 2400, log.length);
     const dtInfo = {
+        status: 1,
         lastOperation: state.last ? state.last[0] : 0,
         _last: state.last,
         runningTime: process.uptime(),

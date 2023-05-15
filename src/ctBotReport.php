@@ -6,6 +6,7 @@ $c = [
     "logText" => "",
     "generationDate"=>""
 ];
+// echo "11111";
 if (isset($_REQUEST["s"])) {
     if ($_REQUEST["s"] === "create") try {
         $recvJson = file_get_contents("php://input");
@@ -21,20 +22,21 @@ if (isset($_REQUEST["s"])) {
         echo $fName;
         die();
     } catch (Exception $e) {
-        header("Bad Request", true, 400);
+        header("HTTP/1.1 400 Bad Request");
+        //header("400 Bad Request");
         print_r($e);
         die();
     }
     // no valid .php?s=_____
-    header("Bad Request", true, 400);
+    header("HTTP/1.1 400 Bad Request");
     die();
 } else if (isset($_REQUEST["n"])) {
     // read former saved JSON then output it.
     try {
         $readJson = file_get_contents($_REQUEST["n"]);
-        $c = json_decode($readJson);
+        $c = json_decode($readJson,true);
     } catch (Exception $e) {
-        header("Internal Error", true, 500);
+        header("500 Internal Error");
         die();
     }
 } else {
@@ -49,7 +51,9 @@ if (isset($_REQUEST["s"])) {
 </head>
 <body>
 <ul>
-    <li>Generation Date: <input type="text" disabled value="<?= $c["generationDate"] ?>"></li>
+    <li>Generation Date: <label>
+            <input type="text" disabled value="<?= $c["generationDate"] ?>">
+        </label></li>
     <li>Last Operation:
         Chat: <label>
             <input type="checkbox" disabled <?= ($c["lastOperation"] === 1) ? "checked" : "" ?>/>
@@ -63,7 +67,9 @@ if (isset($_REQUEST["s"])) {
         </details>
     </li>
     <li>
-        Running time in seconds: <input type="text" disabled value="<?= $c["runningTime"] ?>">
+        Running time in seconds: <label>
+            <input type="text" disabled value="<?= $c["runningTime"] ?>">
+        </label>
     </li>
     <li>
         <details open>
