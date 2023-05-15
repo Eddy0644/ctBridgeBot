@@ -71,6 +71,7 @@ async function onTGMsg(tgMsg) {
                 }
             }
             tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
+
         } else if (tgMsg.text === "/find") {
             let form = {
                 reply_markup: JSON.stringify({
@@ -87,6 +88,7 @@ async function onTGMsg(tgMsg) {
                 userPrompt1: tgMsg,
                 botPrompt1: tgMsg2,
             };
+
         } else if (tgMsg.text === "/keyboard") {
             let form = {
                 reply_markup: JSON.stringify({
@@ -97,10 +99,19 @@ async function onTGMsg(tgMsg) {
                 })
             };
             await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+
         } else if (tgMsg.text.indexOf("F$") === 0) {
-            tgLogger.trace(`Got an attempt to find [${tgMsg.text}] in WeChat.`);
             // Want to find somebody, and have inline parameters
-            await findSbInWechat(tgMsg.text.replace("F$", ""));
+            let findToken = tgMsg.text.replace("F$", "");
+            for (const pair of secretConfig.findReplaceList) {
+                if (findToken === pair[0]) {
+                    findToken = pair[1];
+                    break;
+                }
+            }
+            tgLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
+            await findSbInWechat(findToken);
+
         } else if (tgMsg.text === "/clear") {
             tgLogger.trace(`Cleared tgBot status by user operation.`);
             // state.lastOpt = null;
@@ -108,6 +119,7 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage(`Status Cleared.`, true, null, {
                 reply_markup: {}
             });
+
         } else if (tgMsg.text === "/slet") {
             const talker = state.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
@@ -121,6 +133,7 @@ async function onTGMsg(tgMsg) {
             };
             await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
             await tgBotDo.RevokeMessage(tgMsg.message_id);
+
         } else if (tgMsg.text.indexOf("/log") === 0) {
             const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
             let log = (await fs.promises.readFile(path)).toString();
@@ -129,6 +142,7 @@ async function onTGMsg(tgMsg) {
                 chars = parseInt(tgMsg.text.replace("/log ", ""));
             }
             await tgBotDo.SendMessage(`\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
+
         } else if (tgMsg.text === "/info") {
             tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
@@ -136,15 +150,18 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage(statusReport, true, "HTML");
             const result = await tgbot.setMyCommands(Config.TGBotCommands);
             tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
+
             // No valid COMMAND within msg
             if (state.last === {}) {
                 // Activate chat & env. set
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+
             } else if (state.last.s === STypes.FindMode) {
                 tgLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
@@ -163,6 +180,7 @@ async function onTGMsg(tgMsg) {
                     await tgBotDo.RevokeMessage(lastState.botPrompt1.message_id);
                     await tgBotDo.RevokeMessage(tgMsg.message_id);
                 }
+
             } else if (state.last.s === STypes.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
@@ -194,15 +212,15 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-    const file_path = './downloaded/' + (tgMsg.photo) ?
+    const file_path = './downloaded/' + ((tgMsg.photo) ?
         (`photoTG/${Math.random()}.png`) : (tgMsg.document ?
             (`fileTG/${tg_media.file_name}`) :
-            (`videoTG/${Math.random()}.mp4`));
+            (`videoTG/${Math.random()}.mp4`)));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
     await tgBotDo.SendChatAction(action);
-
+    tgLogger.trace(`file_path is ${file_path}.`);
     await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
     const packed = await FileBox.fromFile(file_path);
     await tgBotDo.SendChatAction("record_video");
