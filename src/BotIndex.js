@@ -6,7 +6,7 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
-const {wxLogger, tgLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
+const {wxLogger, tgLogger, ctLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
 
 let msgMappings = [];
 let state = {
@@ -72,11 +72,11 @@ async function onTGMsg(tgMsg) {
                         await mapPair[1].say(tgMsg.text);
                         await tgBotDo.SendChatAction("choose_sticker");
                     }
-                    tgLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
+                    ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                     return;
                 }
             }
-            tgLogger.debug(`Unable to send-back due to no match in msgMappings.`);
+            ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
 
         } else if (tgMsg.text === "/find") {
             let form = {
@@ -132,7 +132,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/slet") {
             const talker = state.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
-            tgLogger.trace(`forking lastExplicitTalker...`);
+            ctLogger.trace(`forking lastExplicitTalker...`);
             state.last = {
                 s: STypes.Chat,
                 target: state.lastExplicitTalker,
@@ -174,7 +174,7 @@ async function onTGMsg(tgMsg) {
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
 
             } else if (state.last.s === STypes.FindMode) {
-                tgLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
+                ctLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
                 for (const pair of secretConfig.findReplaceList) {
@@ -197,11 +197,11 @@ async function onTGMsg(tgMsg) {
                     // 对wx文件消息做出了确认
                     await tgBotDo.SendChatAction("typing");
                     await getFileFromWx(state.last.wxMsg);
-                    tgLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
+                    ctLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
                 } else {
                     // forward to last talker
                     await state.last.target.say(tgMsg.text);
-                    tgLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
+                    ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
                     await tgBotDo.SendChatAction("choose_sticker");
                 }
             } else {
@@ -291,7 +291,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const packed = await FileBox.fromFile(file_path);
     await tgBotDo.SendChatAction("record_video");
     await state.last.target.say(packed);
-    tgLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
+    ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
     await tgBotDo.SendChatAction("choose_sticker");
     return true;
 }
@@ -374,7 +374,7 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
         wxMsg: wxMsg || null,
         isFile: (wxMsg && wxMsg.filesize) || null
     };
-    tgLogger.trace(`Added mapping from TG msg #${tgMsg.message_id} to WX ${talker}`);
+    ctLogger.trace(`Added mapping from TG msg #${tgMsg.message_id} to WX ${talker}`);
 }
 
 // 监听对话
@@ -585,14 +585,14 @@ async function onWxMessage(msg) {
                         // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
                         // TODO 把此前的消息都存入state中，从而不再需要替换
                         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                        tgLogger.debug(`Delivered new message "${content}" from Room:${topic} into first message.`);
+                        ctLogger.debug(`Delivered new message "${content}" from Room:${topic} into first message.`);
                         return;
                     } else {
                         // 准备修改先前的消息，去除头部
                         const newString = `📬⛓️ [<b>${topic}</b>]\n📨${_.firstWord}\n📨[${name}] ${content}`;
                         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
                         _.firstWord = "";
-                        tgLogger.debug(`Delivered new message "${content}" from Room:${topic} into former message.`);
+                        ctLogger.debug(`Delivered new message "${content}" from Room:${topic} into former message.`);
                         return;
                     }
                 } else msg.preRoomUpdate = true;
@@ -631,7 +631,7 @@ async function onWxMessage(msg) {
                     // 准备修改先前的消息，去除头部
                     const newString = `${_.tgMsg.text}\n[${dayjs().format("H:mm:ss")}] ${content}`;
                     _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                    tgLogger.debug(`Delivered new message "${content}" from Person:${name} into former message.`);
+                    ctLogger.debug(`Delivered new message "${content}" from Person:${name} into former message.`);
                     return;
                 } else
                     msg.prePersonUpdate = true;

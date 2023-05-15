@@ -41,7 +41,7 @@ log4js.configure({
     categories: {
         "default": {appenders: ["dateLog"], level: "debug"},
         "con": {appenders: ["console"], level: "debug"},
-        "cy": {appenders: ["dateLog", "console"], level: "debug"},
+        "ct": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
         "wx": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
         "wxMsg": {appenders: ["wxMsgDetail_dateLog"], level: "info"},
         "tg": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
@@ -50,25 +50,19 @@ log4js.configure({
 
 module.exports = (param) => {
     if (param === "startup") log4js.getLogger("default").debug(`Program Starting...
-  ______             __       __            _______              __     
- /      \\           |  \\  _  |  \\          |       \\            |  \\    
-|  $$$$$$\\ __    __ | $$ / \\ | $$ __    __ | $$$$$$$\\  ______  _| $$_   
-| $$   \\$$|  \\  |  \\| $$/  $\\| $$|  \\  /  \\| $$__/ $$ /      \\|   $$ \\  
-| $$      | $$  | $$| $$  $$$\\ $$ \\$$\\/  $$| $$    $$|  $$$$$$\\\\$$$$$$  
-| $$   __ | $$  | $$| $$ $$\\$$\\$$  >$$  $$ | $$$$$$$\\| $$  | $$ | $$ __ 
-| $$__/  \\| $$__/ $$| $$$$  \\$$$$ /  $$$$\\ | $$__/ $$| $$__/ $$ | $$|  \\
- \\$$    $$ \\$$    $$| $$$    \\$$$|  $$ \\$$\\| $$    $$ \\$$    $$  \\$$  $$
-  \\$$$$$$  _\\$$$$$$$ \\$$      \\$$ \\$$   \\$$ \\$$$$$$$   \\$$$$$$    \\$$$$ 
-          |  \\__| $$                                                    
-           \\$$    $$                                                    
-            \\$$$$$$                                                     
+   ________  ____        __ 
+  / ____/ /_/ __ )____  / /_
+ / /   / __/ __  / __ \\/ __/
+/ /___/ /_/ /_/ / /_/ / /_  
+\\____/\\__/_____/\\____/\\__/  
+                                                                            
 `);
     // else return log4js.getLogger(param);
     else return {
         wxLogger: log4js.getLogger("wx"),
         tgLogger: log4js.getLogger("tg"),
         // conLogger: log4js.getLogger("con"),
-        // cyLogger: log4js.getLogger("cy"),
+        ctLogger: log4js.getLogger("ct"),
         wxMsgLogger: log4js.getLogger("wxMsg"),
 
         LogWxMsg: (msg, isMessageDropped) => {
