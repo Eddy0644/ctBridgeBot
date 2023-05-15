@@ -6,7 +6,6 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
-// const ffmpeg = require('fluent-ffmpeg');
 const {wxLogger, tgLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
 
 let msgMappings = [];
@@ -22,6 +21,12 @@ let state = {
         tgMsg: null,
         name: "",
     },
+    // store messages which has no need to deliver
+    poolDropped: [],
+    // store TG messages which need to be revoked after a period of time
+    poolToDelete: [],
+    // store TG messages which failed to deliver due to network problems or so.
+    poolFailing: [],
 };
 
 const {tgbot, tgBotDo} = require('./tgbot-pre');
@@ -54,7 +59,7 @@ async function onTGMsg(tgMsg) {
         // Non-text messages must be filtered ahead of them
         // tgMsg.text = "";
         if (tgMsg.reply_to_message) {
-            tgLogger.trace(`This message has reply flag, searching mapping...`);
+            tgLogger.trace(`This message has reply flag, searching for mapping...`);
             for (const mapPair of msgMappings) {
                 if (mapPair[0] === tgMsg.reply_to_message.message_id) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
@@ -70,7 +75,7 @@ async function onTGMsg(tgMsg) {
                     return;
                 }
             }
-            tgLogger.debug(`Unable to send-back due to no match in msgReflection.`);
+            tgLogger.debug(`Unable to send-back due to no match in msgMappings.`);
 
         } else if (tgMsg.text === "/find") {
             let form = {
@@ -109,7 +114,7 @@ async function onTGMsg(tgMsg) {
                     break;
                 }
             }
-            tgLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
+            wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
             await findSbInWechat(findToken);
 
         } else if (tgMsg.text === "/clear") {
@@ -120,6 +125,7 @@ async function onTGMsg(tgMsg) {
                 reply_markup: {}
             });
 
+            // Set last explicit talker as last talker.
         } else if (tgMsg.text === "/slet") {
             const talker = state.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
@@ -134,6 +140,7 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
             await tgBotDo.RevokeMessage(tgMsg.message_id);
 
+            // Get a copy of program verbose log of 1000 chars by default.
         } else if (tgMsg.text.indexOf("/log") === 0) {
             const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
             let log = (await fs.promises.readFile(path)).toString();
@@ -146,11 +153,12 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/info") {
             tgLogger.trace(`Sent out tgBot status by user operation.`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-            const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+            const statusReport = generateInfo();
             await tgBotDo.SendMessage(statusReport, true, "HTML");
             const result = await tgbot.setMyCommands(Config.TGBotCommands);
             tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
 
+            // Get a persistent versatile quick keyboard.
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
@@ -203,6 +211,11 @@ async function onTGMsg(tgMsg) {
 
 }
 
+function generateInfo() {
+    const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+    return statusReport;
+}
+
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
     if (state.last.s !== STypes.Chat) {
         await tgBotDo.SendMessage("🛠 Sorry, but media sending without last chatter is not implemented.", true);
@@ -236,10 +249,12 @@ async function findSbInWechat(token) {
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
+        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
         const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
             true, "HTML");
         await addToMsgMappings(tgMsg.message_id, wxFinded1);
     } else if (wxFinded2) {
+        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
         const tgMsg = await tgBotDo.SendMessage(`🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
             true, "HTML");
         await addToMsgMappings(tgMsg.message_id, wxFinded2);
@@ -517,7 +532,7 @@ async function onWxMessage(msg) {
                         // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
                         // TODO 把此前的消息都存入state中，从而不再需要替换
                         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                        tgLogger.debug(`Delivered new message "${content}" from ${topic} into first message.`);
+                        tgLogger.debug(`Delivered new message "${content}" from Room:${topic} into first message.`);
                         return;
                     } else {
                         // 准备修改先前的消息，去除头部
