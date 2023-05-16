@@ -163,8 +163,9 @@ async function onTGMsg(tgMsg) {
             await tgBotDo.SendMessage(`\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
 
         } else if (tgMsg.text === "/info") {
-            tgLogger.trace(`Sent out tgBot status by user operation.`);
+            tgLogger.debug(`Generating tgBot status by user operation...`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+            await tgBotDo.SendChatAction("typing");
             const statusReport = await generateInfo();
             await tgBotDo.SendMessage(statusReport, true, null);
             const result = await tgbot.setMyCommands(Config.TGBotCommands);
@@ -609,7 +610,7 @@ async function onWxMessage(msg) {
                     }
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
-                wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}`);
+                wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
             }
             // 系统消息如拍一拍
             if (name === topic) {
@@ -653,7 +654,7 @@ async function onWxMessage(msg) {
                 } else
                     msg.prePersonNeedUpdate = true;
             } catch (e) {
-                wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}`);
+                wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.prePerson)}`);
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
@@ -671,6 +672,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     const topic = isRoom ? await room.topic() : "";
     const template = isRoom ? `📬[<b>${name}</b>@${topic}]` : `📨[<b>${alias}</b>]`;
     let tgMsg, retrySend = 1;
+    // TG does not support <br/> in HTML parsed text, so filtering it.
+    content = content.replaceAll("<br/>", "\n");
     while (retrySend > 0) {
         if (msg.DType === DTypes.CustomEmotion) {
             // 自定义表情, 已添加读取错误处理
