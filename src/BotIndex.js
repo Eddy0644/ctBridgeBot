@@ -127,7 +127,8 @@ async function onTGMsg(tgMsg) {
             state.prePerson = {
                 tgMsg: null,
                 name: "",
-            };state.preRoom = {
+            };
+            state.preRoom = {
                 firstWord: "",
                 tgMsg: null,
                 name: "",
@@ -229,7 +230,7 @@ async function generateInfo() {
     const logText = log.substring(log.length - 3600, log.length);
     const dtInfo = {
         status: true,
-        lastOperation: state.last ? state.last[0] : 0,
+        lastOperation: state.last ? state.last.s : 0,
         _last: state.last,
         runningTime: process.uptime(),
         logText: logText
@@ -415,7 +416,6 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is {{ ${recalledMessage} }}`);
-        // await tgbot.sendMessage(config.target_TG_ID, `Message: ${recalledMessage} has been recalled.`);
         await tgBotDo.SendMessage(`Message: {{ ${recalledMessage} }} has been recalled.`, true);
         return;
     }
@@ -561,6 +561,7 @@ async function onWxMessage(msg) {
     if (msg.DType > 0) {
         if (content.includes("[收到了一个表情，请在手机上查看]")) {
             msgDef.isSilent = true;
+            wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
         if (room) {
             // 是群消息 - - - - - - - -
@@ -570,6 +571,7 @@ async function onWxMessage(msg) {
             if (name === topic) {
                 if (content.includes("red packet") || content.includes("红包")) {
                     await tgBotDo.SendMessage(`🧧[in ${topic}] ${content}`, 0);
+                    tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
                     return;
                 }
             }
@@ -613,6 +615,7 @@ async function onWxMessage(msg) {
                 wxLogger.debug(`群聊[in ${topic}] ${content}`);
                 // TODO: put such message into Pool
                 await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
+                tgLogger.debug(`Delivered a room msg in advance as it is system msg.`);
                 return;
             }
             const deliverResult = await deliverWxToTG(true, msg, content);
@@ -629,6 +632,10 @@ async function onWxMessage(msg) {
                     wxLogger.debug(`来自此人[in ${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
                 }
+            }
+            if (content.includes("tickled")) {
+                wxLogger.trace(`Updated msgDef to Silent by keyword 'tickled'.`);
+                msgDef.isSilent = true;
             }
             try {
                 const _ = state.prePerson;

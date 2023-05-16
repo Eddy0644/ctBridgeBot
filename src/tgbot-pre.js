@@ -8,7 +8,7 @@ const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken,
-        {polling: {interval: 1000}, request: {proxy: require("../config/proxy")},});
+        {polling: {interval: 1488}, request: {proxy: require("../config/proxy")},});
     tgbot.deleteWebHook();
 } else {
     tgbot = new TelegramBot(secretConfig.botToken, {
@@ -18,7 +18,8 @@ if (isPolling) {
             healthEndpoint: "/health",
             key: "config/srv.pem",
             cert: "config/cli.pem",
-        }
+        },
+        request: {proxy: require("../config/proxy")}
     });
     tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`, {
         drop_pending_updates: true
