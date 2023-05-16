@@ -26,10 +26,18 @@ let state = {
     poolDropped: [],
     // store TG messages which need to be revoked after a period of time
     poolToDelete: [],
+    // {tgMsg:null,toDelTs:0}
     // store TG messages which failed to deliver due to network problems or so.
     poolFailing: [],
 };
-
+state.poolToDelete.add = (tgMsg, delay) => {
+    if (tgMsg !== null) {
+        tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${delay})sec.`);
+        state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + delay});
+    } else {
+        tgLogger.debug(`Attempting to add message to poolToDelete with timer (${delay})sec, but got null Object.`);
+    }
+};
 const {tgbot, tgBotDo} = require('./tgbot-pre');
 
 tgbot.on('message', onTGMsg);
@@ -104,7 +112,8 @@ async function onTGMsg(tgMsg) {
                     one_time_keyboard: false
                 })
             };
-            await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+            const tgMsg = await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+            state.poolToDelete.add(tgMsg, 10);
         } else if (tgMsg.text === "/lock") {
             state.lockTarget = state.lockTarget ? 0 : 1;
             await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
@@ -391,7 +400,8 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg) {
 // 监听对话
 async function onWxMessage(msg) {
     // 按照距今时间来排除wechaty重启时的重复消息
-    let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 120);
+    // sometimes there are delayed messages `by wechaty` for 150s age or more, so altering this.
+    let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     LogWxMsg(msg, isMessageDropped);
     if (isMessageDropped) return;
@@ -776,3 +786,21 @@ wxbot.start()
 
 require('./common')("startup");
 
+const timerData = setInterval(async () => {
+    try {
+        for (const itemId in state.poolToDelete) {
+            const item = state.poolToDelete[itemId];
+            if (dayjs().unix() > item.toDelTs) {
+                // delete the element first to avoid the same ITEM triggers function again if interrupted by errors.
+                state.poolToDelete.splice(itemId, 1);
+                tgLogger.debug(`Attempting to remove expired messages driven by its timer.`);
+                await tgBotDo.RevokeMessage(item.tgMsg.message_id);
+            }
+        }
+    } catch (e) {
+        ctLogger.warn(`An exception happened within timer function with reset cycles left:(${timerDataCount}):\n\t${e.toString()}`);
+        timerDataCount--;
+        if (timerDataCount < 0) clearInterval(timerData);
+    }
+}, 5000);
+let timerDataCount = 6;
