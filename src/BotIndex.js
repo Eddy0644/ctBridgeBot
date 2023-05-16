@@ -373,10 +373,10 @@ async function downloadFileWx(url, pathName, cookieStr) {
     });
 }
 
-async function addToMsgMappings(tgMsg, talker, wxMsg) {
+async function addToMsgMappings(tgMsgId, talker, wxMsg) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
-    msgMappings.push([tgMsg, talker, name, wxMsg]);
+    msgMappings.push([tgMsgId, talker, name, wxMsg]);
     if (state.lockTarget === 0) state.last = {
         s: STypes.Chat,
         target: talker,
@@ -384,7 +384,7 @@ async function addToMsgMappings(tgMsg, talker, wxMsg) {
         wxMsg: wxMsg || null,
         isFile: (wxMsg && wxMsg.filesize) || null
     };
-    ctLogger.trace(`Added mapping from TG msg #${tgMsg.message_id} to WX ${talker}`);
+    ctLogger.trace(`Added mapping from TG msg #${tgMsgId} to WX ${talker}`);
 }
 
 // 监听对话
@@ -518,6 +518,7 @@ async function onWxMessage(msg) {
                 msg.filesize = parseInt(regResult[1]);
                 msgDef.isSilent = false;
                 content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+                msg.toDownloadPath = `./downloaded/file/${dayjs().unix()}-${name}-${msg.payload.filename}`;
                 if (msg.filesize < 50) {
                     // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
                     // 比如块级链接和服务消息
@@ -587,7 +588,7 @@ async function onWxMessage(msg) {
                 const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
                 if (_.topic === topic && nowDate - lastDate < 60 && msg.DType === DTypes.Text) {
-                    msg.preRoomUpdate = false;
+                    msg.preRoomNeedUpdate = false;
                     // from same group, ready to merge
                     // noinspection JSObjectNullOrUndefined
                     if (_.firstWord === "") {
@@ -606,7 +607,7 @@ async function onWxMessage(msg) {
                         ctLogger.debug(`Delivered new message "${content}" from Room:${topic} into former message.`);
                         return;
                     }
-                } else msg.preRoomUpdate = true;
+                } else msg.preRoomNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}`);
             }
@@ -642,7 +643,7 @@ async function onWxMessage(msg) {
                 const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
                 if (_.name === name && nowDate - lastDate < 15 && msg.DType === DTypes.Text) {
-                    msg.prePersonUpdate = false;
+                    msg.prePersonNeedUpdate = false;
                     // from same person, ready to merge
                     // 准备修改先前的消息，去除头部
                     const newString = `${_.tgMsg.text}\n[${dayjs().format("H:mm:ss")}] ${content}`;
@@ -650,7 +651,7 @@ async function onWxMessage(msg) {
                     ctLogger.debug(`Delivered new message "${content}" from Person:${name} into former message.`);
                     return;
                 } else
-                    msg.prePersonUpdate = true;
+                    msg.prePersonNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}`);
             }
@@ -708,12 +709,12 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             // Plain text or not classified
             wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
             tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
-            if (isRoom && msg.preRoomUpdate) {
+            if (isRoom && msg.preRoomNeedUpdate) {
                 state.preRoom.topic = topic;
                 state.preRoom.tgMsg = tgMsg;
                 state.preRoom.firstWord = `[${name}] ${content}`;
             }
-            if (!isRoom && msg.prePersonUpdate) {
+            if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson.name = name;
                 state.prePerson.tgMsg = tgMsg;
             }
@@ -733,11 +734,12 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
 async function getFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
-        let filePath = `${msg.payload.filename}`;
-        while (fs.existsSync(filePath)) {
-            filePath = "@" + filePath;
-        }
-        filePath = `./downloaded/file/` + filePath;
+        // let filePath = `${msg.payload.filename}`;
+        // while (fs.existsSync(filePath)) {
+        //     filePath = "@" + filePath;
+        // }
+        // filePath = `./downloaded/file/` + filePath;
+        const filePath = msg.toDownloadPath;
         const wechatyMemory = JSON.parse((await fs.promises.readFile("ctbridgebot.memory-card.json")).toString());
         const cookieStr = wechatyMemory["\rpuppet\nPUPPET_WECHAT"].map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
         await downloadFileWx(fBox.remoteUrl, filePath, cookieStr);
