@@ -243,7 +243,8 @@ async function generateInfo() {
         lastOperation: state.last ? state.last.s : 0,
         _last: state.last,
         runningTime: process.uptime(),
-        logText: logText
+        poolToDelete: state.poolToDelete,
+        logText: logText,
     };
     const postData = JSON.stringify(dtInfo);
     const options = {

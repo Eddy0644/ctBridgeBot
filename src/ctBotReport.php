@@ -4,6 +4,7 @@ $c = [
     "_last" => [],
     "runningTime" => 0,
     "logText" => "",
+    "poolToDelete" => [],
     "generationDate" => ""
 ];
 // echo "11111";
@@ -74,6 +75,12 @@ if (isset($_REQUEST["s"])) {
         </label>
     </li>
     <li>
+        <details>
+            <summary>poolToDelete Detail</summary>
+            <pre><?= json_encode($c["poolToDelete"], JSON_PRETTY_PRINT) ?></pre>
+        </details>
+    </li>
+    <li>
         <details open>
             <summary>Last 3600 chars of log</summary>
             <pre><?= $c["logText"] ?></pre>
@@ -83,7 +90,19 @@ if (isset($_REQUEST["s"])) {
 </body>
 <style>
     pre {
+        margin: 5px;
+        padding: 5px;
+    }
 
+    details {
+        background-color: #ede8e8;
+        border: dashed 3px #9f9fea;
+    }
+
+    summary {
+        background-color: white;
+        border-bottom: dashed 1px black;
+        padding: 5px;
     }
 </style>
 </html>
