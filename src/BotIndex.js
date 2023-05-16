@@ -796,7 +796,9 @@ require('./common')("startup");
 const timerData = setInterval(async () => {
     try {
         for (const itemId in state.poolToDelete) {
+            if (Number.isNaN(parseInt(itemId))) continue;
             const item = state.poolToDelete[parseInt(itemId)];
+            // ctLogger.debug(`${itemId}:${item}`);
             if (dayjs().unix() > item.toDelTs) {
                 // delete the element first to avoid the same ITEM triggers function again if interrupted by errors.
                 state.poolToDelete.splice(parseInt(itemId), 1);
@@ -805,7 +807,7 @@ const timerData = setInterval(async () => {
             }
         }
     } catch (e) {
-        ctLogger.warn(`An exception happened within timer function with reset cycles left:(${timerDataCount}):\n\t${e.toString()}`);
+        ctLogger.info(`An exception happened within timer function with x${timerDataCount} reset cycles left:\n\t${e.toString()}`);
         timerDataCount--;
         if (timerDataCount < 0) clearInterval(timerData);
     }
