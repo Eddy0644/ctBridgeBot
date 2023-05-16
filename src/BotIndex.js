@@ -30,7 +30,7 @@ let state = {
     // store TG messages which failed to deliver due to network problems or so.
     poolFailing: [],
 };
-state.poolToDelete.add = (tgMsg, delay) => {
+state.poolToDelete.add = function (tgMsg, delay) {
     if (tgMsg !== null) {
         tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${delay})sec.`);
         state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + delay});
@@ -113,7 +113,7 @@ async function onTGMsg(tgMsg) {
                 })
             };
             const tgMsg = await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
-            state.poolToDelete.add(tgMsg, 10);
+            state.poolToDelete.add(tgMsg, 6);
         } else if (tgMsg.text === "/lock") {
             state.lockTarget = state.lockTarget ? 0 : 1;
             await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
@@ -130,24 +130,11 @@ async function onTGMsg(tgMsg) {
             await findSbInWechat(findToken);
 
         } else if (tgMsg.text === "/clear") {
-            tgLogger.trace(`Cleared tgBot status by user operation.`);
-            // state.lastOpt = null;
-            state.last = {};
-            state.prePerson = {
-                tgMsg: null,
-                name: "",
-            };
-            state.preRoom = {
-                firstWord: "",
-                tgMsg: null,
-                name: "",
-            };
-            await tgBotDo.SendMessage(`<Last> & <preMessage> status Cleared.`, true, null, {
-                reply_markup: {}
-            });
+            tgLogger.trace(`Invoking softReboot by user operation...`);
+            await softReboot();
 
-            // Set last explicit talker as last talker.
         } else if (tgMsg.text === "/slet") {
+            // Set last explicit talker as last talker.
             const talker = state.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
             ctLogger.trace(`forking lastExplicitTalker...`);
@@ -231,6 +218,25 @@ async function onTGMsg(tgMsg) {
         tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
     }
 
+}
+
+async function softReboot() {
+    // state.lastOpt = null;
+    state.last = {};
+    state.prePerson = {
+        tgMsg: null,
+        name: "",
+    };
+    state.preRoom = {
+        firstWord: "",
+        tgMsg: null,
+        name: "",
+    };
+    timerDataCount = 6;
+    const tgMsg = await tgBotDo.SendMessage(`Soft Reboot Successful.`, true, null, {
+        reply_markup: {}
+    });
+    state.poolToDelete.add(tgMsg, 6);
 }
 
 async function generateInfo() {
@@ -790,10 +796,10 @@ require('./common')("startup");
 const timerData = setInterval(async () => {
     try {
         for (const itemId in state.poolToDelete) {
-            const item = state.poolToDelete[itemId];
+            const item = state.poolToDelete[parseInt(itemId)];
             if (dayjs().unix() > item.toDelTs) {
                 // delete the element first to avoid the same ITEM triggers function again if interrupted by errors.
-                state.poolToDelete.splice(itemId, 1);
+                state.poolToDelete.splice(parseInt(itemId), 1);
                 tgLogger.debug(`Attempting to remove expired messages driven by its timer.`);
                 await tgBotDo.RevokeMessage(item.tgMsg.message_id);
             }
