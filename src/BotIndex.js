@@ -401,7 +401,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg) {
         wxMsg: wxMsg || null,
         isFile: (wxMsg && wxMsg.filesize) || null
     };
-    ctLogger.trace(`Added mapping from TG msg #${tgMsgId} to WX ${talker}`);
+    ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
 }
 
 // 监听对话
@@ -698,6 +698,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         if (msg.DType === DTypes.CustomEmotion) {
             // 自定义表情, 已添加读取错误处理
             try {
+                //TODO add CuEmo format conversion to let all msg in GIF state.
                 const stream = fs.createReadStream(msg.downloadedPath);
                 tgMsg = await tgBotDo.SendAnimation(`${template} [CustomEmotion]`, stream, true, true);
             } catch (e) {
