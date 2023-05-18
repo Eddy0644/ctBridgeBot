@@ -131,7 +131,7 @@ async function onTGMsg(tgMsg) {
 
         } else if (tgMsg.text === "/clear") {
             tgLogger.trace(`Invoking softReboot by user operation...`);
-            await softReboot();
+            await softReboot("User triggered.");
 
         } else if (tgMsg.text === "/slet") {
             // Set last explicit talker as last talker.
@@ -220,7 +220,8 @@ async function onTGMsg(tgMsg) {
 
 }
 
-async function softReboot() {
+async function softReboot(reason) {
+    const userDo = (reason === "User triggered.") || (reason === "");
     // state.lastOpt = null;
     state.last = {};
     state.prePerson = {
@@ -233,10 +234,11 @@ async function softReboot() {
         name: "",
     };
     timerDataCount = 6;
-    const tgMsg = await tgBotDo.SendMessage(`Soft Reboot Successful.`, true, null, {
+    msgMergeFailCount = 6;
+    const tgMsg = await tgBotDo.SendMessage(`Soft Reboot Successful.\nReason: <code>${reason}</code>`, userDo, "HTML", {
         reply_markup: {}
     });
-    state.poolToDelete.add(tgMsg, 6);
+    state.poolToDelete.add(tgMsg, userDo ? 6 : 25);
 }
 
 async function generateInfo() {
@@ -631,6 +633,8 @@ async function onWxMessage(msg) {
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
+                msgMergeFailCount--;
+                if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             // 系统消息如拍一拍
             if (name === topic) {
@@ -675,6 +679,8 @@ async function onWxMessage(msg) {
                     msg.prePersonNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.prePerson)}`);
+                msgMergeFailCount--;
+                if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
@@ -817,3 +823,4 @@ const timerData = setInterval(async () => {
     }
 }, 5000);
 let timerDataCount = 6;
+let msgMergeFailCount = 6;
