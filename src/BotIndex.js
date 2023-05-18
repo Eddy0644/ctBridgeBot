@@ -537,12 +537,15 @@ async function onWxMessage(msg) {
                 msgDef.isSilent = false;
                 content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
                 msg.toDownloadPath = `./downloaded/file/${dayjs().unix()}-${name}-${msg.payload.filename}`;
-                if (msg.filesize < 50) {
+                if (msg.filesize === 0) {
+                    wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
+                    return;
+                } else if (msg.filesize < 50) {
                     // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
                     // 比如块级链接和服务消息
                     msg.autoDownload = false;
                     msgDef.isSilent = true;
-                    content += `Too small, so it maybe not a valid file.`
+                    content += `Too small, so it maybe not a valid file. Check DT log for detail.`
                     wxLogger.info(`Got a very-small wx file here, please check manually.Sender:{${alias}`);
                 } else if (msg.filesize < Config.wxAutoDownloadThreshold) {
                     msg.autoDownload = true;
