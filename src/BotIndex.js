@@ -606,7 +606,7 @@ async function onWxMessage(msg) {
             }
             try {
                 const _ = state.preRoom;
-                const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+                const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
                 if (_.topic === topic && nowDate - lastDate < 60 && msg.DType === DTypes.Text) {
                     msg.preRoomNeedUpdate = false;
@@ -661,7 +661,7 @@ async function onWxMessage(msg) {
             }
             try {
                 const _ = state.prePerson;
-                const lastDate = (_.tgMsg !== null) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+                const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
                 if (_.name === name && nowDate - lastDate < 15 && msg.DType === DTypes.Text) {
                     msg.prePersonNeedUpdate = false;
