@@ -2,8 +2,6 @@ const secretConfig = require('../config/secret');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger} = require('./common')();
-// const tgbot = new TelegramBot(secretConfig.botToken,
-//     {polling: {interval: 1000}, request: {proxy: require("./config/proxy")},});
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 let tgbot;
 if (isPolling) {

@@ -76,7 +76,7 @@ async function onTGMsg(tgMsg) {
                         await getFileFromWx(mapPair[3]);
                         await tgBotDo.SendChatAction("upload_document");
                     } else {
-                        state.lastExplicitTalker = await mapPair[1].from();
+                        state.lastExplicitTalker = mapPair[1];
                         await mapPair[1].say(tgMsg.text);
                         await tgBotDo.SendChatAction("choose_sticker");
                     }
@@ -706,10 +706,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             try {
                 //TODO add CuEmo format conversion to let all msg in GIF state.
                 const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotDo.SendAnimation(`${template} [CustomEmotion]`, stream, true, true);
+                tgMsg = await tgBotDo.SendAnimation(`${template} 👆`, stream, true, true);
             } catch (e) {
                 wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Couldn't send)`, true);
+                tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Send Failure)`, true);
             }
         } else if (msg.DType === DTypes.Audio) {
             // 语音
