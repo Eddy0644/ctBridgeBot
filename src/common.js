@@ -135,6 +135,28 @@ module.exports = (param) => {
                     const nowDate = dayjs().unix();
                     return (nowDate - targetTS < maxDelay);
                 }
+            },
+            uploadFileToUpyun: async function () {
+                return new Promise((resolve, reject) => {
+                    const fileStream = fs.createReadStream('a.webp');
+
+                    const req = https.request(options, (res) => {
+                        if (res.statusCode === 200) {
+                            resolve('File uploaded successfully.');
+                        } else {
+                            reject('File upload failed.');
+                        }
+                    });
+
+                    req.on('error', (error) => {
+                        reject('An error occurred during the request: ' + error);
+                    });
+
+                    fileStream.pipe(req);
+                    fileStream.on('end', () => {
+                        req.end();
+                    });
+                });
             }
         }
     }
