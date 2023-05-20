@@ -316,7 +316,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const file_path = './downloaded/' + (
         (tgMsg.photo) ? (`photoTG/${Math.random()}.png`) :
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-        (tgMsg.sticker ? (`stickerTG/${Math.random()}.jpg`) :
+        (tgMsg.sticker ? (`stickerTG/${Math.random()}.webp`) :
             (`videoTG/${Math.random()}.mp4`))));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
