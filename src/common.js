@@ -95,6 +95,7 @@ module.exports = (param) => {
                 {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
                 {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
                 {command: '/lock', description: 'Lock the target talker to avoid being interrupted.'},
+                {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                 // Add more commands as needed
             ],
             placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,

@@ -68,6 +68,14 @@ async function onTGMsg(tgMsg) {
         // Non-text messages must be filtered ahead of them
         // tgMsg.text = "";
         if (tgMsg.reply_to_message) {
+            if (tgMsg.text === "/spoiler") {
+                const orig = tgMsg.reply_to_message;
+                if (orig.photo) {
+                    const file_id = orig.photo[orig.photo.length - 1].file_id;
+                    await tgBotDo.EditMessageMedia(file_id, orig, true);
+                }
+                return;
+            }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             for (const mapPair of msgMappings) {
                 if (mapPair[0] === tgMsg.reply_to_message.message_id) {

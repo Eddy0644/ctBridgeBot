@@ -80,6 +80,22 @@ module.exports = {
             };
             return await tgbot.editMessageText(text, form).catch((e) => tgLogger.error(e.toString()));
         },
+        EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false) => {
+            // await delay(100);
+            let form = {
+                chat_id: secretConfig.target_TG_ID,
+                message_id: formerMsg.message_id,
+                parse_mode: "HTML",
+
+            };
+            return await tgbot.editMessageMedia({
+                type: "photo",
+                media: file_id,
+                has_spoiler: hasSpoiler,
+                parse_mode: "HTML",
+                caption: formerMsg.caption
+            }, form).catch((e) => tgLogger.error(e.toString()));
+        },
         SendAudio: async (msg, path, isSilent = false) => {
             await delay(100);
             let form = {
