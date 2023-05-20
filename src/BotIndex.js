@@ -61,6 +61,10 @@ async function onTGMsg(tgMsg) {
             await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
             return;
         }
+        if (tgMsg.sticker) {
+            await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+            return;
+        }
         if (tgMsg.document) {
             await deliverTGToWx(tgMsg, tgMsg.document, "document");
             return;
@@ -309,10 +313,11 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-    const file_path = './downloaded/' + ((tgMsg.photo) ?
-        (`photoTG/${Math.random()}.png`) : (tgMsg.document ?
-            (`fileTG/${tg_media.file_name}`) :
-            (`videoTG/${Math.random()}.mp4`)));
+    const file_path = './downloaded/' + (
+        (tgMsg.photo) ? (`photoTG/${Math.random()}.png`) :
+        (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
+        (tgMsg.sticker ? (`stickerTG/${Math.random()}.jpg`) :
+            (`videoTG/${Math.random()}.mp4`))));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
