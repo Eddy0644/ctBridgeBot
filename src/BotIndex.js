@@ -6,7 +6,7 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
-const {wxLogger, tgLogger, ctLogger, LogWxMsg, Config, STypes, downloadFileHttp} = require('./common')();
+const {wxLogger, tgLogger, ctLogger, LogWxMsg, Config, STypes, downloadFileHttp, processor} = require('./common')();
 
 let msgMappings = [];
 let state = {
@@ -615,10 +615,8 @@ async function onWxMessage(msg) {
                 }
             }
             try {
-                const _ = state.preRoom;
-                const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
-                const nowDate = dayjs().unix();
-                if (_.topic === topic && nowDate - lastDate < 60 && msg.DType === DTypes.Text) {
+                if (processor.isPreRoomValid(state.preRoom, topic) && msg.DType === DTypes.Text) {
+                    const _ = state.preRoom;
                     msg.preRoomNeedUpdate = false;
                     // from same group, ready to merge
                     // noinspection JSObjectNullOrUndefined
