@@ -130,6 +130,10 @@ module.exports = (param) => {
                         log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
                         return false;
                     }
+                },
+                isTimeValid: function (targetTS, maxDelay) {
+                    const nowDate = dayjs().unix();
+                    return (nowDate - targetTS < maxDelay);
                 }
             }
         }

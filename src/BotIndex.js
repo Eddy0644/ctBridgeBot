@@ -22,6 +22,10 @@ let state = {
         tgMsg: null,
         name: "",
     },
+    lastEmotion: {
+        md5: "",
+        ts: 0
+    },
     // store messages which has no need to deliver
     poolDropped: [],
     // store TG messages which need to be revoked after a period of time
@@ -461,6 +465,19 @@ async function onWxMessage(msg) {
         // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
         const fileExt = ".gif";
         const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+        let filtered = false;
+        if (processor.isTimeValid(state.lastEmotion.ts, 10) && md5 === state.lastEmotion.md5) {
+            // Got duplicate and continuous Sticker, skipping and CONDEMN that!
+            wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
+            //TODO add here to undelivered pool too!
+            filtered = true;
+        }
+        // Despite match or not, update state.lastEmotion
+        state.lastEmotion = {
+            md5: md5,
+            ts: dayjs().unix()
+        }
+        if (filtered) return;
         if (!fs.existsSync(cEPath)) {
             if (await downloadFileHttp(emotionHref, cEPath)) {
                 // downloadFile_old(emotionHref, path + ".backup.gif");
