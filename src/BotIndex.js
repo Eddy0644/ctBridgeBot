@@ -264,7 +264,7 @@ async function generateInfo() {
         _last: state.last,
         runningTime: process.uptime(),
         poolToDelete: state.poolToDelete,
-        logText: logText,
+        logText: logText.replaceAll(`<img class="qqemoji`,`&lt;img class="qqemoji`),
     };
     const postData = JSON.stringify(dtInfo);
     const options = {
@@ -282,19 +282,10 @@ async function generateInfo() {
         const res = await new Promise((resolve, reject) => {
             const req = require('https').request(options, (res) => {
                 let data = '';
-
-                res.on('data', (chunk) => {
-                    data += chunk;
-                });
-
-                res.on('end', () => {
-                    resolve(data);
-                });
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => resolve(data));
             });
-
-            req.on('error', (err) => {
-                reject(err);
-            });
+            req.on('error', (err) => reject(err));
 
             req.write(postData);
             req.end();
@@ -307,7 +298,6 @@ async function generateInfo() {
         url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
     }
     return url;
-    // return statusReport;
 }
 
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
@@ -563,7 +553,7 @@ async function onWxMessage(msg) {
                 msg.filesize = parseInt(regResult[1]);
                 msgDef.isSilent = false;
                 content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                msg.toDownloadPath = `./downloaded/file/${dayjs().unix()}-${name}-${msg.payload.filename}`;
+                msg.toDownloadPath = `./downloaded/file/${dayjs().unix()}-${msg.payload.filename}`;
                 if (msg.filesize === 0) {
                     wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
                     return;
