@@ -65,6 +65,7 @@ tgbot.on('webhook_error', async (e) => {
 async function onTGMsg(tgMsg) {
     //Update: added choose_sticker chatAction after sending message back successfully.
     try {
+        // const a= await uploadFileToUpyun("0.4669193503887734.webp", secretConfig.upyun);
         if (process.uptime() < 10) return;
 
         if (tgMsg.photo) {
@@ -826,9 +827,9 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
     // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
-wxbot.start()
-    .then(() => wxLogger.info('开始登陆大而丑...'))
-    .catch((e) => wxLogger.error(e));
+// wxbot.start()
+//     .then(() => wxLogger.info('开始登陆大而丑...'))
+//     .catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 

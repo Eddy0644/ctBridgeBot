@@ -3,6 +3,7 @@ const fs = require("fs");
 require("https-proxy-agent");
 const dayjs = require("dayjs");
 const https = require("https");
+const crypto = require('crypto');
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "[%d{yy/MM/dd hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
 log4js.configure({
@@ -140,28 +141,29 @@ module.exports = (param) => {
             },
             uploadFileToUpyun: async (filename, options) => {
                 return new Promise(async (resolve, reject) => {
-                    const fileStream = fs.createReadStream(filename);
-                    const {password, filePathPrefix, operatorName, urlPrefix} = options;
+                    const {password, webFilePathPrefix, operatorName, urlPrefix} = options;
                     const generateAPIKey = (password) => crypto.createHash('md5').update(password).digest('hex');
-
                     const generateSignature = (apiKey, signatureData) => {
+
                         const hmac = crypto.createHmac('sha1', apiKey);
                         hmac.update(signatureData);
                         return hmac.digest('base64');
                     };
-                    const getFileContentMD5 = async (filePath) => {
-                        const fileContent = await fs.promises.readFile(filePath);
-                        return crypto.createHash('md5').update(fileContent).digest('base64');
+                    const getFileContentMD5 = async (filePath2) => {
+                        const fileContent = fs.readFileSync(filePath2);
+                        return crypto.createHash('md5').update(fileContent).digest('hex');
                     };
                     const apiKey = generateAPIKey(password);
                     const method = 'PUT';
                     const date = new Date().toUTCString(); // Generate UTC timestamp
-                    const filePath = `${filePathPrefix}/${filename}`;
-                    const contentMD5 = await getFileContentMD5(filename);
+                    const filePathPrefix = `./downloaded/stickerTG/`;
+                    const filePath = `${webFilePathPrefix}/${filename}`;
+                    const fileStream = fs.createReadStream(`${filePathPrefix}${filename}`);
+                    const contentMD5 = await getFileContentMD5(`${filePathPrefix}${filename}`);
                     const signatureData = `${method}&${filePath}&${date}&${contentMD5}`;
                     const signature = generateSignature(apiKey, signatureData);
                     const authHeader = `UPYUN ${operatorName}:${signature}`;
-                    const requestUrl = `https://api.upyun.com${filePath}`;
+                    const requestUrl = `https://v0.api.upyun.com${filePath}`;
 
                     const requestOptions = {
                         method,
