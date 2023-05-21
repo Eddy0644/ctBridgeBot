@@ -324,19 +324,28 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-    const file_path = './downloaded/' + (
-        (tgMsg.photo) ? (`photoTG/${Math.random()}.png`) :
+    const rand1 = Math.random();
+    let file_path = './downloaded/' + (
+        (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
             (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-                (tgMsg.sticker ? (`stickerTG/${Math.random()}.webp`) :
-                    (`videoTG/${Math.random()}.mp4`))));
+                (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
+                    (`videoTG/${rand1}.mp4`))));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
     await tgBotDo.SendChatAction(action);
     tgLogger.trace(`file_path is ${file_path}.`);
     await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
-    await uploadFileToUpyun(file_path, secretConfig.upyun);
-    const packed = await FileBox.fromFile(file_path);
+    let packed;
+    if (tgMsg.sticker) {
+        const uploadResult = await uploadFileToUpyun(file_path.replace('./downloaded/stickerTG/', ''), secretConfig.upyun);
+        if (uploadResult.ok) {
+            const dl = await FileBox.fromUrl(uploadResult.filePath + '!/format/jpg').toFile(`./downloaded/stickerTG/${rand1}.jpg`);
+            file_path = file_path.replace('.webp', '.jpg');
+        }
+        packed = await FileBox.fromFile(file_path);
+    } else packed = await FileBox.fromFile(file_path);
+
     await tgBotDo.SendChatAction("record_video");
     await state.last.target.say(packed);
     ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
@@ -827,9 +836,9 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
     // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
-// wxbot.start()
-//     .then(() => wxLogger.info('开始登陆大而丑...'))
-//     .catch((e) => wxLogger.error(e));
+wxbot.start()
+    .then(() => wxLogger.info('开始登陆大而丑...'))
+    .catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 
