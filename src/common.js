@@ -139,37 +139,28 @@ module.exports = (param) => {
                 }
             },
             uploadFileToUpyun: async (filename, options) => {
-                return new Promise((resolve, reject) => {
+                return new Promise(async (resolve, reject) => {
                     const fileStream = fs.createReadStream(filename);
                     const {password, filePathPrefix, operatorName, urlPrefix} = options;
-
-                    const generateAPIKey = (password) => {
-                        return crypto.createHash('md5').update(password).digest('hex');
-                    };
+                    const generateAPIKey = (password) => crypto.createHash('md5').update(password).digest('hex');
 
                     const generateSignature = (apiKey, signatureData) => {
                         const hmac = crypto.createHmac('sha1', apiKey);
                         hmac.update(signatureData);
                         return hmac.digest('base64');
                     };
-
-                    const getFileContentMD5 = (filePath) => {
-                        const fileContent = fs.readFileSync(filePath);
+                    const getFileContentMD5 = async (filePath) => {
+                        const fileContent = await fs.promises.readFile(filePath);
                         return crypto.createHash('md5').update(fileContent).digest('base64');
                     };
-
                     const apiKey = generateAPIKey(password);
-
                     const method = 'PUT';
                     const date = new Date().toUTCString(); // Generate UTC timestamp
                     const filePath = `${filePathPrefix}/${filename}`;
-                    const contentMD5 = getFileContentMD5(filename);
-
+                    const contentMD5 = await getFileContentMD5(filename);
                     const signatureData = `${method}&${filePath}&${date}&${contentMD5}`;
                     const signature = generateSignature(apiKey, signatureData);
-
                     const authHeader = `UPYUN ${operatorName}:${signature}`;
-
                     const requestUrl = `https://api.upyun.com${filePath}`;
 
                     const requestOptions = {
@@ -183,22 +174,29 @@ module.exports = (param) => {
                     };
 
                     const req = https.request(requestUrl, requestOptions, (res) => {
-                        if (res.statusCode === 200) {
-                            resolve({
-                                ok: 1,
-                                filePath: `${urlPrefix}${filePath}`
-                            });
-                        } else {
-                            resolve({
-                                ok: 0,
-                                error: `Upyun server returned non-200 response.`
-                            });
-                        }
+                        let data = "";
+                        res.on('data', (chunk) => {
+                            data = data + chunk.toString();
+                        });
+                        res.on('end', () => {
+                            if (res.statusCode === 200) {
+                                resolve({
+                                    ok: 1,
+                                    filePath: `${urlPrefix}${filePath}`,
+                                    msg: data
+                                });
+                            } else {
+                                resolve({
+                                    ok: 0,
+                                    msg: `Upyun server returned non-200 response.\n${data}`
+                                });
+                            }
+                        });
                     });
                     req.on('error', (e) => {
                         resolve({
                             ok: 0,
-                            error: `Error occurred during upload-to-Upyun request: ${e.toString()}`
+                            msg: `Error occurred during upload-to-Upyun request: ${e.toString()}`
                         });
                     });
 
