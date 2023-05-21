@@ -1,7 +1,8 @@
 const log4js = require('log4js');
 const fs = require("fs");
-const agentEr = require("https-proxy-agent");
+require("https-proxy-agent");
 const dayjs = require("dayjs");
+const https = require("https");
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "[%d{yy/MM/dd hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
 log4js.configure({
@@ -123,6 +124,7 @@ module.exports = (param) => {
                 isPreRoomValid: function (preRoomState, targetTopic) {
                     try {
                         const _ = preRoomState;
+                        // noinspection JSUnresolvedVariable
                         const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                         const nowDate = dayjs().unix();
                         return (_.topic === targetTopic && nowDate - lastDate < 60);
@@ -136,20 +138,68 @@ module.exports = (param) => {
                     return (nowDate - targetTS < maxDelay);
                 }
             },
-            uploadFileToUpyun: async function () {
+            uploadFileToUpyun: async (filename, options) => {
                 return new Promise((resolve, reject) => {
-                    const fileStream = fs.createReadStream('a.webp');
+                    const fileStream = fs.createReadStream(filename);
+                    const {password, filePathPrefix, operatorName, urlPrefix} = options;
 
-                    const req = https.request(options, (res) => {
+                    const generateAPIKey = (password) => {
+                        return crypto.createHash('md5').update(password).digest('hex');
+                    };
+
+                    const generateSignature = (apiKey, signatureData) => {
+                        const hmac = crypto.createHmac('sha1', apiKey);
+                        hmac.update(signatureData);
+                        return hmac.digest('base64');
+                    };
+
+                    const getFileContentMD5 = (filePath) => {
+                        const fileContent = fs.readFileSync(filePath);
+                        return crypto.createHash('md5').update(fileContent).digest('base64');
+                    };
+
+                    const apiKey = generateAPIKey(password);
+
+                    const method = 'PUT';
+                    const date = new Date().toUTCString(); // Generate UTC timestamp
+                    const filePath = `${filePathPrefix}/${filename}`;
+                    const contentMD5 = getFileContentMD5(filename);
+
+                    const signatureData = `${method}&${filePath}&${date}&${contentMD5}`;
+                    const signature = generateSignature(apiKey, signatureData);
+
+                    const authHeader = `UPYUN ${operatorName}:${signature}`;
+
+                    const requestUrl = `https://api.upyun.com${filePath}`;
+
+                    const requestOptions = {
+                        method,
+                        headers: {
+                            'Authorization': authHeader,
+                            'Content-Type': 'image/webp',
+                            'Date': date,
+                            'Content-MD5': contentMD5,
+                        }
+                    };
+
+                    const req = https.request(requestUrl, requestOptions, (res) => {
                         if (res.statusCode === 200) {
-                            resolve('File uploaded successfully.');
+                            resolve({
+                                ok: 1,
+                                filePath: `${urlPrefix}${filePath}`
+                            });
                         } else {
-                            reject('File upload failed.');
+                            resolve({
+                                ok: 0,
+                                error: `Upyun server returned non-200 response.`
+                            });
                         }
                     });
-
-                    req.on('error', (error) => {
-                        reject('An error occurred during the request: ' + error);
+                    req.on('error', (e) => {
+                        resolve({
+                            ok: 0,
+                            error: `Error occurred during upload-to-Upyun request: ${e.toString()}`
+                        });
                     });
 
                     fileStream.pipe(req);
@@ -160,4 +210,4 @@ module.exports = (param) => {
             }
         }
     }
-};
+}
