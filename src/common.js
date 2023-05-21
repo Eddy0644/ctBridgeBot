@@ -141,10 +141,9 @@ module.exports = (param) => {
             },
             uploadFileToUpyun: async (filename, options) => {
                 return new Promise(async (resolve, reject) => {
-                    const {password, webFilePathPrefix, operatorName, urlPrefix} = options;
+                    const {password, webFilePathPrefix, operatorName, urlPrefix, urlPathPrefix} = options;
                     const generateAPIKey = (password) => crypto.createHash('md5').update(password).digest('hex');
                     const generateSignature = (apiKey, signatureData) => {
-
                         const hmac = crypto.createHmac('sha1', apiKey);
                         hmac.update(signatureData);
                         return hmac.digest('base64');
@@ -174,7 +173,6 @@ module.exports = (param) => {
                             'Content-MD5': contentMD5,
                         }
                     };
-
                     const req = https.request(requestUrl, requestOptions, (res) => {
                         let data = "";
                         res.on('data', (chunk) => {
@@ -184,7 +182,7 @@ module.exports = (param) => {
                             if (res.statusCode === 200) {
                                 resolve({
                                     ok: 1,
-                                    filePath: `${urlPrefix}${filePath}`,
+                                    filePath: `${urlPrefix}${urlPathPrefix}/${filename}`,
                                     msg: data
                                 });
                             } else {
@@ -203,9 +201,7 @@ module.exports = (param) => {
                     });
 
                     fileStream.pipe(req);
-                    fileStream.on('end', () => {
-                        req.end();
-                    });
+                    fileStream.on('end', () => req.end());
                 });
             }
         }

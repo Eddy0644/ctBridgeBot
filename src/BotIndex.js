@@ -338,13 +338,14 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
     let packed;
     if (tgMsg.sticker) {
+        ctLogger.trace(`Invoking TG sticker pre-process...`);
         const uploadResult = await uploadFileToUpyun(file_path.replace('./downloaded/stickerTG/', ''), secretConfig.upyun);
         if (uploadResult.ok) {
             const dl = await FileBox.fromUrl(uploadResult.filePath + '!/format/jpg').toFile(`./downloaded/stickerTG/${rand1}.jpg`);
             file_path = file_path.replace('.webp', '.jpg');
-        }
-        packed = await FileBox.fromFile(file_path);
-    } else packed = await FileBox.fromFile(file_path);
+        }else ctLogger.warn(`Error on sticker pre-process:\n\t${uploadResult.msg}`);
+    }
+    packed = await FileBox.fromFile(file_path);
 
     await tgBotDo.SendChatAction("record_video");
     await state.last.target.say(packed);
@@ -379,10 +380,8 @@ async function findSbInWechat(token) {
 async function downloadFile(url, pathName) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
-        // const agentEr = require('https-proxy-agent');
         const agent = new agentEr.HttpsProxyAgent(require("../config/proxy"));
         require('https').get(url, {agent: agent}, (response) => {
-            // response.setEncoding("binary");
             response.pipe(file);
             file.on('finish', () => {
                 file.close();

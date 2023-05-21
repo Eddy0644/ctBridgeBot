@@ -1,0 +1,1 @@
+In test, sending a TG sticker to Wx takes about 8 seconds.
