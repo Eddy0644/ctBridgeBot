@@ -6,7 +6,17 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
-const {wxLogger, tgLogger, ctLogger, LogWxMsg, Config, STypes, downloadFileHttp, processor} = require('./common')();
+const {
+    wxLogger,
+    tgLogger,
+    ctLogger,
+    LogWxMsg,
+    Config,
+    STypes,
+    downloadFileHttp,
+    processor,
+    uploadFileToUpyun
+} = require('./common')();
 
 let msgMappings = [];
 let state = {
@@ -268,7 +278,7 @@ async function generateInfo() {
         _last: state.last,
         runningTime: process.uptime(),
         poolToDelete: state.poolToDelete,
-        logText: logText.replaceAll(`<img class="qqemoji`,`&lt;img class="qqemoji`),
+        logText: logText.replaceAll(`<img class="qqemoji`, `&lt;img class="qqemoji`),
     };
     const postData = JSON.stringify(dtInfo);
     const options = {
@@ -315,15 +325,16 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
     const file_path = './downloaded/' + (
         (tgMsg.photo) ? (`photoTG/${Math.random()}.png`) :
-        (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-        (tgMsg.sticker ? (`stickerTG/${Math.random()}.webp`) :
-            (`videoTG/${Math.random()}.mp4`))));
+            (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
+                (tgMsg.sticker ? (`stickerTG/${Math.random()}.webp`) :
+                    (`videoTG/${Math.random()}.mp4`))));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
     await tgBotDo.SendChatAction(action);
     tgLogger.trace(`file_path is ${file_path}.`);
     await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
+    await uploadFileToUpyun(file_path, secretConfig.upyun);
     const packed = await FileBox.fromFile(file_path);
     await tgBotDo.SendChatAction("record_video");
     await state.last.target.say(packed);
