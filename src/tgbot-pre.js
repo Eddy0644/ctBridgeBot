@@ -3,6 +3,8 @@ const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger} = require('./common')();
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
+process.env["NTBA_FIX_350"] = "1";
+
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken,

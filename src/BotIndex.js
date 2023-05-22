@@ -341,7 +341,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
         ctLogger.trace(`Invoking TG sticker pre-process...`);
         const uploadResult = await uploadFileToUpyun(file_path.replace('./downloaded/stickerTG/', ''), secretConfig.upyun);
         if (uploadResult.ok) {
-            const dl = await FileBox.fromUrl(uploadResult.filePath + '!/format/jpg').toFile(`./downloaded/stickerTG/${rand1}.jpg`);
+            await FileBox.fromUrl(uploadResult.filePath + '!/format/jpg').toFile(`./downloaded/stickerTG/${rand1}.jpg`);
             file_path = file_path.replace('.webp', '.jpg');
         }else ctLogger.warn(`Error on sticker pre-process:\n\t${uploadResult.msg}`);
     }
@@ -436,7 +436,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg) {
 // 监听对话
 async function onWxMessage(msg) {
     // 按照距今时间来排除wechaty重启时的重复消息
-    // sometimes there are delayed messages `by wechaty` for 150s age or more, so altering this.
+    // sometimes there are delayed messages `by wechaty` for 150s age or more, so altered this.
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     LogWxMsg(msg, isMessageDropped);
@@ -555,7 +555,8 @@ async function onWxMessage(msg) {
     // 文件及公众号消息类型
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
-            wxLogger.trace(`filename has suffix .49, maybe pushes.`);
+            // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
+            wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.`);
             //TODO add this to msg pool and return
         } else if (msg.payload.filename.endsWith(".url")) {
             wxLogger.trace(`filename has suffix .url, maybe LINK.`);

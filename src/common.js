@@ -6,6 +6,9 @@ const https = require("https");
 const crypto = require('crypto');
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "[%d{yy/MM/dd hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
+
+process.env.TZ = 'Asia/Shanghai';
+
 log4js.configure({
     appenders: {
         "console": {
