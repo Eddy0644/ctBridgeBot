@@ -8,7 +8,7 @@ process.env["NTBA_FIX_350"] = "1";
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken,
-        {polling: {interval: 2000}, request: {proxy: require("../config/proxy")},});
+        {polling: {interval: 2000}, request: {proxy: require("../proxy")},});
     tgbot.deleteWebHook();
 } else {
     tgbot = new TelegramBot(secretConfig.botToken, {
@@ -19,7 +19,7 @@ if (isPolling) {
             key: "config/srv.pem",
             cert: "config/cli.pem",
         },
-        request: {proxy: require("../config/proxy")}
+        request: {proxy: require("../proxy")}
     });
     tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`, {
         drop_pending_updates: true

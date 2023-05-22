@@ -17,7 +17,7 @@ package-lock.json
 */downloaded/
 /default.log
 /log/
-/config/proxy.js
+/proxy.js
 /config/secret.js
 /.idea/*
 /config/cli.pem

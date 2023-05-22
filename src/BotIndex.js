@@ -386,7 +386,7 @@ async function findSbInWechat(token) {
 async function downloadFile(url, pathName) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(pathName);
-        const agent = new agentEr.HttpsProxyAgent(require("../config/proxy"));
+        const agent = new agentEr.HttpsProxyAgent(require("../proxy"));
         require('https').get(url, {agent: agent}, (response) => {
             response.pipe(file);
             file.on('finish', () => {
