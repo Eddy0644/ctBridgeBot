@@ -8,7 +8,7 @@ process.env["NTBA_FIX_350"] = "1";
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken,
-        {polling: {interval: 1488}, request: {proxy: require("../config/proxy")},});
+        {polling: {interval: 2000}, request: {proxy: require("../config/proxy")},});
     tgbot.deleteWebHook();
 } else {
     tgbot = new TelegramBot(secretConfig.botToken, {

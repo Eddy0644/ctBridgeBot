@@ -63,9 +63,7 @@ tgbot.on('webhook_error', async (e) => {
 });
 
 async function onTGMsg(tgMsg) {
-    //Update: added choose_sticker chatAction after sending message back successfully.
     try {
-        // const a= await uploadFileToUpyun("0.4669193503887734.webp", secretConfig.upyun);
         if (process.uptime() < 10) return;
 
         if (tgMsg.photo) {
@@ -113,6 +111,7 @@ async function onTGMsg(tgMsg) {
             }
             ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
 
+        // !tgMsg.reply_to_message  ------------------
         } else if (tgMsg.text === "/find") {
             let form = {
                 reply_markup: JSON.stringify({
@@ -130,6 +129,9 @@ async function onTGMsg(tgMsg) {
                 botPrompt1: tgMsg2,
             };
 
+        }else if (tgMsg.text === "/spoiler") {
+            const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
+            state.poolToDelete.add(tgMsg, 6);
         } else if (tgMsg.text === "/keyboard") {
             let form = {
                 reply_markup: JSON.stringify({
