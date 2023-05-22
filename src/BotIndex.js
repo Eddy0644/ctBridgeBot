@@ -89,7 +89,11 @@ async function onTGMsg(tgMsg) {
                 const orig = tgMsg.reply_to_message;
                 if (orig.photo) {
                     const file_id = orig.photo[orig.photo.length - 1].file_id;
-                    await tgBotDo.EditMessageMedia(file_id, orig, true);
+                    const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
+                    if (res !== true) {
+                        const tgMsg = await tgBotDo.SendMessage('Error occurred while setting spoiler for former message :\n<code>${res}</code> ', true, "HTML");
+                        state.poolToDelete.add(tgMsg, 6);
+                    }
                 }
                 return;
             }
@@ -111,7 +115,7 @@ async function onTGMsg(tgMsg) {
             }
             ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
 
-        // !tgMsg.reply_to_message  ------------------
+            // !tgMsg.reply_to_message  ------------------
         } else if (tgMsg.text === "/find") {
             let form = {
                 reply_markup: JSON.stringify({
@@ -129,7 +133,7 @@ async function onTGMsg(tgMsg) {
                 botPrompt1: tgMsg2,
             };
 
-        }else if (tgMsg.text === "/spoiler") {
+        } else if (tgMsg.text === "/spoiler") {
             const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
             state.poolToDelete.add(tgMsg, 6);
         } else if (tgMsg.text === "/keyboard") {
@@ -345,7 +349,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
         if (uploadResult.ok) {
             await FileBox.fromUrl(uploadResult.filePath + '!/format/jpg').toFile(`./downloaded/stickerTG/${rand1}.jpg`);
             file_path = file_path.replace('.webp', '.jpg');
-        }else ctLogger.warn(`Error on sticker pre-process:\n\t${uploadResult.msg}`);
+        } else ctLogger.warn(`Error on sticker pre-process:\n\t${uploadResult.msg}`);
     }
     packed = await FileBox.fromFile(file_path);
 

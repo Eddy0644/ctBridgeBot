@@ -90,13 +90,20 @@ module.exports = {
                 parse_mode: "HTML",
 
             };
-            return await tgbot.editMessageMedia({
-                type: "photo",
-                media: file_id,
-                has_spoiler: hasSpoiler,
-                parse_mode: "HTML",
-                caption: formerMsg.caption
-            }, form).catch((e) => tgLogger.error(e.toString()));
+            try {
+                const res = await tgbot.editMessageMedia({
+                    type: "photo",
+                    media: file_id,
+                    has_spoiler: hasSpoiler,
+                    parse_mode: "HTML",
+                    caption: formerMsg.caption
+                }, form);
+                if (res) return true;
+            } catch (e) {
+                tgLogger.error(e.toString());
+                return e.toString();
+            }
+            return "Unknown Error.";
         },
         SendAudio: async (msg, path, isSilent = false) => {
             await delay(100);
