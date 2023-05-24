@@ -90,7 +90,8 @@ async function onTGMsg(tgMsg) {
                 if (!fs.existsSync(file_path)) throw new Error("save file error");
                 const res = await recogniseAudio({}, file_path, false);
                 if (res === false) throw new Error("transcript error from TXyun");
-                const tgMsg = await tgBotDo.SendMessage('Transcript:\n<code>${res}</code>', true, "HTML");
+                ctLogger.trace(`Transcript result: ${res}`)
+                const tgMsg = await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
             } catch (e) {
                 tgLogger.info(`Audio transcript received, But download failed.`);
                 const tgMsg = await tgBotDo.SendMessage('Audio transcript received, But download failed. ', true, null);
