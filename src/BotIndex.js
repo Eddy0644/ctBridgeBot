@@ -82,8 +82,15 @@ async function onTGMsg(tgMsg) {
             await deliverTGToWx(tgMsg, tgMsg.video, "video");
             return;
         }
+        if (tgMsg.voice) {
+            // await deliverTGToWx(tgMsg, tgMsg.voice, "voice");
+            return;
+        }
         // Non-text messages must be filtered ahead of them !---------------
-        // tgMsg.text = "";
+        if (!tgMsg.text) {
+            tgLogger.warn(`A TG message with empty content has passed through text Processor! Check the log for detail.`);
+            tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
+        }
         for (const pair of secretConfig.tgContentReplaceList) {
             if (tgMsg.text.includes(pair[0])) {
                 tgLogger.trace(`Replaced pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
