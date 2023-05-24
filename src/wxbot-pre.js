@@ -53,7 +53,7 @@ module.exports = (tgbot, wxLogger) => {
     return {
         wxbot: wxbot,
         DTypes: DTypes,
-        recogniseAudio: async (msg, audioPath) => {
+        recogniseAudio: async (saveTarget, audioPath, isWxMsg = true) => {
             try {
                 // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于wx）
                 const client = new AsrClient({
@@ -71,14 +71,16 @@ module.exports = (tgbot, wxLogger) => {
                     "SubServiceType": 2,
                     "EngSerViceType": "16k_zh_dialect",
                     "SourceType": 1,
-                    "VoiceFormat": "mp3",
+                    "VoiceFormat": isWxMsg ? "mp3" : "ogg-opus",
                     "Data": base64Data,
                     "DataLen": fileSize
                 });
-                msg.audioParsed = `, recognition:\n"${result.Result}"`;
+                if (isWxMsg) saveTarget.audioParsed = `, recognition:\n"${result.Result}"`;
+                else return result.Result;
             } catch (e) {
                 wxLogger.debug(`Try to send audio file to Txyun but failed in the process.`);
-                msg.audioParsed = "";
+                if (isWxMsg) saveTarget.audioParsed = "";
+                return false;
             }
         }
     };

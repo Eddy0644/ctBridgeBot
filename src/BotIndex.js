@@ -64,7 +64,7 @@ tgbot.on('webhook_error', async (e) => {
 
 async function onTGMsg(tgMsg) {
     try {
-        if (process.uptime() < 10) return;
+        if (process.uptime() < 4) return;
 
         if (tgMsg.photo) {
             await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
@@ -83,6 +83,19 @@ async function onTGMsg(tgMsg) {
             return;
         }
         if (tgMsg.voice) {
+            let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
+            const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
+            await downloadFile(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
+            try {
+                if (!fs.existsSync(file_path)) throw new Error("save file error");
+                const res = await recogniseAudio({}, file_path, false);
+                if (res === false) throw new Error("transcript error from TXyun");
+                const tgMsg = await tgBotDo.SendMessage('Transcript:\n<code>${res}</code>', true, "HTML");
+            } catch (e) {
+                tgLogger.info(`Audio transcript received, But download failed.`);
+                const tgMsg = await tgBotDo.SendMessage('Audio transcript received, But download failed. ', true, null);
+                state.poolToDelete.add(tgMsg, 6);
+            }
             // await deliverTGToWx(tgMsg, tgMsg.voice, "voice");
             return;
         }
