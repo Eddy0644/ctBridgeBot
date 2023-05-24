@@ -136,6 +136,8 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/spoiler") {
             const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
             state.poolToDelete.add(tgMsg, 6);
+
+        // Get a persistent versatile quick keyboard.
         } else if (tgMsg.text === "/keyboard") {
             let form = {
                 reply_markup: JSON.stringify({
@@ -146,14 +148,15 @@ async function onTGMsg(tgMsg) {
                 })
             };
             const tgMsg = await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+            await tgbot.setMyCommands(Config.TGBotCommands);
             state.poolToDelete.add(tgMsg, 6);
         } else if (tgMsg.text === "/lock") {
             state.lockTarget = state.lockTarget ? 0 : 1;
             await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
-        } else if (tgMsg.text.indexOf("F$") === 0) {
+        } else if (tgMsg.text.indexOf("/F$") === 0) {
             // Want to find somebody, and have inline parameters
-            let findToken = tgMsg.text.replace("F$", "");
-            for (const pair of secretConfig.findReplaceList) {
+            let findToken = tgMsg.text.replace("/F$", "");
+            for (const pair of secretConfig.nameFindReplaceList) {
                 if (findToken === pair[0]) {
                     findToken = pair[1];
                     break;
@@ -200,7 +203,6 @@ async function onTGMsg(tgMsg) {
             const result = await tgbot.setMyCommands(Config.TGBotCommands);
             tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
 
-            // Get a persistent versatile quick keyboard.
         } else if (tgMsg.text === "/placeholder") {
             await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
         } else {
@@ -216,7 +218,7 @@ async function onTGMsg(tgMsg) {
                 ctLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
-                for (const pair of secretConfig.findReplaceList) {
+                for (const pair of secretConfig.nameFindReplaceList) {
                     if (findToken === pair[0]) {
                         findToken = pair[1];
                         break;
