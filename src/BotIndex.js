@@ -137,7 +137,7 @@ async function onTGMsg(tgMsg) {
             const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
             state.poolToDelete.add(tgMsg, 6);
 
-        // Get a persistent versatile quick keyboard.
+            // Get a persistent versatile quick keyboard.
         } else if (tgMsg.text === "/keyboard") {
             let form = {
                 reply_markup: JSON.stringify({
@@ -634,7 +634,14 @@ async function onWxMessage(msg) {
     if (msg.DType > 0) {
         if (content.includes("[收到了一个表情，请在手机上查看]")) {
             msgDef.isSilent = true;
+            content = content.replace("[收到了一个表情，请在手机上查看]", "{--🫥--}");
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
+        }
+        for (const pair of secretConfig.wxContentReplaceList) {
+            if (content.includes(pair[0])) {
+                wxLogger.trace(`Replaced wx emoji ${pair[0]} to corresponding universal emoji. (config :->secret.js)`);
+                while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
+            }
         }
         if (room) {
             // 是群消息 - - - - - - - -
