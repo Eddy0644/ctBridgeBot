@@ -82,8 +82,14 @@ async function onTGMsg(tgMsg) {
             await deliverTGToWx(tgMsg, tgMsg.video, "video");
             return;
         }
-        // Non-text messages must be filtered ahead of them
+        // Non-text messages must be filtered ahead of them !---------------
         // tgMsg.text = "";
+        for (const pair of secretConfig.tgContentReplaceList) {
+            if (tgMsg.text.includes(pair[0])) {
+                tgLogger.trace(`Replaced pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
+                while (tgMsg.text.includes(pair[0])) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
+            }
+        }
         if (tgMsg.reply_to_message) {
             if (tgMsg.text === "/spoiler") {
                 const orig = tgMsg.reply_to_message;
