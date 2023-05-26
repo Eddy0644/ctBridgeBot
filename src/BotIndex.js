@@ -91,7 +91,7 @@ async function onTGMsg(tgMsg) {
                 const res = await recogniseAudio({}, file_path, false);
                 if (res === false) throw new Error("transcript error from TXyun");
                 ctLogger.trace(`Transcript result: ${res}`)
-                const tgMsg = await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
+                await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
             } catch (e) {
                 tgLogger.info(`Audio transcript received, But download failed.`);
                 const tgMsg = await tgBotDo.SendMessage('Audio transcript received, But download failed. ', true, null);
@@ -179,10 +179,11 @@ async function onTGMsg(tgMsg) {
             state.poolToDelete.add(tgMsg, 6);
         } else if (tgMsg.text === "/lock") {
             state.lockTarget = state.lockTarget ? 0 : 1;
-            await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
-        } else if (tgMsg.text.indexOf("/F$") === 0) {
+            const tgMsg = await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
+            state.poolToDelete.add(tgMsg, 6);
+        } else if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
-            let findToken = tgMsg.text.replace("/F$", "");
+            let findToken = tgMsg.text.replace("F$", "");
             for (const pair of secretConfig.nameFindReplaceList) {
                 if (findToken === pair[0]) {
                     findToken = pair[1];
@@ -190,8 +191,8 @@ async function onTGMsg(tgMsg) {
                 }
             }
             wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
-            await findSbInWechat(findToken);
-
+            const res = await findSbInWechat(findToken);
+            if (res) await tgBotDo.RevokeMessage(tgMsg.message_id);
         } else if (tgMsg.text === "/clear") {
             tgLogger.trace(`Invoking softReboot by user operation...`);
             await softReboot("User triggered.");
