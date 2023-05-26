@@ -65,7 +65,12 @@ tgbot.on('webhook_error', async (e) => {
 async function onTGMsg(tgMsg) {
     try {
         if (process.uptime() < 4) return;
-
+        if (!secretConfig.tgAllowList.includes(tgMsg.from.id)) {
+            tgLogger.trace(`Got TG message (#${tgMsg.message_id}) from unauthorized user (${tgMsg.from.id}), Ignoring.`);
+            return;
+        }
+        //TODO: ready to migrate to supergroup message but not now
+        if (tgMsg.chat.type === "supergroup") return;
         if (tgMsg.photo) {
             await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
             return;
@@ -169,7 +174,7 @@ async function onTGMsg(tgMsg) {
             let form = {
                 reply_markup: JSON.stringify({
                     keyboard: secretConfig.quickKeyboard,
-                    is_persistent: false,
+                    is_persistent: true,
                     resize_keyboard: true,
                     one_time_keyboard: false
                 })
@@ -232,7 +237,7 @@ async function onTGMsg(tgMsg) {
             tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
 
         } else if (tgMsg.text === "/placeholder") {
-            await tgbot.sendMessage(tgMsg.chat.id, Config.placeholder);
+            await tgBotDo.SendMessage(Config.placeholder, true);
         } else {
 
             // No valid COMMAND within msg
