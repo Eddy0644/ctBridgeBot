@@ -111,9 +111,9 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
         }
         for (const pair of secretConfig.tgContentReplaceList) {
-            if (tgMsg.text.includes(pair[0])) {
+            if (tgMsg.text.indexOf(pair[0]) !== -1) {
                 tgLogger.trace(`Replaced pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
-                while (tgMsg.text.includes(pair[0])) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
+                while (tgMsg.text.indexOf(pair[0]) !== -1) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
             }
         }
         if (tgMsg.reply_to_message) {
@@ -504,7 +504,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is {{ ${recalledMessage} }}`);
-        await tgBotDo.SendMessage(`Message: {{ ${recalledMessage} }} has been recalled.`, true);
+        await tgBotDo.SendMessage(`❌ [ ${recalledMessage} ] was recalled.`, true);
         return;
     }
 
@@ -522,7 +522,7 @@ async function onWxMessage(msg) {
         const fileExt = ".gif";
         const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
         let filtered = false;
-        if (processor.isTimeValid(state.lastEmotion.ts, 10) && md5 === state.lastEmotion.md5) {
+        if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
             // Got duplicate and continuous Sticker, skipping and CONDEMN that!
             wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
             //TODO add here to undelivered pool too!
@@ -630,7 +630,7 @@ async function onWxMessage(msg) {
                     msg.autoDownload = false;
                     msgDef.isSilent = true;
                     content += `Too small, so it maybe not a valid file. Check DT log for detail.`
-                    wxLogger.info(`Got a very-small wx file here, please check manually.Sender:{${alias}`);
+                    wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}`);
                 } else if (msg.filesize < Config.wxAutoDownloadThreshold) {
                     msg.autoDownload = true;
                     content += `Smaller than threshold, so we would try download that automatically for you.`/*Remember to change the prompt in two locations!*/;
@@ -650,12 +650,12 @@ async function onWxMessage(msg) {
 
     //处理未受支持的emoji表情
     if (msg.DType === DTypes.Text) {
-        const UsEmojiRegex = new RegExp(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
+        const WxEmojiRegex = new RegExp(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
         let replaceFlag = 1;
         while (replaceFlag > 0) try {
-            UsEmojiRegex.lastIndex = 0;
-            let execResult = UsEmojiRegex.exec(content);
-            wxLogger.trace('UsEmoji Replaced,' + JSON.stringify([execResult[1], execResult[2]]));
+            WxEmojiRegex.lastIndex = 0;
+            let execResult = WxEmojiRegex.exec(content);
+            wxLogger.trace('WxEmoji Replaced,' + JSON.stringify([execResult[1], execResult[2]]));
             content = content.replace(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/, `${execResult[2]}`);
             content = content.replace("_web", "");
         } catch (e) {
