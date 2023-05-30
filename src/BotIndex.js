@@ -597,7 +597,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
-            wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.`);
+            wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49","")}].`);
             //TODO add this to msg pool and return
         } else if (msg.payload.filename.endsWith(".url")) {
             wxLogger.trace(`filename has suffix .url, maybe LINK.`);
@@ -737,6 +737,8 @@ async function onWxMessage(msg) {
             //不是群消息 - - - - - - - -
             //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
             if (alias === "微信运动") {
+                wxLogger.debug(`[微信运动] says: ${msg.payload.filename.replace(".1","")}`);
+                //TODO: add to undelivered pool!
                 return;
             }
             // 筛选掉符合exclude keyword的个人消息

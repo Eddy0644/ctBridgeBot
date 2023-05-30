@@ -35,7 +35,7 @@ module.exports = (tgbot, wxLogger) => {
             qrcodeTerminal.generate(qrcode, {small: true}); // 在console端显示二维码
             console.log(qrcodeImageUrl);
         } else if (status === 3) {
-            console.log(`The code is already scanned.\n${qrcodeImageUrl}`);
+            console.log(`-----The code is already scanned.\n${qrcodeImageUrl}`);
         } else {
             console.log(`User may accepted login. Proceeding...`);
         }

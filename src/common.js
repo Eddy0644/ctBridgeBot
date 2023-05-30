@@ -73,8 +73,9 @@ module.exports = (param) => {
             wxMsgLogger: log4js.getLogger("wxMsg"),
 
             LogWxMsg: (msg, isMessageDropped) => {
-
-                log4js.getLogger("wx").trace(`---Raw ${msg}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
+                let msgToStr=`${msg}`;
+                // fixed here to avoid contamination of <img of HTML.
+                log4js.getLogger("wx").trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji","[img class=\"emoji")}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
                     `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`
                     + (isMessageDropped ? '\n' : ''));
                 log4js.getLogger("wxMsg").info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
