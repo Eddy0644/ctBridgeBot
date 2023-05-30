@@ -35,18 +35,18 @@ module.exports = {
             await delay(100);
             if (isSilent) form.disable_notification = true;
             if (parseMode) form.parse_mode = parseMode;
-            return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.error(e.toString()));
+            return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.warn(e.toString()));
         },
         RevokeMessage: async (msgId) => {
             await delay(100);
             return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => {
-                tgLogger.error(e.toString());
+                tgLogger.warn(e.toString());
             });
         },
         SendChatAction: async (action) => {
             await delay(100);
             return await tgbot.sendChatAction(secretConfig.target_TG_ID, action).catch((e) => {
-                tgLogger.error(e.toString());
+                tgLogger.warn(e.toString());
             });
         },
         SendAnimation: async (msg, path, isSilent = false, hasSpoiler = true) => {
@@ -59,7 +59,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.error(e.toString()));
+            return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.warn(e.toString()));
         },
         SendPhoto: async (msg, path, isSilent = false, hasSpoiler = false) => {
             await delay(100);
@@ -71,7 +71,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.error(e.toString()));
+            return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.warn(e.toString()));
         },
         EditMessageText: async (text, formerMsg) => {
             // await delay(100);
@@ -80,7 +80,7 @@ module.exports = {
                 message_id: formerMsg.message_id,
                 parse_mode: "HTML"
             };
-            return await tgbot.editMessageText(text, form).catch((e) => tgLogger.error(e.toString()));
+            return await tgbot.editMessageText(text, form).catch((e) => tgLogger.warn(e.toString()));
         },
         EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false) => {
             // await delay(100);
@@ -100,7 +100,7 @@ module.exports = {
                 }, form);
                 if (res) return true;
             } catch (e) {
-                tgLogger.error(e.toString());
+                tgLogger.warn(e.toString());
                 return e.toString();
             }
             return "Unknown Error.";
@@ -112,7 +112,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.error(e.toString()));
+            return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.warn(e.toString()));
         },
         SendDocument: async (msg, path, isSilent = false) => {
             await delay(100);
@@ -121,7 +121,7 @@ module.exports = {
                 parse_mode: "HTML",
             };
             if (isSilent) form.disable_notification = true;
-            return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.error(e.toString()));
+            return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.warn(e.toString()));
         }
     }
 }
