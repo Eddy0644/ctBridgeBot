@@ -116,6 +116,7 @@ async function onTGMsg(tgMsg) {
         }
         if (tgMsg.reply_to_message) {
             if (tgMsg.text === "/spoiler") {
+                // TG-wide command so not put inside the for loop
                 const orig = tgMsg.reply_to_message;
                 if (orig.photo) {
                     const file_id = orig.photo[orig.photo.length - 1].file_id;
@@ -134,6 +135,20 @@ async function onTGMsg(tgMsg) {
                         // 对wx文件消息做出了确认
                         await getFileFromWx(mapPair[3]);
                         await tgBotDo.SendChatAction("upload_document");
+                    } else if (tgMsg.text === "@") {
+                        // Trigger special operation: Lock and set as explicit
+                        state.lockTarget = 2;
+                        const name = mapPair[2], talker = mapPair[1];
+                        state.last = {
+                            s: STypes.Chat,
+                            target: talker,
+                            name: name,
+                            wxMsg: null,
+                            isFile: null
+                        };
+                        ctLogger.debug(`Upon '@' msg, set '${name}' as last talker and lock-target to 2.`);
+                        const tgMsg = await tgBotDo.SendMessage(`Already set '${name}' as last talker and locked.`, true);
+                        state.poolToDelete.add(tgMsg, 6);
                     } else {
                         state.lastExplicitTalker = mapPair[1];
                         await mapPair[1].say(tgMsg.text);
@@ -574,7 +589,7 @@ async function onWxMessage(msg) {
             // skip stickers that already sent and replace them into text
             const fetched = await stickerLib.get(md5);
             if (fetched === null) {
-                ctLogger.trace(`former msg for '${md5}' not found, entering normal deliver way.`);
+                ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
             } else {
                 // change msg detail so that could be used in merging or so.
                 content = `[CuEmo] ${md5.substring(0, 2)} of #sticker`;
