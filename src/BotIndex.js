@@ -559,7 +559,8 @@ async function onWxMessage(msg) {
                 // Got duplicate and continuous Sticker, skipping and CONDEMN that!
                 wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
                 //TODO add here to undelivered pool too!
-                filtered = true;
+                //TODO: set this for debugging
+                // filtered = true;
             }
             // Despite match or not, update state.lastEmotion
             state.lastEmotion = {
@@ -579,6 +580,7 @@ async function onWxMessage(msg) {
                 content = `[CuEmo] ${md5.substring(0, 2)} of #sticker`;
                 msg.DType = DTypes.Text;
                 ahead = false;
+                ctLogger.trace(`Found former msg for '${md5}', replacing to Text.`);
             }
         }
         if (ahead && !fs.existsSync(cEPath)) {
