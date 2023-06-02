@@ -154,7 +154,7 @@ async function onTGMsg(tgMsg) {
                         await mapPair[1].say(tgMsg.text);
                         if (mapPair[2] === state.preRoom.topic) {
                             // the explicit talker - Room matches preRoom
-                            if (processor.isPreRoomValid(state.preRoom, topic) && state.preRoom.firstWord === "") {
+                            if (processor.isPreRoomValid(state.preRoom, mapPair[2]) && state.preRoom.firstWord === "") {
                                 // preRoom valid and already merged (more than 2 msg)
                                 const _ = state.preRoom;
                                 const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(topic, `<b>${topic}</b>`);
@@ -306,7 +306,7 @@ async function onTGMsg(tgMsg) {
                     await state.last.target.say(tgMsg.text);
                     if (state.last.name === state.preRoom.topic) {
                         // the last talker - Room matches preRoom
-                        if (processor.isPreRoomValid(state.preRoom, topic) && state.preRoom.firstWord === "") {
+                        if (processor.isPreRoomValid(state.preRoom, state.last.name) && state.preRoom.firstWord === "") {
                             // preRoom valid and already merged (more than 2 msg)
                             const _ = state.preRoom;
                             const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(topic, `<b>${topic}</b>`);
@@ -627,6 +627,7 @@ async function onWxMessage(msg) {
 
         }
     }
+
     // 尝试下载语音
     if (msg.type() === wxbot.Message.Type.Audio) try {
         const fBox = await msg.toFileBox();
