@@ -1,6 +1,6 @@
 {
   "name": "ctbridgebot",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Bridge your messages from a notorious IM in China:{WeChat}, to an excellent IM:{Telegram}.",
   "superagent": "BotIndex.js",
   "scripts": {

@@ -7,7 +7,7 @@ const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
 const DataStorage = require('./dataStorage.api');
-const stickerLib = new DataStorage("../downloaded/stickers.json");
+const stickerLib = new DataStorage("./downloaded/stickers.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg,
     Config, STypes,
@@ -549,80 +549,83 @@ async function onWxMessage(msg) {
     //已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();
-        wxLogger.debug(`This message was a recaller, original is {{ ${recalledMessage} }}`);
-        await tgBotDo.SendMessage(`❌ [ ${recalledMessage} ] was recalled.`, true);
-        return;
+        wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
+        msgDef.isSilent = true;
+        content = `❌ [ ${recalledMessage} ] was recalled.`;
+        msg.DType = DTypes.Text;
     }
 
     // 处理自定义表情,若失败再处理图片
     const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
-    if (msg.type() === wxbot.Message.Type.Image) try {
-        let result = CustomEmotionRegex.exec(content);
-        let emotionHref = result[5].replace(/&amp;amp;/g, "&");
-        let md5 = result[2];
-        content = content.replace(/&lt;msg&gt;(.*?)&lt;\/msg&gt;/, `[CustomEmotion]`);
-        msg.DType = DTypes.CustomEmotion;
-        //查找是否有重复项,再保存CustomEmotion并以md5命名.消息详情中的filename有文件格式信息
-        //Sometimes couldn't get fileExt so deprecate it
-        // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
-        const fileExt = ".gif";
-        const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
-        {
-            // filter duplicate-in-period sticker
-            let filtered = false;
-            if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
-                // Got duplicate and continuous Sticker, skipping and CONDEMN that!
-                wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
-                //TODO add here to undelivered pool too!
-                //TODO: set this for debugging
-                // filtered = true;
+    {
+        if (msg.type() === wxbot.Message.Type.Image) try {
+            let result = CustomEmotionRegex.exec(content);
+            let emotionHref = result[5].replace(/&amp;amp;/g, "&");
+            let md5 = result[2];
+            content = content.replace(/&lt;msg&gt;(.*?)&lt;\/msg&gt;/, `[CustomEmotion]`);
+            msg.DType = DTypes.CustomEmotion;
+            //查找是否有重复项,再保存CustomEmotion并以md5命名.消息详情中的filename有文件格式信息
+            //Sometimes couldn't get fileExt so deprecate it
+            // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
+            const fileExt = ".gif";
+            const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+            {
+                // filter duplicate-in-period sticker
+                let filtered = false;
+                if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
+                    // Got duplicate and continuous Sticker, skipping and CONDEMN that!
+                    wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
+                    //TODO add here to undelivered pool too!
+                    //TODO: set this for debugging
+                    filtered = true;
+                }
+                // Despite match or not, update state.lastEmotion
+                state.lastEmotion = {
+                    md5: md5,
+                    ts: dayjs().unix()
+                }
+                if (filtered) return;
             }
-            // Despite match or not, update state.lastEmotion
-            state.lastEmotion = {
-                md5: md5,
-                ts: dayjs().unix()
+            let ahead = true;
+            {
+                // skip stickers that already sent and replace them into text
+                const fetched = await stickerLib.get(md5);
+                if (fetched === null) {
+                    ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
+                } else {
+                    // change msg detail so that could be used in merging or so.
+                    content = `[${md5.substring(0, 3)} of #sticker]`;
+                    msg.DType = DTypes.Text;
+                    ahead = false;
+                    ctLogger.trace(`Found former msg for '${md5}', replacing to Text.`);
+                }
             }
-            if (filtered) return;
-        }
-        let ahead = true;
-        {
-            // skip stickers that already sent and replace them into text
-            const fetched = await stickerLib.get(md5);
-            if (fetched === null) {
-                ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
+            if (ahead && !fs.existsSync(cEPath)) {
+                if (await downloadFileHttp(emotionHref, cEPath)) {
+                    // downloadFile_old(emotionHref, path + ".backup.gif");
+                    msg.downloadedPath = cEPath;
+                    wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}`);
+                    msg.md5 = md5.substring(0, 3);
+                    await stickerLib.set(md5, [msg.md5, cEPath]);
+                } else msg.downloadedPath = null;
             } else {
-                // change msg detail so that could be used in merging or so.
-                content = `[CuEmo] ${md5.substring(0, 2)} of #sticker`;
-                msg.DType = DTypes.Text;
-                ahead = false;
-                ctLogger.trace(`Found former msg for '${md5}', replacing to Text.`);
-            }
-        }
-        if (ahead && !fs.existsSync(cEPath)) {
-            if (await downloadFileHttp(emotionHref, cEPath)) {
-                // downloadFile_old(emotionHref, path + ".backup.gif");
                 msg.downloadedPath = cEPath;
-                wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}`);
-                msg.md5 = md5.substring(0, 2);
                 await stickerLib.set(md5, [msg.md5, cEPath]);
-            } else msg.downloadedPath = null;
-        } else {
-            msg.downloadedPath = cEPath;
-            await stickerLib.set(md5, [msg.md5, cEPath]);
-        }
-    } catch (e) {
-        wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);
-        //尝试解析为图片
-        const fBox = await msg.toFileBox();
-        const photoPath = `./downloaded/photo/${alias}-${msg.payload.filename}`;
-        await fBox.toFile(photoPath);
-        if (fs.existsSync(photoPath)) {
-            wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
-            msg.DType = DTypes.Image;
-            msg.downloadedPath = photoPath;
-            msgDef.isSilent = true;
-        } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
+            }
+        } catch (e) {
+            wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);
+            //尝试解析为图片
+            const fBox = await msg.toFileBox();
+            const photoPath = `./downloaded/photo/${alias}-${msg.payload.filename}`;
+            await fBox.toFile(photoPath);
+            if (fs.existsSync(photoPath)) {
+                wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
+                msg.DType = DTypes.Image;
+                msg.downloadedPath = photoPath;
+                msgDef.isSilent = true;
+            } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
 
+        }
     }
     // 尝试下载语音
     if (msg.type() === wxbot.Message.Type.Audio) try {
@@ -734,9 +737,10 @@ async function onWxMessage(msg) {
 
     // 正式处理消息--------------
     if (msg.DType > 0) {
-        if (content.includes("[收到了一个表情，请在手机上查看]")) {
+        if (content.includes("[收到了一个表情，请在手机上查看]") || content.includes("[Send an emoji, view it on mobile]")) {
+
             msgDef.isSilent = true;
-            content = content.replace("[收到了一个表情，请在手机上查看]", "{--🫥--}");
+            content = content.replace("[收到了一个表情，请在手机上查看]", "{--🫥--}").replace("[Send an emoji, view it on mobile]", "{--🫥--}");
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
         for (const pair of secretConfig.wxContentReplaceList) {
@@ -752,7 +756,7 @@ async function onWxMessage(msg) {
             // 群系统消息中先过滤出红包
             if (name === topic) {
                 if (content.includes("red packet") || content.includes("红包")) {
-                    await tgBotDo.SendMessage(`🧧[in ${topic}] ${content}`, 0);
+                    await tgBotDo.SendMessage(`🧧🧧[in ${topic}] ${content}`, 0);
                     tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
                     return;
                 }
@@ -863,10 +867,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             try {
                 //TODO add CuEmo format conversion to let all msg in GIF state.
                 const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotDo.SendAnimation(`${template} 👆 #sticker ${msg.md5}`, stream, true, true);
+                tgMsg = await tgBotDo.SendAnimation(`${template} ns 👆 #sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
                 wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Send Failure)`, true);
+                tgMsg = await tgBotDo.SendMessage(`${template} [CuEmo](Send Failure)`, true);
             }
         } else if (msg.DType === DTypes.Audio) {
             // 语音
@@ -921,11 +925,6 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
 async function getFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
-        // let filePath = `${msg.payload.filename}`;
-        // while (fs.existsSync(filePath)) {
-        //     filePath = "@" + filePath;
-        // }
-        // filePath = `./downloaded/file/` + filePath;
         const filePath = msg.toDownloadPath;
         const wechatyMemory = JSON.parse((await fs.promises.readFile("ctbridgebot.memory-card.json")).toString());
         const cookieStr = wechatyMemory["\rpuppet\nPUPPET_WECHAT"].map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
