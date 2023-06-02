@@ -22,3 +22,4 @@ package-lock.json
 /.idea/*
 /config/cli.pem
 /config/srv.pem
+/downloaded/stickers.json
