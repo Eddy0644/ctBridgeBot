@@ -139,6 +139,22 @@ async function onTGMsg(tgMsg) {
                     } else {
                         state.lastExplicitTalker = mapPair[1];
                         await mapPair[1].say(tgMsg.text);
+                        if (mapPair[2] === state.preRoom.topic) {
+                            // the explicit talker - Room matches preRoom
+                            if (processor.isPreRoomValid(state.preRoom, topic) && state.preRoom.firstWord === "") {
+                                // preRoom valid and already merged (more than 2 msg)
+                                const _ = state.preRoom;
+                                const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(topic, `<b>${topic}</b>`);
+                                // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
+                                _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
+                                ctLogger.debug(`Delivered myself reply stamp into Room:${topic} 's former message, and cleared its preRoom.`);
+                                state.preRoom = {
+                                    firstWord: "",
+                                    tgMsg: null,
+                                    name: "",
+                                };
+                            }
+                        }
                         await tgBotDo.SendChatAction("choose_sticker");
                     }
                     ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
