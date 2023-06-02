@@ -6,13 +6,11 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
+const DataStorage = require('./dataStorage.api');
+const stickerLib = new DataStorage("../downloaded/stickers.json");
 const {
-    wxLogger,
-    tgLogger,
-    ctLogger,
-    LogWxMsg,
-    Config,
-    STypes,
+    wxLogger, tgLogger, ctLogger, LogWxMsg,
+    Config, STypes,
     downloadFileHttp,
     processor,
     uploadFileToUpyun
@@ -523,6 +521,7 @@ async function onWxMessage(msg) {
     const alias = await contact.alias() || await contact.name(); // 发消息人备注
     let msgDef = {
         isSilent: false,
+        replyTo: null
     }
 
     msg.DType = DTypes.Default;
@@ -553,26 +552,47 @@ async function onWxMessage(msg) {
         // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
         const fileExt = ".gif";
         const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
-        let filtered = false;
-        if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
-            // Got duplicate and continuous Sticker, skipping and CONDEMN that!
-            wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
-            //TODO add here to undelivered pool too!
-            filtered = true;
+        {
+            // filter duplicate-in-period sticker
+            let filtered = false;
+            if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
+                // Got duplicate and continuous Sticker, skipping and CONDEMN that!
+                wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
+                //TODO add here to undelivered pool too!
+                filtered = true;
+            }
+            // Despite match or not, update state.lastEmotion
+            state.lastEmotion = {
+                md5: md5,
+                ts: dayjs().unix()
+            }
+            if (filtered) return;
         }
-        // Despite match or not, update state.lastEmotion
-        state.lastEmotion = {
-            md5: md5,
-            ts: dayjs().unix()
+        let ahead = true;
+        {
+            // skip stickers that already sent and replace them into text
+            const fetched = await stickerLib.get(md5);
+            if (fetched === null) {
+                ctLogger.trace(`former msg for '${md5}' not found, entering normal deliver way.`);
+            } else {
+                // change msg detail so that could be used in merging or so.
+                content = `[CuEmo] ${md5.substring(0, 2)} of #sticker`;
+                msg.DType = DTypes.Text;
+                ahead = false;
+            }
         }
-        if (filtered) return;
-        if (!fs.existsSync(cEPath)) {
+        if (ahead && !fs.existsSync(cEPath)) {
             if (await downloadFileHttp(emotionHref, cEPath)) {
                 // downloadFile_old(emotionHref, path + ".backup.gif");
                 msg.downloadedPath = cEPath;
                 wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}`);
+                msg.md5 = md5.substring(0, 2);
+                await stickerLib.set(md5, [msg.md5, cEPath]);
             } else msg.downloadedPath = null;
-        } else msg.downloadedPath = cEPath;
+        } else {
+            msg.downloadedPath = cEPath;
+            await stickerLib.set(md5, [msg.md5, cEPath]);
+        }
     } catch (e) {
         wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);
         //尝试解析为图片
@@ -826,7 +846,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             try {
                 //TODO add CuEmo format conversion to let all msg in GIF state.
                 const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotDo.SendAnimation(`${template} 👆`, stream, true, true);
+                tgMsg = await tgBotDo.SendAnimation(`${template} 👆 #sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
                 wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
                 tgMsg = await tgBotDo.SendMessage(`${template} [CustomEmotion](Send Failure)`, true);
