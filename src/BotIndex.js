@@ -7,7 +7,7 @@ const fs = require("fs");
 const dayjs = require('dayjs');
 const agentEr = require("https-proxy-agent");
 const DataStorage = require('./dataStorage.api');
-const stickerLib = new DataStorage("./downloaded/stickers.json");
+const stickerLib = new DataStorage("./stickers.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg,
     Config, STypes,
@@ -743,6 +743,13 @@ async function onWxMessage(msg) {
             msgDef.isSilent = true;
             content = content.replace("[收到了一个表情，请在手机上查看]", "{--🫥--}").replace("[Send an emoji, view it on mobile]", "{--🫥--}");
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
+        }
+        // TODO add special action to these two snippet
+        if(content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")){
+            content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", "{📞📲}");
+        }
+        if(content.includes("[收到一条微信转账消息，请在手机上查看]")){
+            content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
         }
         for (const pair of secretConfig.wxContentReplaceList) {
             if (content.includes(pair[0])) {
