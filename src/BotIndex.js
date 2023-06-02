@@ -275,6 +275,22 @@ async function onTGMsg(tgMsg) {
                 } else {
                     // forward to last talker
                     await state.last.target.say(tgMsg.text);
+                    if (state.last.name === state.preRoom.topic) {
+                        // the last talker - Room matches preRoom
+                        if (processor.isPreRoomValid(state.preRoom, topic) && state.preRoom.firstWord === "") {
+                            // preRoom valid and already merged (more than 2 msg)
+                            const _ = state.preRoom;
+                            const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(topic, `<b>${topic}</b>`);
+                            // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
+                            _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
+                            ctLogger.debug(`Delivered myself reply stamp into Room:${topic} 's former message, and cleared its preRoom.`);
+                            state.preRoom = {
+                                firstWord: "",
+                                tgMsg: null,
+                                name: "",
+                            };
+                        }
+                    }
                     ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
                     await tgBotDo.SendChatAction("choose_sticker");
                 }
@@ -597,7 +613,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
-            wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49","")}].`);
+            wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49", "")}].`);
             //TODO add this to msg pool and return
         } else if (msg.payload.filename.endsWith(".url")) {
             wxLogger.trace(`filename has suffix .url, maybe LINK.`);
@@ -735,9 +751,8 @@ async function onWxMessage(msg) {
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg);
         } else {
             //不是群消息 - - - - - - - -
-            //微信运动-wipe-out(由于客户端不支持微信运动消息的显示,故被归类为text)
             if (alias === "微信运动") {
-                wxLogger.debug(`[微信运动] says: ${msg.payload.filename.replace(".1","")}`);
+                wxLogger.debug(`[微信运动] says: ${msg.payload.filename.replace(".1", "")}`);
                 //TODO: add to undelivered pool!
                 return;
             }
