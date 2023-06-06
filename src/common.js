@@ -1,10 +1,12 @@
 const log4js = require('log4js');
 const fs = require("fs");
-require("https-proxy-agent");
+const proxy = require("../proxy");
 const dayjs = require("dayjs");
 const https = require("https");
+const http = require("http");
 const crypto = require('crypto');
 const agentEr = require("https-proxy-agent");
+
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "[%d{yy/MM/dd hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
 
@@ -74,9 +76,9 @@ module.exports = (param) => {
             wxMsgLogger: log4js.getLogger("wxMsg"),
 
             LogWxMsg: (msg, isMessageDropped) => {
-                let msgToStr=`${msg}`;
+                let msgToStr = `${msg}`;
                 // fixed here to avoid contamination of <img of HTML.
-                log4js.getLogger("wx").trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji","[img class=\"emoji")}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
+                log4js.getLogger("wx").trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
                     `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`
                     + (isMessageDropped ? '\n' : ''));
                 log4js.getLogger("wxMsg").info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
@@ -86,8 +88,7 @@ module.exports = (param) => {
             ---------------------`);
             },
 
-            //////-----------Above is mostly logger ---------------------//////
-
+            //////-----------Above is mostly of logger ---------------------//////
 
             _T: {},
             STypes: {
@@ -110,11 +111,11 @@ module.exports = (param) => {
                 placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
                 wxAutoDownloadThreshold: 3 * 1048576
             },
-            downloader:{
+            downloader: {
                 httpNoProxy: async function (url, pathName) {
                     return new Promise((resolve, reject) => {
                         const file = fs.createWriteStream(pathName);
-                        require('http').get(url, {}, (response) => {
+                        http.get(url, {}, (response) => {
                             // response.setEncoding("binary");
                             response.pipe(file);
                             file.on('finish', () => {
@@ -126,11 +127,11 @@ module.exports = (param) => {
                         });
                     });
                 },
-                httpsWithProxy:async function(url, pathName) {
+                httpsWithProxy: async function (url, pathName) {
                     return new Promise((resolve, reject) => {
                         const file = fs.createWriteStream(pathName);
-                        const agent = new agentEr.HttpsProxyAgent(require("../proxy"));
-                        require('https').get(url, {agent: agent}, (response) => {
+                        const agent = new agentEr.HttpsProxyAgent(proxy);
+                        https.get(url, {agent: agent}, (response) => {
                             response.pipe(file);
                             file.on('finish', () => {
                                 file.close();
@@ -141,7 +142,7 @@ module.exports = (param) => {
                         });
                     });
                 },
-                httpsWithWx:async function(url, pathName, cookieStr) {
+                httpsWithWx: async function (url, pathName, cookieStr) {
                     return new Promise((resolve, reject) => {
                         const file = fs.createWriteStream(pathName);
                         const options = {
@@ -150,7 +151,7 @@ module.exports = (param) => {
                             },
                             rejectUnauthorized: false
                         };
-                        require('https').get(url, options, (response) => {
+                        https.get(url, options, (response) => {
                             if (response.statusCode !== 200) {
                                 reject(new Error(`Failed to download file: ${response.statusCode} ${response.statusMessage}`));
                                 return;
