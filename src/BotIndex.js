@@ -561,6 +561,7 @@ async function onWxMessage(msg) {
                 } else msg.downloadedPath = null;
             } else {
                 msg.downloadedPath = cEPath;
+                msg.md5 = md5.substring(0, 3);
                 await stickerLib.set(md5, [msg.md5, cEPath]);
             }
         } catch (e) {
