@@ -548,6 +548,7 @@ async function onWxMessage(msg) {
                     content = `[${md5.substring(0, 3)} of #sticker]`;
                     msg.DType = DTypes.Text;
                     ahead = false;
+                    msg.md5 = md5.substring(0, 3);
                     ctLogger.trace(`Found former msg for '${md5}', replacing to Text.`);
                 }
             }
@@ -559,7 +560,7 @@ async function onWxMessage(msg) {
                     msg.md5 = md5.substring(0, 3);
                     await stickerLib.set(md5, [msg.md5, cEPath]);
                 } else msg.downloadedPath = null;
-            } else {
+            } else if(ahead){
                 msg.downloadedPath = cEPath;
                 msg.md5 = md5.substring(0, 3);
                 await stickerLib.set(md5, [msg.md5, cEPath]);
