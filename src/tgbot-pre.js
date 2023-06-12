@@ -54,9 +54,11 @@ const tgBotDo = {
             width: 100,
             height: 100,
             parse_mode: "HTML",
+            message_thread_id:secretConfig.tgTarget.sticker_topic
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendAnimation(secretConfig.target_TG_ID, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.warn(e.toString()));
+        // Temp. change for classifying stickers
+        return await tgbot.sendAnimation(secretConfig.tgTarget.id, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.warn(e.toString()));
     },
     SendPhoto: async (msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
