@@ -341,6 +341,7 @@ async function softReboot(reason) {
     };
     timerDataCount = 6;
     msgMergeFailCount = 6;
+    globalNetworkErrorCount = 3;
     const tgMsg = await tgBotDo.SendMessage(`Soft Reboot Successful.\nReason: <code>${reason}</code>`, userDo, "HTML", {
         reply_markup: {}
     });
@@ -560,7 +561,7 @@ async function onWxMessage(msg) {
                     msg.md5 = md5.substring(0, 3);
                     await stickerLib.set(md5, [msg.md5, cEPath]);
                 } else msg.downloadedPath = null;
-            } else if(ahead){
+            } else if (ahead) {
                 msg.downloadedPath = cEPath;
                 msg.md5 = md5.substring(0, 3);
                 await stickerLib.set(md5, [msg.md5, cEPath]);
@@ -820,7 +821,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     let content = contentO.replaceAll("<br/>", "\n");
     const topic = isRoom ? await room.topic() : "";
     const template = isRoom ? `📬[<b>${name}</b>@${topic}]` : `📨[<b>${alias}</b>]`;
-    let tgMsg, retrySend = 1;
+    let tgMsg, retrySend = 2;
     // TG does not support <br/> in HTML parsed text, so filtering it.
     content = content.replaceAll("<br/>", "\n");
     while (retrySend > 0) {
@@ -874,8 +875,9 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         }
 
         if (!tgMsg) {
+            if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secretConfig.network_issue_webhook);
             tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed. " +
-            (retrySend > 0) ? `[Trying resend #${retrySend} to solve network error]` : `[No retries left]`);
+            (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
             if (retrySend-- > 0) continue;
             return "sendFailure";
         } else {
@@ -942,3 +944,4 @@ const timerData = setInterval(async () => {
 }, 5000);
 let timerDataCount = 6;
 let msgMergeFailCount = 6;
+let globalNetworkErrorCount = 3;

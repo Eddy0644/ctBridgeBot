@@ -142,6 +142,15 @@ module.exports = (param) => {
                         });
                     });
                 },
+                httpsCurl: async function (url) {
+                    return new Promise((resolve, reject) => {
+                        https.get(url, {}, (response) => {
+                            resolve("SUCCESS");
+                        }).on('error', (error) => {
+                            reject(error);
+                        });
+                    });
+                },
                 httpsWithWx: async function (url, pathName, cookieStr) {
                     return new Promise((resolve, reject) => {
                         const file = fs.createWriteStream(pathName);
