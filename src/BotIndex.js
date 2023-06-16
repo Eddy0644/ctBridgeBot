@@ -12,11 +12,12 @@ const {
     Config, STypes,
     downloader,
     processor,
-    uploadFileToUpyun
+    uploadFileToUpyun,
+    delay
 } = require('./common')();
 
-let msgMappings = [];
-let state = {
+let msgMappings = [], talkerLocks = [];
+const state = {
     last: {},
     lastExplicitTalker: null,
     lockTarget: 0,
@@ -492,12 +493,25 @@ async function onWxMessage(msg) {
     }
 
     msg.DType = DTypes.Default;
+
     //提前筛选出自己的消息,避免多次下载媒体
     if (room) {
         if (msg.self() && await room.topic() !== "CyTest") return;
     } else {
         if (msg.self()) return;
     }
+
+    // TODO delay messages from same talker as many messages may arrive at almost same time
+    let haveLock = false;
+    for (let i = 0; i < 6 && talkerLocks.includes(contact.id); i++) {
+        await delay(200);
+    }
+    if (!talkerLocks.includes(contact.id)) {
+        haveLock = true;
+        talkerLocks.push(contact.id);
+        // talkerLocks.re
+    }
+
     //已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();

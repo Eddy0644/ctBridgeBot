@@ -89,7 +89,7 @@ module.exports = (param) => {
             },
 
             //////-----------Above is mostly of logger ---------------------//////
-
+            delay : (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
             _T: {},
             STypes: {
                 Chat: 1,
