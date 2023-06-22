@@ -1,9 +1,9 @@
 const {WechatyBuilder} = require('wechaty');
 const qrcodeTerminal = require("qrcode-terminal");
-const config = require("../config/secret");
+// const config = require("../config/secret");
 const secretConfig = require("../config/secret");
 const fs = require("fs");
-
+const {downloader} = require("./common");
 const tencentcloud = require("tencentcloud-sdk-nodejs-asr");
 const AsrClient = tencentcloud.asr.v20190614.Client;
 
@@ -24,7 +24,8 @@ const DTypes = {
 
 
 module.exports = (tgbot, wxLogger) => {
-
+    // running instance of wxbot-pre
+    let needLoginStat = 0;
     // 二维码生成
     wxbot.on('scan', async (qrcode, status) => {
         const qrcodeImageUrl = [
@@ -34,8 +35,22 @@ module.exports = (tgbot, wxLogger) => {
         if (status === 2) {
             qrcodeTerminal.generate(qrcode, {small: true}); // 在console端显示二维码
             console.log(qrcodeImageUrl);
+            // Need User Login
+            if (needLoginStat === 0) {
+                needLoginStat = 1;
+                setTimeout(async () => {
+                    if (needLoginStat === 1) {
+                        await downloader.httpsCurl(secretConfig.notification.baseUrl + secretConfig.notification.prompt_relogin_required);
+                        wxLogger.info(`Already send re-login reminder to user.`);
+                    } else {
+
+                    }
+                }, 30000);
+            }
+
         } else if (status === 3) {
             console.log(`-----The code is already scanned.\n${qrcodeImageUrl}`);
+            needLoginStat = 0;
         } else {
             console.log(`User may accepted login. Proceeding...`);
         }

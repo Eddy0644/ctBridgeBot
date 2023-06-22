@@ -23,3 +23,4 @@ package-lock.json
 /config/cli.pem
 /config/srv.pem
 /stickers.json
+/test.json
