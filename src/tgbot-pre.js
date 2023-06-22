@@ -5,6 +5,8 @@ const {tgLogger} = require('./common')();
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 process.env["NTBA_FIX_350"] = "1";
 
+const {downloader} = require("./common");
+
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secretConfig.botToken,
@@ -54,7 +56,7 @@ const tgBotDo = {
             width: 100,
             height: 100,
             parse_mode: "HTML",
-            message_thread_id:secretConfig.tgTarget.sticker_topic
+            message_thread_id: secretConfig.tgTarget.sticker_topic
         };
         if (isSilent) form.disable_notification = true;
         // Temp. change for classifying stickers
@@ -123,9 +125,30 @@ const tgBotDo = {
         return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.warn(e.toString()));
     }
 };
-
+let errorStat = 0;
 tgbot.on('polling_error', async (e) => {
-    tgLogger.warn("Polling - " + e.message.replace("Error: ", ""));
+    const msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "[Error]\t";
+    if (errorStat === 0) {
+        errorStat = 1;
+        setTimeout(async () => {
+            if (errorStat === 2) {
+                // still have errors after the timer been set up triggered by first error
+                await downloader.httpsCurl(secretConfig.notification.baseUrl + secretConfig.notification.prompt_network_problematic);
+                tgLogger.warn(`Frequent network issue detected! Please check network!\n${msg}`);
+            } else {
+                // no other error during this period, discarding notify initiation
+                errorStat = 0;
+                tgLogger.warn(`There may be a temporary network issue but now disappeared. If possible, please check your network config.`);
+
+            }
+        }, 10000);
+        console.warn(msg2 + msg);
+    } else if (errorStat === 1) {
+        errorStat = 2;
+        console.warn(msg2 + msg);
+    } else {
+        console.warn(msg2 + msg);
+    }
 });
 tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
