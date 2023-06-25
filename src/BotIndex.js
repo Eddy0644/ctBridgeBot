@@ -83,21 +83,18 @@ async function onTGMsg(tgMsg) {
 
         if (tgMsg.voice) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
+            // noinspection JSUnresolvedVariable
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
             await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
             try {
                 if (!fs.existsSync(file_path)) throw new Error("save file error");
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
                 if (res !== "") {
-                    ctLogger.trace(`Transcript result: ${res}`)
                     await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
                 }
             } catch (e) {
-                tgLogger.info(`Audio transcript received, But download failed.`);
-                const tgMsg = await tgBotDo.SendMessage('Audio transcript received, But download failed. ', true, null);
-                state.poolToDelete.add(tgMsg, 6);
+                await mod.tgProcessor.replyWithTips("audioProcessFail");
             }
-            // await deliverTGToWx(tgMsg, tgMsg.voice, "voice");
             return;
         }
         // Non-text messages must be filtered ahead of them !---------------
@@ -212,9 +209,7 @@ async function onTGMsg(tgMsg) {
             }
             case "/lock": {
                 state.lockTarget = state.lockTarget ? 0 : 1;
-                const tgMsg = await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
-                state.poolToDelete.add(tgMsg, 6);
-                return;
+                return await mod.tgProcessor.replyWithTips("lockStateChange", null, 6, state.lockTarget);
             }
             case "/slet": {
                 // Set last explicit talker as last talker.
@@ -381,10 +376,8 @@ async function softReboot(reason) {
     timerDataCount = 6;
     msgMergeFailCount = 6;
     globalNetworkErrorCount = 3;
-    const tgMsg = await tgBotDo.SendMessage(`Soft Reboot Successful.\nReason: <code>${reason}</code>`, userDo, "HTML", {
-        reply_markup: {}
-    });
-    state.poolToDelete.add(tgMsg, userDo ? 6 : 25);
+
+    await mod.tgProcessor.replyWithTips("softReboot", null, userDo ? 6 : 25, reason);
 }
 
 async function generateInfo() {
@@ -442,8 +435,10 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     }
     tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
+    // noinspection JSUnresolvedVariable
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
     const rand1 = Math.random();
+    // noinspection JSUnresolvedVariable
     let file_path = './downloaded/' + (
         (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
             (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :

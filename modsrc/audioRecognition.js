@@ -51,8 +51,10 @@ async function wx_audio_VTT(saveTarget, audioPath, voiceFormat = "mp3") {
 }
 
 async function tg_audio_VTT(audioPath) {
+    const {defLogger} = env;
     const result = await VTT_by_tx(audioPath, "ogg-opus");
     if (result !== "ERR!.") {
+        defLogger.trace(`Transcript result: ${result}`);
         return result;
     } else return "";
 }

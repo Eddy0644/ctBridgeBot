@@ -34,52 +34,53 @@ let env;
 //     }
 // }
 //
-// async function replyWithTips(tipMode = "", target = null, timeout = 6, additional = null) {
-//     const {tgLogger, state, secret, defLogger, tgBotDo} = env;
-//     let message = "", form = {};
-//     switch (tipMode) {
-//         case "globalCmdToC2C":
-//             message = `You sent a global command to a C2C chat. The operation has been blocked and please check.`;
-//             break;
-//         case "wrongMYSTAT_setter":
-//             message = `You sent a global command to a C2C chat. The operation has been blocked and please check.`;
-//             break;
-//         case "mystat_changed":
-//             message = `Changed myStat into ${additional}.`;
-//             break;
-//         case "lockStateChange":
-//             message = `Already set lock state to ${additional}.`;
-//             break;
-//         case "softReboot":
-//             message = `Soft Reboot Successful.\nReason: <code>${additional}</code>`;
-//             form = {reply_markup: {}};
-//             break;
-//         case "nothingToDo":
-//             message = `Nothing to do upon your message, ${target}`;
-//             break;
-//         default:
-//             tgLogger.error(`Wrong call of tg replyWithTips() with invalid 'tipMode'. Please check arguments.\n${tipMode}\t${target}`);
-//             return;
-//     }
-//     if (target === null) {
-//         // left this to null means replying to default channel. ---------------
-//         target = secret.class.fallback.tgGroupId;
-//         // tgLogger.error(`Wrong call of tg replyWithTips() with null 'target'. Please check arguments.\n${tipMode}\t${target}`);
-//         // return;
-//     }
-//     try {
-//         const tgMsg = await tgBotDo.sendMessage({tgGroupId: target}, message, true, "HTML", form);
-//         defLogger.debug(`Sent out following tips: {${message}}`);
-//         if (timeout !== 0) {
-//             tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${timeout})sec.`);
-//             state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + timeout, chat_id: target});
-//         }
-//     } catch (e) {
-//         defLogger.warn(`Sending Tip failed in post-check, please check!`);
-//     }
-//     // if (timeout !== 0) state.poolToDelete.add(tgMsg, timeout);
-//
-// }
+async function replyWithTips(tipMode = "", target = null, timeout = 6, additional = null) {
+    const {tgLogger, state, secret, defLogger, tgBotDo} = env;
+    let message = "", form = {};
+    switch (tipMode) {
+        case "globalCmdToC2C":
+            message = `You sent a global command to a C2C chat. The operation has been blocked and please check.`;
+            break;
+        case "wrongMYSTAT_setter":
+            message = `You sent a global command to a C2C chat. The operation has been blocked and please check.`;
+            break;
+        case "mystat_changed":
+            message = `Changed myStat into ${additional}.`;
+            break;
+        case "lockStateChange":
+            message = `Already set lock state to ${additional}.`;
+            break;
+        case "softReboot":
+            message = `Soft Reboot Successful.\nReason: <code>${additional}</code>`;
+            form = {reply_markup: {}};
+            break;
+        case "nothingToDo":
+            message = `Nothing to do upon your message, ${target}`;
+            break;
+        case "audioProcessFail":
+            message = `Audio transcript request received, But error occurred when processing.`;
+            break;
+        default:
+            tgLogger.error(`Wrong call of tg replyWithTips() with invalid 'tipMode'. Please check arguments.\n${tipMode}\t${target}`);
+            return;
+    }
+    if (target === null) {
+        // left this to null means replying to default channel. ---------------
+        target = secret.target_TG_ID;
+    }
+    try {
+        const tgMsg = await tgBotDo.SendMessage(/*{tgGroupId: target},*/ message, true, "HTML", form);
+        defLogger.debug(`Sent out following tips: {${message}}`);
+        if (timeout !== 0) {
+            tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${timeout})sec.`);
+            state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + timeout, chat_id: target});
+        }
+    } catch (e) {
+        defLogger.warn(`Sending Tip failed in post-check, please check!`);
+    }
+    // if (timeout !== 0) state.poolToDelete.add(tgMsg, timeout);
+
+}
 
 async function addSelfReplyTs() {
     const {processor, state, ctLogger} = env;
@@ -102,7 +103,7 @@ async function addSelfReplyTs() {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs};
+    return {addSelfReplyTs,replyWithTips};
     // return {mergeToPrev_tgMsg, replyWithTips};
 
 };
