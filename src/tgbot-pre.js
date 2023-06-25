@@ -1,4 +1,4 @@
-const secretConfig = require('../config/secret');
+const secret = require('../config/secret');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger} = require('./common')();
@@ -9,11 +9,11 @@ const {downloader} = require("./common");
 
 let tgbot;
 if (isPolling) {
-    tgbot = new TelegramBot(secretConfig.botToken,
+    tgbot = new TelegramBot(secret.botToken,
         {polling: {interval: 2000}, request: {proxy: require("../proxy")},});
     tgbot.deleteWebHook();
 } else {
-    tgbot = new TelegramBot(secretConfig.botToken, {
+    tgbot = new TelegramBot(secret.botToken, {
         webHook: {
             port: 8443,
             max_connections: 3,
@@ -23,7 +23,7 @@ if (isPolling) {
         },
         request: {proxy: require("../proxy")}
     });
-    tgbot.setWebHook(`${secretConfig.webHookUrlPrefix}${process.argv[3]}/bot${secretConfig.botToken}`, {
+    tgbot.setWebHook(`${secret.webHookUrlPrefix}${process.argv[3]}/bot${secret.botToken}`, {
         drop_pending_updates: true
         /* Please, remove this line after the bot have ability to control messages between instances!!! */
     });
@@ -34,17 +34,17 @@ const tgBotDo = {
         await delay(100);
         if (isSilent) form.disable_notification = true;
         if (parseMode) form.parse_mode = parseMode;
-        return await tgbot.sendMessage(secretConfig.target_TG_ID, msg, form).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendMessage(secret.target_TG_ID, msg, form).catch((e) => tgLogger.warn(e.toString()));
     },
     RevokeMessage: async (msgId) => {
         await delay(100);
-        return await tgbot.deleteMessage(secretConfig.target_TG_ID, msgId).catch((e) => {
+        return await tgbot.deleteMessage(secret.target_TG_ID, msgId).catch((e) => {
             tgLogger.warn(e.toString());
         });
     },
     SendChatAction: async (action) => {
         await delay(100);
-        return await tgbot.sendChatAction(secretConfig.target_TG_ID, action).catch((e) => {
+        return await tgbot.sendChatAction(secret.target_TG_ID, action).catch((e) => {
             tgLogger.warn(e.toString());
         });
     },
@@ -56,11 +56,11 @@ const tgBotDo = {
             width: 100,
             height: 100,
             parse_mode: "HTML",
-            message_thread_id: secretConfig.tgTarget.sticker_topic
+            message_thread_id: secret.tgTarget.sticker_topic
         };
         if (isSilent) form.disable_notification = true;
         // Temp. change for classifying stickers
-        return await tgbot.sendAnimation(secretConfig.tgTarget.id, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendAnimation(secret.tgTarget.id, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.warn(e.toString()));
     },
     SendPhoto: async (msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
@@ -72,12 +72,12 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendPhoto(secretConfig.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendPhoto(secret.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.warn(e.toString()));
     },
     EditMessageText: async (text, formerMsg) => {
         // await delay(100);
         let form = {
-            chat_id: secretConfig.target_TG_ID,
+            chat_id: secret.target_TG_ID,
             message_id: formerMsg.message_id,
             parse_mode: "HTML"
         };
@@ -86,7 +86,7 @@ const tgBotDo = {
     EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false) => {
         // await delay(100);
         let form = {
-            chat_id: secretConfig.target_TG_ID,
+            chat_id: secret.target_TG_ID,
             message_id: formerMsg.message_id,
             parse_mode: "HTML",
 
@@ -113,7 +113,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendVoice(secretConfig.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendVoice(secret.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.warn(e.toString()));
     },
     SendDocument: async (msg, path, isSilent = false) => {
         await delay(100);
@@ -122,7 +122,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendDocument(secretConfig.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendDocument(secret.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.warn(e.toString()));
     }
 };
 let errorStat = 0;
@@ -133,7 +133,7 @@ tgbot.on('polling_error', async (e) => {
         setTimeout(async () => {
             if (errorStat === 2) {
                 // still have errors after the timer been set up triggered by first error
-                await downloader.httpsCurl(secretConfig.notification.baseUrl + secretConfig.notification.prompt_network_problematic);
+                await downloader.httpsCurl(secret.notification.baseUrl + secret.notification.prompt_network_problematic);
                 tgLogger.warn(`Frequent network issue detected! Please check network!\n${msg}`);
             } else {
                 // no other error during this period, discarding notify initiation

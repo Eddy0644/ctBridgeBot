@@ -1,7 +1,7 @@
 const {WechatyBuilder} = require('wechaty');
 const qrcodeTerminal = require("qrcode-terminal");
 // const config = require("../config/secret");
-const secretConfig = require("../config/secret");
+const secret = require("../config/secret");
 const fs = require("fs");
 const {downloader} = require("./common");
 const tencentcloud = require("tencentcloud-sdk-nodejs-asr");
@@ -40,7 +40,7 @@ module.exports = (tgbot, wxLogger) => {
                 needLoginStat = 1;
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
-                        await downloader.httpsCurl(secretConfig.notification.baseUrl + secretConfig.notification.prompt_relogin_required);
+                        await downloader.httpsCurl(secret.notification.baseUrl + secret.notification.prompt_relogin_required);
                         wxLogger.info(`Already send re-login reminder to user.`);
                     } else {
 
@@ -72,7 +72,7 @@ module.exports = (tgbot, wxLogger) => {
             try {
                 // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于wx）
                 const client = new AsrClient({
-                    credential: secretConfig.txyun_credential,
+                    credential: secret.txyun_credential,
                     region: "",
                     profile: {
                         httpProfile: {

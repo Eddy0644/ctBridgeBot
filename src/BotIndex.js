@@ -1,6 +1,6 @@
 // noinspection JSUnresolvedVariable,JSObjectNullOrUndefined
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
-const secretConfig = require('../config/secret');
+const secret = require('../config/secret');
 // const Config = require('./config/public');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
@@ -52,12 +52,24 @@ state.poolToDelete.add = function (tgMsg, delay) {
 };
 const {tgbot, tgBotDo} = require('./tgbot-pre');
 
-tgbot.on('message', onTGMsg);
+const {wxbot, DTypes, recogniseAudio} = require('./wxbot-pre')(tgbot, wxLogger);
+
+// Loading instance modules...
+const env = {
+    state, tgBotDo, tgLogger, defLogger: ctLogger, wxLogger, secret, wxbot, mod: {}
+};
+const mod = {
+    // autoRespond: require('./autoResponder')(env),
+    upyunMiddleware: require('../modsrc/upyunMiddleware')(env),
+    // wxProcessor: require('./wxProcessor')(env),
+    // tgProcessor: require('./tgProcessor')(env),
+}
+env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     try {
         if (process.uptime() < 4) return;
-        if (!secretConfig.tgAllowList.includes(tgMsg.from.id)) {
+        if (!secret.tgAllowList.includes(tgMsg.from.id)) {
             tgLogger.trace(`Got TG message (#${tgMsg.message_id}) from unauthorized user (${tgMsg.from.id}), Ignoring.`);
             return;
         }
@@ -82,7 +94,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.voice) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
-            await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
+            await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
             try {
                 if (!fs.existsSync(file_path)) throw new Error("save file error");
                 const res = await recogniseAudio({}, file_path, false);
@@ -102,7 +114,7 @@ async function onTGMsg(tgMsg) {
             tgLogger.warn(`A TG message with empty content has passed through text Processor! Check the log for detail.`);
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
         }
-        for (const pair of secretConfig.tgContentReplaceList) {
+        for (const pair of secret.tgContentReplaceList) {
             if (tgMsg.text.indexOf(pair[0]) !== -1) {
                 tgLogger.trace(`Replaced pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
                 while (tgMsg.text.indexOf(pair[0]) !== -1) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
@@ -174,7 +186,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/find") {
             let form = {
                 reply_markup: JSON.stringify({
-                    keyboard: secretConfig.quickFindList,
+                    keyboard: secret.quickFindList,
                     is_persistent: false,
                     resize_keyboard: true,
                     one_time_keyboard: true
@@ -196,7 +208,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text === "/keyboard") {
             let form = {
                 reply_markup: JSON.stringify({
-                    keyboard: secretConfig.quickKeyboard,
+                    keyboard: secret.quickKeyboard,
                     is_persistent: true,
                     resize_keyboard: true,
                     one_time_keyboard: false
@@ -212,7 +224,7 @@ async function onTGMsg(tgMsg) {
         } else if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
             let findToken = tgMsg.text.replace("F$", "");
-            for (const pair of secretConfig.nameFindReplaceList) {
+            for (const pair of secret.nameFindReplaceList) {
                 if (findToken === pair[0]) {
                     findToken = pair[1];
                     break;
@@ -274,7 +286,7 @@ async function onTGMsg(tgMsg) {
                 ctLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
-                for (const pair of secretConfig.nameFindReplaceList) {
+                for (const pair of secret.nameFindReplaceList) {
                     if (findToken === pair[0]) {
                         findToken = pair[1];
                         break;
@@ -327,6 +339,8 @@ async function onTGMsg(tgMsg) {
 
 }
 
+tgbot.on('message', onTGMsg);
+
 async function softReboot(reason) {
     const userDo = (reason === "User triggered.") || (reason === "");
     // state.lastOpt = null;
@@ -364,9 +378,9 @@ async function generateInfo() {
     };
     const postData = JSON.stringify(dtInfo);
     const options = {
-        hostname: secretConfig.statusReport[0],
+        hostname: secret.statusReport[0],
         port: 443,
-        path: secretConfig.statusReport[1] + '?s=create',
+        path: secret.statusReport[1] + '?s=create',
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -387,7 +401,7 @@ async function generateInfo() {
             req.end();
         });
 
-        url = `https://${options.hostname}${secretConfig.statusReport[1]}?n=${res}`;
+        url = `https://${options.hostname}${secret.statusReport[1]}?n=${res}`;
         if (res.indexOf('<html') > -1) throw new Error("Upload error");
     } catch (e) {
         ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
@@ -416,15 +430,11 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const action = `upload_${media_type}`;
     await tgBotDo.SendChatAction(action);
     tgLogger.trace(`file_path is ${file_path}.`);
-    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secretConfig.botToken}/${fileCloudPath}`, file_path);
+    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
     let packed;
     if (tgMsg.sticker) {
-        ctLogger.trace(`Invoking TG sticker pre-process...`);
-        const uploadResult = await uploadFileToUpyun(file_path.replace('./downloaded/stickerTG/', ''), secretConfig.upyun);
-        if (uploadResult.ok) {
-            await FileBox.fromUrl(uploadResult.filePath + '!/format/jpg').toFile(`./downloaded/stickerTG/${rand1}.jpg`);
-            file_path = file_path.replace('.webp', '.jpg');
-        } else ctLogger.warn(`Error on sticker pre-process:\n\t${uploadResult.msg}`);
+        tgLogger.trace(`Invoking TG sticker pre-process...`);
+        file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
     }
     packed = await FileBox.fromFile(file_path);
 
@@ -720,7 +730,7 @@ async function onWxMessage(msg) {
         if (content.includes("[收到一条微信转账消息，请在手机上查看]")) {
             content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
         }
-        for (const pair of secretConfig.wxContentReplaceList) {
+        for (const pair of secret.wxContentReplaceList) {
             if (content.includes(pair[0])) {
                 wxLogger.trace(`Replaced wx emoji ${pair[0]} to corresponding universal emoji. (config :->secret.js)`);
                 while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
@@ -739,7 +749,7 @@ async function onWxMessage(msg) {
                 }
             }
             // 再筛选掉符合exclude keyword的群聊消息
-            for (const keyword of secretConfig.nameExcludeKeyword) {
+            for (const keyword of secret.nameExcludeKeyword) {
                 if (topic.includes(keyword)) {
                     wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -791,7 +801,7 @@ async function onWxMessage(msg) {
                 return;
             }
             // 筛选掉符合exclude keyword的个人消息
-            for (const keyword of secretConfig.nameExcludeKeyword) {
+            for (const keyword of secret.nameExcludeKeyword) {
                 if (name.includes(keyword)) {
                     wxLogger.debug(`来自此人[in ${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -889,7 +899,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         }
 
         if (!tgMsg) {
-            if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secretConfig.network_issue_webhook);
+            if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secret.network_issue_webhook);
             tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
             if (retrySend-- > 0) continue;
@@ -924,7 +934,6 @@ async function getFileFromWx(msg) {
     }
 }
 
-const {wxbot, DTypes, recogniseAudio} = require('./wxbot-pre')(tgbot, wxLogger);
 
 wxbot.on('message', onWxMessage);
 wxbot.on('login', async user => {
