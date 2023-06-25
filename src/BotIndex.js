@@ -52,7 +52,7 @@ state.poolToDelete.add = function (tgMsg, delay) {
 };
 const {tgbot, tgBotDo} = require('./tgbot-pre');
 
-const {wxbot, DTypes, recogniseAudio} = require('./wxbot-pre')(tgbot, wxLogger);
+const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
 
 // Loading instance modules...
 const env = {
@@ -61,6 +61,7 @@ const env = {
 const mod = {
     // autoRespond: require('./autoResponder')(env),
     upyunMiddleware: require('../modsrc/upyunMiddleware')(env),
+    audioRecognition: require('../modsrc/audioRecognition')(env),
     // wxProcessor: require('./wxProcessor')(env),
     // tgProcessor: require('./tgProcessor')(env),
 }
@@ -87,10 +88,11 @@ async function onTGMsg(tgMsg) {
             await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
             try {
                 if (!fs.existsSync(file_path)) throw new Error("save file error");
-                const res = await recogniseAudio({}, file_path, false);
-                if (res === false) throw new Error("transcript error from TXyun");
-                ctLogger.trace(`Transcript result: ${res}`)
-                await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
+                const res = await mod.audioRecognition.tg_audio_VTT(file_path);
+                if (res !== "") {
+                    ctLogger.trace(`Transcript result: ${res}`)
+                    await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
+                }
             } catch (e) {
                 tgLogger.info(`Audio transcript received, But download failed.`);
                 const tgMsg = await tgBotDo.SendMessage('Audio transcript received, But download failed. ', true, null);
@@ -666,7 +668,8 @@ async function onWxMessage(msg) {
         let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
         await fBox.toFile(audioPath);
         if (!fs.existsSync(audioPath)) throw new Error("save file error");
-        await recogniseAudio(msg, audioPath);
+        // await recogniseAudio(msg, audioPath);
+        await mod.audioRecognition.wx_audio_VTT(msg, audioPath);
         wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
         msg.DType = DTypes.Audio;
         msg.downloadedPath = audioPath;
@@ -885,6 +888,8 @@ async function onWxMessage(msg) {
             const deliverResult = await deliverWxToTG(false, msg, content);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
         }
+
+        if (haveLock) talkerLocks.pop();
     }
 }
 
