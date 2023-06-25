@@ -303,9 +303,11 @@ async function onTGMsg(tgMsg) {
                     }
                     if (found) {
                         wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
-                        const res = await findSbInWechat(findToken);
+                        const res = await findSbInWechat(findToken, tgMsg.message_id);
                         if (res) {
                             await tgBotDo.RevokeMessage(tgMsg.message_id);
+                            // TODO force override of message content but need a fix
+                            tgMsg.text = tgMsg.text.replace(match[0], "");
                             // left empty here, to continue forward message to talker and reuse the code
                         } else return;
                     } else {
