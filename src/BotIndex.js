@@ -294,7 +294,7 @@ async function onTGMsg(tgMsg) {
                         wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
                         const res = await findSbInWechat(findToken, tgMsg.message_id);
                         if (res) {
-                            await tgBotDo.RevokeMessage(tgMsg.message_id);
+                            // await tgBotDo.RevokeMessage(tgMsg.message_id);
                             // TODO force override of message content but need a fix
                             tgMsg.text = tgMsg.text.replace(match[0], "");
                             // left empty here, to continue forward message to talker and reuse the code
@@ -917,7 +917,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
         } else {
             // 仅文本或未分类
             // Plain text or not classified
-            wxLogger.debug(`发消息人: ${template} 消息内容: ${content}`);
+            wxLogger.debug(`Normal Text message from: ${template} started delivering...`);
             tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
             if (isRoom && msg.preRoomNeedUpdate) {
                 state.preRoom.topic = topic;
@@ -1001,7 +1001,8 @@ let timerDataCount = 6;
 let msgMergeFailCount = 6;
 let globalNetworkErrorCount = 3;
 
-await onTGMsg({
+// noinspection JSIgnoredPromiseFromCall
+onTGMsg({
     chat: undefined, reply_to_message: undefined, edit_date: undefined,
     DEPRESS_IDE_WARNING: 1
 });

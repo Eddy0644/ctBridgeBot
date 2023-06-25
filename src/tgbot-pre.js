@@ -5,7 +5,7 @@ const {tgLogger} = require('./common')();
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 process.env["NTBA_FIX_350"] = "1";
 
-const {downloader} = require("./common");
+const {downloader} = require("./common")();
 
 let tgbot;
 if (isPolling) {
