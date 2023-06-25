@@ -66,6 +66,7 @@ const mod = {
 env.mod = mod;
 
 async function onTGMsg(tgMsg) {
+    if (tgMsg.DEPRESS_IDE_WARNING) return;
     try {
         if (process.uptime() < 4) return;
         if (!secret.tgAllowList.includes(tgMsg.from.id)) {
@@ -999,3 +1000,8 @@ const timerData = setInterval(async () => {
 let timerDataCount = 6;
 let msgMergeFailCount = 6;
 let globalNetworkErrorCount = 3;
+
+await onTGMsg({
+    chat: undefined, reply_to_message: undefined, edit_date: undefined,
+    DEPRESS_IDE_WARNING: 1
+});
