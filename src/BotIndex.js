@@ -1,4 +1,3 @@
-// noinspection JSUnresolvedVariable,JSObjectNullOrUndefined
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 const secret = require('../config/secret');
 // const Config = require('./config/public');
@@ -12,7 +11,6 @@ const {
     Config, STypes,
     downloader,
     processor,
-    uploadFileToUpyun,
     delay
 } = require('./common')();
 
@@ -56,14 +54,14 @@ const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
 
 // Loading instance modules...
 const env = {
-    state, tgBotDo, tgLogger, defLogger: ctLogger, wxLogger, secret, wxbot, mod: {}
+    state, tgBotDo, tgLogger, defLogger: ctLogger, wxLogger, secret, wxbot, processor, mod: {}
 };
 const mod = {
     // autoRespond: require('./autoResponder')(env),
     upyunMiddleware: require('../modsrc/upyunMiddleware')(env),
     audioRecognition: require('../modsrc/audioRecognition')(env),
     // wxProcessor: require('./wxProcessor')(env),
-    // tgProcessor: require('./tgProcessor')(env),
+    tgProcessor: require('../modsrc/tgProcessor')(env),
 }
 env.mod = mod;
 
@@ -152,19 +150,7 @@ async function onTGMsg(tgMsg) {
                         await mapPair[1].say(tgMsg.text);
                         if (mapPair[2] === state.preRoom.topic) {
                             // the explicit talker - Room matches preRoom
-                            if (processor.isPreRoomValid(state.preRoom, mapPair[2]) && state.preRoom.firstWord === "") {
-                                // preRoom valid and already merged (more than 2 msg)
-                                const _ = state.preRoom;
-                                const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(topic, `<b>${topic}</b>`);
-                                // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
-                                _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                                ctLogger.debug(`Delivered myself reply stamp into Room:${topic} 's former message, and cleared its preRoom.`);
-                                state.preRoom = {
-                                    firstWord: "",
-                                    tgMsg: null,
-                                    name: "",
-                                };
-                            }
+                            await mod.tgProcessor.addSelfReplyTs();
                         }
                         await tgBotDo.SendChatAction("choose_sticker");
                     }
@@ -361,19 +347,7 @@ async function onTGMsg(tgMsg) {
                     await state.last.target.say(tgMsg.text);
                     if (state.last.name === state.preRoom.topic) {
                         // the last talker - Room matches preRoom
-                        if (processor.isPreRoomValid(state.preRoom, state.last.name) && state.preRoom.firstWord === "") {
-                            // preRoom valid and already merged (more than 2 msg)
-                            const _ = state.preRoom;
-                            const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(topic, `<b>${topic}</b>`);
-                            // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
-                            _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                            ctLogger.debug(`Delivered myself reply stamp into Room:${topic} 's former message, and cleared its preRoom.`);
-                            state.preRoom = {
-                                firstWord: "",
-                                tgMsg: null,
-                                name: "",
-                            };
-                        }
+                        await mod.tgProcessor.addSelfReplyTs();
                     }
                     ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
                     await tgBotDo.SendChatAction("choose_sticker");
