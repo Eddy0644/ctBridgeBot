@@ -75,22 +75,12 @@ async function onTGMsg(tgMsg) {
         }
         //TODO: ready to migrate to supergroup message but not now
         if (tgMsg.chat.type === "supergroup") return;
-        if (tgMsg.photo) {
-            await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
-            return;
-        }
-        if (tgMsg.sticker) {
-            await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
-            return;
-        }
-        if (tgMsg.document) {
-            await deliverTGToWx(tgMsg, tgMsg.document, "document");
-            return;
-        }
-        if (tgMsg.video) {
-            await deliverTGToWx(tgMsg, tgMsg.video, "video");
-            return;
-        }
+
+        if (tgMsg.photo) return await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
+        if (tgMsg.sticker) return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+        if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
+        if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
+
         if (tgMsg.voice) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
@@ -181,47 +171,95 @@ async function onTGMsg(tgMsg) {
                 }
             }
             ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
-
+            return;
             // !tgMsg.reply_to_message  ------------------
-        } else if (tgMsg.text === "/find") {
-            let form = {
-                reply_markup: JSON.stringify({
-                    keyboard: secret.quickFindList,
-                    is_persistent: false,
-                    resize_keyboard: true,
-                    one_time_keyboard: true
-                })
-            };
-            const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
-            // state.lastOpt = ["/find", tgMsg2];
-            state.last = {
-                s: STypes.FindMode,
-                userPrompt1: tgMsg,
-                botPrompt1: tgMsg2,
-            };
+        }
 
-        } else if (tgMsg.text === "/spoiler") {
-            const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
-            state.poolToDelete.add(tgMsg, 6);
+        switch (tgMsg.text) {
+            case "/clear": {
+                // if (tgMsg.matched.s === 1) {
+                //     return await mod.tgProcessor.replyWithTips("globalCmdToC2C", tgMsg.chat.id, 6);
+                // }
+                tgLogger.trace(`Invoking softReboot by user operation...`);
+                await softReboot("User triggered.");
+                return;
+            }
+            case "/find": {
+                let form = {
+                    reply_markup: JSON.stringify({
+                        keyboard: secret.quickFindList,
+                        is_persistent: false,
+                        resize_keyboard: true,
+                        one_time_keyboard: true
+                    })
+                };
+                const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
+                // state.lastOpt = ["/find", tgMsg2];
+                state.last = {
+                    s: STypes.FindMode,
+                    userPrompt1: tgMsg,
+                    botPrompt1: tgMsg2,
+                };
+                return;
+            }
+            case "/spoiler": {
+                const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
+                state.poolToDelete.add(tgMsg, 6);
+                return;
+            }
+            case "/keyboard": {
+                let form = {
+                    reply_markup: JSON.stringify({
+                        keyboard: secret.quickKeyboard,
+                        is_persistent: true,
+                        resize_keyboard: true,
+                        one_time_keyboard: false
+                    })
+                };
+                const tgMsg = await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+                await tgbot.setMyCommands(Config.TGBotCommands);
+                state.poolToDelete.add(tgMsg, 6);
+                return;
+            }
+            case "/lock": {
+                state.lockTarget = state.lockTarget ? 0 : 1;
+                const tgMsg = await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
+                state.poolToDelete.add(tgMsg, 6);
+                return;
+            }
+            case "/slet": {
+                // Set last explicit talker as last talker.
+                const talker = state.lastExplicitTalker;
+                const name = await (talker.name ? talker.name() : talker.topic());
+                ctLogger.trace(`forking lastExplicitTalker...`);
+                state.last = {
+                    s: STypes.Chat,
+                    target: state.lastExplicitTalker,
+                    name: name,
+                    wxMsg: null,
+                    isFile: null
+                };
+                await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
+                await tgBotDo.RevokeMessage(tgMsg.message_id);
+                return;
+            }
+            case "/info": {
+                tgLogger.debug(`Generating tgBot status by user operation...`);
+                // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+                await tgBotDo.SendChatAction("typing");
+                const statusReport = await generateInfo();
+                await tgBotDo.SendMessage(statusReport, true, null);
+                const result = await tgbot.setMyCommands(Config.TGBotCommands);
+                tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+                return;
+            }
+            case "/placeholder": {
+                await tgBotDo.SendMessage(Config.placeholder, true);
+                return;
+            }
+        }
 
-            // Get a persistent versatile quick keyboard.
-        } else if (tgMsg.text === "/keyboard") {
-            let form = {
-                reply_markup: JSON.stringify({
-                    keyboard: secret.quickKeyboard,
-                    is_persistent: true,
-                    resize_keyboard: true,
-                    one_time_keyboard: false
-                })
-            };
-            const tgMsg = await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
-            await tgbot.setMyCommands(Config.TGBotCommands);
-            state.poolToDelete.add(tgMsg, 6);
-        } else if (tgMsg.text === "/lock") {
-            state.lockTarget = state.lockTarget ? 0 : 1;
-            const tgMsg = await tgBotDo.SendMessage(`Already set lock state to ${state.lockTarget}.`, true);
-            state.poolToDelete.add(tgMsg, 6);
-        } else if (tgMsg.text.indexOf("F$") === 0) {
+        if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
             let findToken = tgMsg.text.replace("F$", "");
             for (const pair of secret.nameFindReplaceList) {
@@ -233,27 +271,11 @@ async function onTGMsg(tgMsg) {
             wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
             const res = await findSbInWechat(findToken);
             if (res) await tgBotDo.RevokeMessage(tgMsg.message_id);
-        } else if (tgMsg.text === "/clear") {
-            tgLogger.trace(`Invoking softReboot by user operation...`);
-            await softReboot("User triggered.");
+            return;
+        }
 
-        } else if (tgMsg.text === "/slet") {
-            // Set last explicit talker as last talker.
-            const talker = state.lastExplicitTalker;
-            const name = await (talker.name ? talker.name() : talker.topic());
-            ctLogger.trace(`forking lastExplicitTalker...`);
-            state.last = {
-                s: STypes.Chat,
-                target: state.lastExplicitTalker,
-                name: name,
-                wxMsg: null,
-                isFile: null
-            };
-            await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
-            await tgBotDo.RevokeMessage(tgMsg.message_id);
-
-            // Get a copy of program verbose log of 1000 chars by default.
-        } else if (tgMsg.text.indexOf("/log") === 0) {
+        // Get a copy of program verbose log of 1000 chars by default.
+        if (tgMsg.text.indexOf("/log") === 0) {
             const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
             let log = (await fs.promises.readFile(path)).toString();
             let chars = 1000;
@@ -261,19 +283,40 @@ async function onTGMsg(tgMsg) {
                 chars = parseInt(tgMsg.text.replace("/log ", ""));
             }
             await tgBotDo.SendMessage(`\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
+            return;
+        }
 
-        } else if (tgMsg.text === "/info") {
-            tgLogger.debug(`Generating tgBot status by user operation...`);
-            // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-            await tgBotDo.SendChatAction("typing");
-            const statusReport = await generateInfo();
-            await tgBotDo.SendMessage(statusReport, true, null);
-            const result = await tgbot.setMyCommands(Config.TGBotCommands);
-            tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+        // Last process block  ------------------------
+        {
+            //inline find someone: (priority higher than ops below)
+            if (/*tgMsg.matched.s === 0 &&*/ /(::|：：)\n/.test(tgMsg.text)) {
+                const match = tgMsg.text.match(/^(.{1,10})(::|：：)\n/);
+                if (match && match[1]) {
+                    // Parse Success
+                    let findToken = match[1], found = false;
+                    for (const pair of secret.nameFindReplaceList) {
+                        if (findToken === pair[0]) {
+                            findToken = pair[1];
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
+                        const res = await findSbInWechat(findToken);
+                        if (res) {
+                            await tgBotDo.RevokeMessage(tgMsg.message_id);
+                            // left empty here, to continue forward message to talker and reuse the code
+                        } else return;
+                    } else {
+                        ctLogger.trace(`Message have inline search, but no match in nameFindReplaceList pair.`);
+                        return;
+                    }
+                } else {
+                    ctLogger.debug(`Message have dual colon, but parse search token failed. Please Check.`);
+                }
+            }
 
-        } else if (tgMsg.text === "/placeholder") {
-            await tgBotDo.SendMessage(Config.placeholder, true);
-        } else {
 
             // No valid COMMAND within msg
             if (Object.keys(state.last).length === 0) {
@@ -281,8 +324,9 @@ async function onTGMsg(tgMsg) {
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
-
-            } else if (state.last.s === STypes.FindMode) {
+                return;
+            }
+            if (state.last.s === STypes.FindMode) {
                 ctLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
@@ -300,8 +344,9 @@ async function onTGMsg(tgMsg) {
                     await tgBotDo.RevokeMessage(lastState.botPrompt1.message_id);
                     await tgBotDo.RevokeMessage(tgMsg.message_id);
                 }
-
-            } else if (state.last.s === STypes.Chat) {
+                return;
+            }
+            if (state.last.s === STypes.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
                     await tgBotDo.SendChatAction("typing");
@@ -329,9 +374,9 @@ async function onTGMsg(tgMsg) {
                     ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
                     await tgBotDo.SendChatAction("choose_sticker");
                 }
-            } else {
-                // Empty here.
             }
+            // Empty here.
+
         }
     } catch (e) {
         tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
@@ -445,21 +490,26 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     return true;
 }
 
-async function findSbInWechat(token) {
+async function findSbInWechat(token, alterMsgId = 0) {
+    const s = alterMsgId === 0;
     await tgBotDo.SendChatAction("typing");
     let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
         wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
-        const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
-            true, "HTML");
-        await addToMsgMappings(tgMsg.message_id, wxFinded1);
+        if (s) {
+            const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
+                true, "HTML");
+            await addToMsgMappings(tgMsg.message_id, wxFinded1);
+        } else await addToMsgMappings(alterMsgId, wxFinded1);
     } else if (wxFinded2) {
         wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
-        const tgMsg = await tgBotDo.SendMessage(`🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
-            true, "HTML");
-        await addToMsgMappings(tgMsg.message_id, wxFinded2);
+        if (s) {
+            const tgMsg = await tgBotDo.SendMessage(`🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
+                true, "HTML");
+            await addToMsgMappings(tgMsg.message_id, wxFinded2);
+        } else await addToMsgMappings(alterMsgId, wxFinded2);
     } else {
         await tgBotDo.SendMessage(`🔍Found Failed. Please enter token again or /clear.`);
         return false;
