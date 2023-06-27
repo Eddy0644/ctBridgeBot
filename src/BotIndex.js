@@ -274,7 +274,7 @@ async function onTGMsg(tgMsg) {
         {
             //inline find someone: (priority higher than ops below)
             if (/*tgMsg.matched.s === 0 &&*/ /(::|：：)\n/.test(tgMsg.text)) {
-                const match = tgMsg.text.match(/^(.{1,10})(::|：：)\n/);
+                const match = tgMsg.text.match(/^(.{1,12})(::|：：)\n/);
                 if (match && match[1]) {
                     // Parse Success
                     let findToken = match[1], found = false;
@@ -285,7 +285,9 @@ async function onTGMsg(tgMsg) {
                             break;
                         }
                     }
-                    if (found) {
+                    // if settings.enableInlineSearchForUnreplaced is true,
+                    // then whether findToken is in nameFindReplaceList it will continue.
+                    if (found || secret.settings.enableInlineSearchForUnreplaced) {
                         wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
                         const res = await findSbInWechat(findToken, tgMsg.message_id);
                         if (res) {
@@ -295,7 +297,7 @@ async function onTGMsg(tgMsg) {
                             // left empty here, to continue forward message to talker and reuse the code
                         } else return;
                     } else {
-                        ctLogger.trace(`Message have inline search, but no match in nameFindReplaceList pair.`);
+                        ctLogger.debug(`Message have inline search, but no match in nameFindReplaceList pair.`);
                         return;
                     }
                 } else {
@@ -749,12 +751,9 @@ async function onWxMessage(msg) {
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
         // TODO add special action to these two snippet
-        if (content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")) {
-            content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", "{📞📲}");
-        }
-        if (content.includes("[收到一条微信转账消息，请在手机上查看]")) {
-            content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
-        }
+        content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", "{📞📲}")
+            .replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
+
         for (const pair of secret.wxContentReplaceList) {
             if (content.includes(pair[0])) {
                 wxLogger.trace(`Replaced wx emoji ${pair[0]} to corresponding universal emoji. (config :->secret.js)`);
@@ -767,7 +766,7 @@ async function onWxMessage(msg) {
 
             // 群系统消息中先过滤出红包
             if (name === topic) {
-                if (content.includes("red packet") || content.includes("红包")) {
+                if (content.includes("Red packet") || content.includes("红包")) {
                     await tgBotDo.SendMessage(`🧧🧧[in ${topic}] ${content}`, 0);
                     tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
                     return;
