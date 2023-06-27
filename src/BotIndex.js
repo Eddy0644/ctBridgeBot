@@ -525,6 +525,7 @@ async function onWxMessage(msg) {
     let alias = await contact.alias() || await contact.name(); // 发消息人备注
     let msgDef = {
         isSilent: false,
+        forceMerge: false,
         replyTo: null
     }
 
@@ -773,6 +774,7 @@ async function onWxMessage(msg) {
                 } else {
                     // Did system message have any impact on me? So silent them.
                     msgDef.isSilent = true;
+                    msgDef.forceMerge = true;
                     // Force override {name} to let system message seems better
                     name = `{System}`;
                 }
@@ -785,7 +787,7 @@ async function onWxMessage(msg) {
                 }
             }
             try {
-                if (processor.isPreRoomValid(state.preRoom, topic) && msg.DType === DTypes.Text) {
+                if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge) && msg.DType === DTypes.Text) {
                     const _ = state.preRoom;
                     msg.preRoomNeedUpdate = false;
                     // from same group, ready to merge
@@ -813,20 +815,19 @@ async function onWxMessage(msg) {
                 if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             // 系统消息如拍一拍
-            if (name === topic) {
-                wxLogger.debug(`群聊[in ${topic}] ${content}`);
-                // TODO: put such message into Pool
-                await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
-                tgLogger.debug(`Delivered a room msg in advance as it is system msg.`);
-                return;
-            }
+            // if (name === topic) {
+            //     wxLogger.debug(`群聊[in ${topic}] ${content}`);
+            //     await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
+            //     tgLogger.debug(`Delivered a room msg in advance as it is system msg.`);
+            //     return;
+            // }
             const deliverResult = await deliverWxToTG(true, msg, content);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg);
         } else {
             //不是群消息 - - - - - - - -
             if (alias === "微信运动") {
                 wxLogger.debug(`[微信运动] says: ${msg.payload.filename.replace(".1", "")}`);
-                //TODO: add to undelivered pool!
+                //TODO: add to subscribe channel!
                 return;
             }
             // 筛选掉符合exclude keyword的个人消息

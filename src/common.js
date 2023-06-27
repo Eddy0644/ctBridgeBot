@@ -88,7 +88,7 @@ module.exports = (param) => {
             },
 
             //////-----------Above is mostly of logger ---------------------//////
-            delay : (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            delay: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
             _T: {},
             STypes: {
                 Chat: 1,
@@ -177,13 +177,13 @@ module.exports = (param) => {
             },
 
             processor: {
-                isPreRoomValid: function (preRoomState, targetTopic) {
+                isPreRoomValid: function (preRoomState, targetTopic, forceMerge = false) {
                     try {
                         const _ = preRoomState;
                         // noinspection JSUnresolvedVariable
                         const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                         const nowDate = dayjs().unix();
-                        return (_.topic === targetTopic && nowDate - lastDate < 60);
+                        return (_.topic === targetTopic && (nowDate - lastDate < 60 || forceMerge));
                     } catch (e) {
                         log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
                         return false;
