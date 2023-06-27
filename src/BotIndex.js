@@ -770,6 +770,11 @@ async function onWxMessage(msg) {
                     await tgBotDo.SendMessage(`🧧🧧[in ${topic}] ${content}`, 0);
                     tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
                     return;
+                } else {
+                    // Did system message have any impact on me? So silent them.
+                    msgDef.isSilent = true;
+                    // Force override {name} to let system message seems better
+                    name = `{System}`;
                 }
             }
             // 再筛选掉符合exclude keyword的群聊消息
