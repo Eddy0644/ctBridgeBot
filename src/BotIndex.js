@@ -20,10 +20,12 @@ const state = {
         firstWord: "",
         tgMsg: null,
         topic: "",
+        msgText: "",
     },
     prePerson: {
         tgMsg: null,
         name: "",
+        msgText: "",
     },
     lastEmotion: {
         md5: "",
@@ -366,11 +368,13 @@ async function softReboot(reason) {
     state.prePerson = {
         tgMsg: null,
         name: "",
+        msgText: "",
     };
     state.preRoom = {
         firstWord: "",
         tgMsg: null,
         name: "",
+        msgText: "",
     };
     timerDataCount = 6;
     msgMergeFailCount = 6;
@@ -922,6 +926,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
                 state.preRoom.topic = topic;
                 state.preRoom.tgMsg = tgMsg;
                 state.preRoom.firstWord = `[${name}] ${content}`;
+                state.preRoom.msgText = `${template} ${content}`;
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson.name = name;
