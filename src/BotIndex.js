@@ -902,13 +902,15 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             if (isRoom && msg.preRoomNeedUpdate) {
                 state.preRoom.topic = topic;
                 state.preRoom.tgMsg = tgMsg;
-                state.preRoom.firstWord = `[${name}] ${content}`;
+                // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
+                state.preRoom.firstWord = `[<u>${name}</u>] ${content}`;
                 state.preRoom.msgText = `${template} ${content}`;
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson.name = name;
                 state.prePerson.tgMsg = tgMsg;
                 state.prePerson.msgText = `${template} ${content}`;
+                state.prePerson.firstWord = `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`;
             }
         }
 

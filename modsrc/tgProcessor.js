@@ -105,12 +105,12 @@ async function addSelfReplyTs() {
 function filterMsgText(inText) {
     const {tgLogger} = env;
     let txt = inText;
-    if (/"(.{1,10}): <br\/>(.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/.test(txt)) {
+    if (/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
-        const match = txt.match(/"(.{1,10}): <br\/>(.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
+        const match = txt.match(/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 6) ? match[2].substring(0, 6) : match[2];
-        txt = txt.replace(match[0], `(R)`) + `\n(Quoted "${origMsgClip}" of ${match[1]}`;
+        txt = txt.replace(match[0], `(R)`) + `\n(Quoted "${origMsgClip.replaceAll("<br/>", "\n")}" of ${match[1]})`;
     }
     if (txt.includes("<br/>")) {
         // Telegram would not accept this tag in all mode! Must remind.
