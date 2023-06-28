@@ -1,6 +1,5 @@
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 const secret = require('../config/secret');
-// const Config = require('./config/public');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
@@ -9,12 +8,10 @@ const stickerLib = new DataStorage("./stickers.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg,
     Config, STypes,
-    downloader,
-    processor,
-    delay
+    downloader, processor,
 } = require('./common')();
 
-let msgMappings = [], talkerLocks = [];
+let msgMappings = [];
 const state = {
     last: {},
     lastExplicitTalker: null,
@@ -469,6 +466,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
 async function findSbInWechat(token, alterMsgId = 0) {
     const s = alterMsgId === 0;
     await tgBotDo.SendChatAction("typing");
+    // Find below as: 1.name of Person 2.name of topic 3.alias of person
     let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
@@ -539,15 +537,16 @@ async function onWxMessage(msg) {
     }
 
     // TODO delay messages from same talker as many messages may arrive at almost same time
-    let haveLock = false;
-    for (let i = 0; i < 6 && talkerLocks.includes(contact.id); i++) {
-        await delay(200);
-    }
-    if (!talkerLocks.includes(contact.id)) {
-        haveLock = true;
-        talkerLocks.push(contact.id);
-        // talkerLocks.re
-    }
+    // lock is hard to make; used another strategy here.
+    // let haveLock = false;
+    // for (let i = 0; i < 6 && talkerLocks.includes(contact.id); i++) {
+    //     await delay(200);
+    // }
+    // if (!talkerLocks.includes(contact.id)) {
+    //     haveLock = true;
+    //     talkerLocks.push(contact.id);
+    //     // talkerLocks.re
+    // }
 
     //已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
@@ -864,7 +863,7 @@ async function onWxMessage(msg) {
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
         }
 
-        if (haveLock) talkerLocks.pop();
+        // if (haveLock) talkerLocks.pop();
     }
 }
 
