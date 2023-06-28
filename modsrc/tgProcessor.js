@@ -1,4 +1,4 @@
-// noinspection JSUnreachableSwitchBranches
+// noinspection JSUnreachableSwitchBranches,JSUnusedAssignment
 
 const dayjs = require("dayjs");
 const {tgBotDo} = require("../src/tgbot-pre");
@@ -11,8 +11,8 @@ let env;
 async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const {state, defLogger, tgBotDo} = env;
     const word = isGroup ? "Room" : "Person";
-    const newFirstTitle = isGroup ? (await msg.room().topic()) : name;
-    const newItemTitle = isGroup ? name : dayjs().format("H:mm:ss");
+    const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
+    const newItemTitle = `<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>`;
     const _ = isGroup ? state.preRoom : state.prePerson;
     msg[`pre${word}NeedUpdate`] = false;
     content = filterMsgText(content);
@@ -89,8 +89,7 @@ async function addSelfReplyTs() {
     if (processor.isPreRoomValid(state.preRoom, state.last.name) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
-        const newString = `${_.tgMsg.text}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`.replace(_.topic, `<b>${_.topic}</b>`);
-        // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
+        const newString = `${_.msgText}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
         ctLogger.debug(`Delivered myself reply stamp into Room:${_.topic} 's former message, and cleared its preRoom.`);
         state.preRoom = {
@@ -107,14 +106,14 @@ function filterMsgText(inText) {
     const {tgLogger} = env;
     let txt = inText;
     if (/"(.{1,10}): <br\/>(.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/.test(txt)) {
-        // Filter Wx ReplyTo / Quote
+        // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
         const match = txt.match(/"(.{1,10}): <br\/>(.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 6) ? match[2].substring(0, 6) : match[2];
         txt = txt.replace(match[0], `(R)`) + `\n(Quoted "${origMsgClip}" of ${match[1]}`;
     }
     if (txt.includes("<br/>")) {
-        // Telegram would not accept this tag in parseMode=null mode! Must remind.
+        // Telegram would not accept this tag in all mode! Must remind.
         tgLogger.warn(`Unsupported <br/> tag found and cleared. Check Raw Log for reason!`);
         txt = txt.replaceAll("<br/>", "\n");
     }
@@ -124,6 +123,4 @@ function filterMsgText(inText) {
 module.exports = (incomingEnv) => {
     env = incomingEnv;
     return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg};
-    // return {mergeToPrev_tgMsg, replyWithTips};
-
 };
