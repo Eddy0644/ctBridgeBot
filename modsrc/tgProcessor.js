@@ -8,31 +8,29 @@ let env;
 //     const {} = env;
 // }
 
-async function mergeToPrev_tgMsg(qdata, isGroup, content, name = "") {
+async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const {state, defLogger, tgBotDo} = env;
     const word = isGroup ? "Room" : "Person";
+    const newFirstTitle = isGroup ? (await msg.room().topic()) : name;
     const newItemTitle = isGroup ? name : dayjs().format("H:mm:ss");
-    //TODO: add template string separately!!!
     const _ = isGroup ? state.preRoom : state.prePerson;
-    qdata[`pre${word}NeedUpdate`] = false;
-    // from same person, ready to merge
-    // noinspection JSObjectNullOrUndefined
+    msg[`pre${word}NeedUpdate`] = false;
+    // from same talker, ready to merge
     if (_.firstWord === "") {
-        // 已经合并过，标题已经更改，直接追加新内容
+        // Already merged, so just append newer to last
         const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg/*, _.tg_chat_id*/);
-        defLogger.debug(`Delivered new message "${content}" from ${word}: ${name} into 2nd message.`);
+        defLogger.debug(`Merged new msg "${content}" from ${word}: ${name} into 2nd.`);
         return true;
     } else {
-        // 准备修改先前的消息，去除头部
-        // const newString = (/* C2C msg do not need header */qdata.receiver.qTarget ? `` :
-        //     `📨⛓️ [<b>${name}</b>] - - - -\n`) + `${_.firstWord}\n[${newItemTitle}] ${content}`;
-        const newString = `📨⛓️ [<b>${name}</b>] - - - -\n${_.firstWord}\n[${newItemTitle}] ${content}`;
+        // Ready to modify first msg, refactoring it.
+        ///* C2C msg do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
+        const newString = `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n${_.firstWord}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg/*, _.tg_chat_id*/);
         _.firstWord = "";
-        defLogger.debug(`Delivered new message "${content}" from ${word}: ${name} into first message.`);
+        defLogger.debug(`Merged new msg "${content}" from ${word}: ${name} into first.`);
         return true;
     }
 }
@@ -104,9 +102,14 @@ async function addSelfReplyTs() {
     }
 }
 
+function filterWxReplyTo(inText){
+    // "海洋: <br/>我大概要在学校待一个星期吧"<br/>- - - - - - - - - - - - - - -<br/>
+
+}
+
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs, replyWithTips};
+    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg};
     // return {mergeToPrev_tgMsg, replyWithTips};
 
 };

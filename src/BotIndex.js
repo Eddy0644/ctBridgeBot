@@ -636,7 +636,6 @@ async function onWxMessage(msg) {
         }
     }
 
-
     // 尝试下载语音
     if (msg.type() === wxbot.Message.Type.Audio) try {
         const fBox = await msg.toFileBox();
@@ -791,26 +790,8 @@ async function onWxMessage(msg) {
             }
             try {
                 if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge) && msg.DType === DTypes.Text) {
-                    const _ = state.preRoom;
-                    msg.preRoomNeedUpdate = false;
-                    // from same group, ready to merge
-                    // noinspection JSObjectNullOrUndefined
-                    if (_.firstWord === "") {
-                        // 已经合并过，标题已经更改，直接追加新内容
-                        const newString = `${_.tgMsg.text}\n📨[${name}] ${content}`.replace(topic, `<b>${topic}</b>`);
-                        // 此处更改是由于发送TG消息后加粗标记会被去除，所以通过不稳定的替换方法使标题加粗
-                        // TODO 把此前的消息都存入state中，从而不再需要替换
-                        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                        ctLogger.debug(`Delivered new message "${content}" from Room:${topic} into first message.`);
-                        return;
-                    } else {
-                        // 准备修改先前的消息，去除头部
-                        const newString = `📬⛓️ [<b>${topic}</b>]\n📨${_.firstWord}\n📨[${name}] ${content}`;
-                        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                        _.firstWord = "";
-                        ctLogger.debug(`Delivered new message "${content}" from Room:${topic} into former message.`);
-                        return;
-                    }
+                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name);
+                    if (result === true) return;
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
