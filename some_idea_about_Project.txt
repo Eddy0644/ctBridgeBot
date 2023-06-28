@@ -1,1 +1,3 @@
 In test, sending a TG sticker to Wx takes about 8 seconds.
+
+If a network error is classified as WARN, then maybe a message failed to send.

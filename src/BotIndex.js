@@ -355,6 +355,7 @@ async function onTGMsg(tgMsg) {
         }
     } catch (e) {
         tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
+        tgLogger.debug(`Stack: ${e.stack.split("\n")[0]}\nCause: ${e.cause}`);
     }
 
 }
@@ -872,7 +873,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
                 const stream = fs.createReadStream(msg.downloadedPath);
                 tgMsg = await tgBotDo.SendAnimation(`${template} ns 👆 #sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
-                wxLogger.warn(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
+                wxLogger.info(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
                 tgMsg = await tgBotDo.SendMessage(`${template} [CuEmo](Send Failure)`, true);
             }
         } else if (msg.DType === DTypes.Audio) {

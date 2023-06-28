@@ -34,18 +34,18 @@ const tgBotDo = {
         await delay(100);
         if (isSilent) form.disable_notification = true;
         if (parseMode) form.parse_mode = parseMode;
-        return await tgbot.sendMessage(secret.target_TG_ID, msg, form).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendMessage(secret.target_TG_ID, msg, form).catch((e) => logErrorDuringTGSend(e));
     },
     RevokeMessage: async (msgId) => {
         await delay(100);
         return await tgbot.deleteMessage(secret.target_TG_ID, msgId).catch((e) => {
-            tgLogger.warn(e.toString());
+            logErrorDuringTGSend(e);
         });
     },
     SendChatAction: async (action) => {
         await delay(100);
         return await tgbot.sendChatAction(secret.target_TG_ID, action).catch((e) => {
-            tgLogger.warn(e.toString());
+            logErrorDuringTGSend(e);
         });
     },
     SendAnimation: async (msg, path, isSilent = false, hasSpoiler = true) => {
@@ -60,7 +60,7 @@ const tgBotDo = {
         };
         if (isSilent) form.disable_notification = true;
         // Temp. change for classifying stickers
-        return await tgbot.sendAnimation(secret.tgTarget.id, path, form, {contentType: 'image/gif'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendAnimation(secret.tgTarget.id, path, form, {contentType: 'image/gif'}).catch((e) => logErrorDuringTGSend(e));
     },
     SendPhoto: async (msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
@@ -72,7 +72,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendPhoto(secret.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendPhoto(secret.target_TG_ID, path, form, {contentType: 'image/jpeg'}).catch((e) => logErrorDuringTGSend(e));
     },
     EditMessageText: async (text, formerMsg) => {
         // await delay(100);
@@ -81,7 +81,7 @@ const tgBotDo = {
             message_id: formerMsg.message_id,
             parse_mode: "HTML"
         };
-        return await tgbot.editMessageText(text, form).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.editMessageText(text, form).catch((e) => logErrorDuringTGSend(e));
     },
     EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false) => {
         // await delay(100);
@@ -101,7 +101,7 @@ const tgBotDo = {
             }, form);
             if (res) return true;
         } catch (e) {
-            tgLogger.warn(e.toString());
+            logErrorDuringTGSend(e);
             return e.toString();
         }
         return "Unknown Error.";
@@ -113,7 +113,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendVoice(secret.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendVoice(secret.target_TG_ID, path, form, {contentType: 'audio/mp3'}).catch((e) => logErrorDuringTGSend(e));
     },
     SendDocument: async (msg, path, isSilent = false) => {
         await delay(100);
@@ -122,7 +122,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendDocument(secret.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => tgLogger.warn(e.toString()));
+        return await tgbot.sendDocument(secret.target_TG_ID, path, form, {contentType: 'application/octet-stream'}).catch((e) => logErrorDuringTGSend(e));
     }
 };
 let errorStat = 0;
@@ -138,7 +138,7 @@ tgbot.on('polling_error', async (e) => {
             } else {
                 // no other error during this period, discarding notify initiation
                 errorStat = 0;
-                tgLogger.warn(`There may be a temporary network issue but now disappeared. If possible, please check your network config.`);
+                tgLogger.info(`There may be a temporary network issue but now disappeared. If possible, please check your network config.`);
 
             }
         }, 10000);
@@ -154,6 +154,10 @@ tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
 
+function logErrorDuringTGSend(err) {
+    let err2 = err.toString().replaceAll("Error:", "");
+    tgLogger.warn(`MsgSendFail: ${err2}`);
+}
 
 module.exports = {
     tgbot,

@@ -2,7 +2,7 @@ const {WechatyBuilder} = require('wechaty');
 const qrcodeTerminal = require("qrcode-terminal");
 // const config = require("../config/secret");
 const secret = require("../config/secret");
-const {downloader} = require("./common");
+const {downloader} = require("./common")();
 
 
 const wxbot = WechatyBuilder.build({
