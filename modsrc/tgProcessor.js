@@ -1,4 +1,4 @@
-// noinspection JSUnreachableSwitchBranches,JSUnusedAssignment
+// noinspection JSUnreachableSwitchBranches
 
 const dayjs = require("dayjs");
 const {tgBotDo} = require("../src/tgbot-pre");
@@ -11,9 +11,9 @@ let env;
 async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const {state, defLogger, tgBotDo} = env;
     const word = isGroup ? "Room" : "Person";
+    const _ = isGroup ? state.preRoom : state.prePerson;
     const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
     const newItemTitle = `<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>`;
-    const _ = isGroup ? state.preRoom : state.prePerson;
     msg[`pre${word}NeedUpdate`] = false;
     content = filterMsgText(content);
     // from same talker check complete, ready to merge

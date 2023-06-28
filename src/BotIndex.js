@@ -831,13 +831,8 @@ async function onWxMessage(msg) {
                 const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
                 if (_.name === name && nowDate - lastDate < 15 && msg.DType === DTypes.Text) {
-                    msg.prePersonNeedUpdate = false;
-                    // from same person, ready to merge
-                    // 准备修改先前的消息，去除头部
-                    const newString = `${_.tgMsg.text}\n[${dayjs().format("H:mm:ss")}] ${content}`;
-                    _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
-                    ctLogger.debug(`Delivered new message "${content}" from Person:${name} into former message.`);
-                    return;
+                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name);
+                    if (result === true) return;
                 } else
                     msg.prePersonNeedUpdate = true;
             } catch (e) {
@@ -913,6 +908,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson.name = name;
                 state.prePerson.tgMsg = tgMsg;
+                state.prePerson.msgText = `${template} ${content}`;
             }
         }
 
