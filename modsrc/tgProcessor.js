@@ -15,7 +15,8 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const newItemTitle = isGroup ? name : dayjs().format("H:mm:ss");
     const _ = isGroup ? state.preRoom : state.prePerson;
     msg[`pre${word}NeedUpdate`] = false;
-    // from same talker, ready to merge
+    content = filterMsgText(content);
+    // from same talker check complete, ready to merge
     if (_.firstWord === "") {
         // Already merged, so just append newer to last
         const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
@@ -102,9 +103,22 @@ async function addSelfReplyTs() {
     }
 }
 
-function filterWxReplyTo(inText){
-    // "海洋: <br/>我大概要在学校待一个星期吧"<br/>- - - - - - - - - - - - - - -<br/>
-
+function filterMsgText(inText) {
+    const {tgLogger} = env;
+    let txt = inText;
+    if (/"(.{1,10}): <br\/>(.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/.test(txt)) {
+        // Filter Wx ReplyTo / Quote
+        const match = txt.match(/"(.{1,10}): <br\/>(.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
+        // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
+        const origMsgClip = (match[2].length > 6) ? match[2].substring(0, 6) : match[2];
+        txt = txt.replace(match[0], `(R)`) + `\n(Quoted "${origMsgClip}" of ${match[1]}`;
+    }
+    if (txt.includes("<br/>")) {
+        // Telegram would not accept this tag in parseMode=null mode! Must remind.
+        tgLogger.warn(`Unsupported <br/> tag found and cleared. Check Raw Log for reason!`);
+        txt = txt.replaceAll("<br/>", "\n");
+    }
+    return txt;
 }
 
 module.exports = (incomingEnv) => {
