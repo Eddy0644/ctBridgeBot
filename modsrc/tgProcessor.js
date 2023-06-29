@@ -50,7 +50,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
             message = `Changed myStat into ${additional}.`;
             break;
         case "lockStateChange":
-            message = `Already set lock state to ${additional}.`;
+            message = `Now conversation lock state is ${additional}.`;
             break;
         case "softReboot":
             message = `Soft Reboot Successful.\nReason: <code>${additional}</code>`;

@@ -100,6 +100,7 @@ async function onTGMsg(tgMsg) {
         if (!tgMsg.text) {
             tgLogger.warn(`A TG message with empty content has passed through text Processor! Check the log for detail.`);
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
+            return;
         }
         for (const pair of secret.tgContentReplaceList) {
             if (tgMsg.text.indexOf(pair[0]) !== -1) {
@@ -126,9 +127,10 @@ async function onTGMsg(tgMsg) {
                 if (mapPair[0] === tgMsg.reply_to_message.message_id) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
-                        await getFileFromWx(mapPair[3]);
-                        await tgBotDo.SendChatAction("upload_document");
-                    } else if (tgMsg.text === "@") {
+                        if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
+                        return await tgBotDo.SendChatAction("upload_document");
+                    }
+                    if (tgMsg.text === "@") {
                         // Trigger special operation: Lock and set as explicit
                         state.lockTarget = 2;
                         const name = mapPair[2], talker = mapPair[1];
@@ -143,6 +145,10 @@ async function onTGMsg(tgMsg) {
                         const tgMsg = await tgBotDo.SendMessage(`Already set '${name}' as last talker and locked.`, true);
                         state.poolToDelete.add(tgMsg, 6);
                     } else {
+                        if (state.lockTarget === 2) {
+                            state.lockTarget = 0;
+                            ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
+                        }
                         state.lastExplicitTalker = mapPair[1];
                         await mapPair[1].say(tgMsg.text);
                         if (mapPair[2] === state.preRoom.topic) {
