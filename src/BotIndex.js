@@ -72,8 +72,23 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`Got TG message (#${tgMsg.message_id}) from unauthorized user (${tgMsg.from.id}), Ignoring.`);
             return;
         }
-        //TODO: ready to migrate to supergroup message but not now
-        if (tgMsg.chat.type === "supergroup") return;
+
+        // Iterate through secret.class to find matches
+        tgMsg.matched = null;
+        // s=0 -> default, s=1 -> C2C
+        with (secret.class) {
+            for (const pair of C2C) {
+                //TODO add thread_id verification
+                if (tgMsg.chat.id === pair.tgid) {
+                    tgMsg.matched = {s: 1, p: pair};
+                    tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
+                    break;
+                }
+            }
+            if (!tgMsg.matched) {
+                tgMsg.matched = {s: 0};
+            }
+        }
 
         if (tgMsg.photo) return await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
         if (tgMsg.sticker) return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
