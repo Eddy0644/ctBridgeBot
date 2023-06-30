@@ -791,7 +791,7 @@ async function onWxMessage(msg) {
             // 再筛选掉符合exclude keyword的群聊消息
             for (const keyword of secret.nameExcludeKeyword) {
                 if (topic.includes(keyword)) {
-                    wxLogger.debug(`群聊[in ${topic}]以下消息符合关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
+                    wxLogger.debug(`[in ${topic}]符合黑名单关键词“${keyword}”： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
                 }
             }

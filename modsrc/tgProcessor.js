@@ -110,7 +110,7 @@ function filterMsgText(inText) {
         const match = txt.match(/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 6) ? match[2].substring(0, 6) : match[2];
-        txt = txt.replace(match[0], `(R)`) + `\n(Quoted "${origMsgClip.replaceAll("<br/>", "\n")}" of ${match[1]})`;
+        txt = txt.replace(match[0], ``) + `\n<i>(Quoted "${origMsgClip.replaceAll("<br/>", "\n")}" of ${match[1]})</i>`;
     }
     if (txt.includes("<br/>")) {
         // Telegram would not accept this tag in all mode! Must remind.
