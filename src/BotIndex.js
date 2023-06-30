@@ -485,7 +485,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     await tgBotDo.SendChatAction("record_video", tgMsg.matched);
     await state.last.target.say(packed);
     ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
-    await tgBotDo.SendChatAction("choose_sticker");
+    await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
     return true;
 }
 
@@ -893,6 +893,7 @@ async function onWxMessage(msg) {
 }
 
 async function deliverWxToTG(isRoom = false, msg, contentO) {
+    // TODO remove title in C2C chat!
     const contact = msg.talker();
     const room = msg.room();
     const name = await contact.name();
