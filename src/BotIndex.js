@@ -182,8 +182,10 @@ async function onTGMsg(tgMsg) {
             // !tgMsg.reply_to_message  ------------------
         }
 
+        const botName = secret.botName;
         switch (tgMsg.text) {
-            case "/clear": {
+            case "/clear":
+            case "/clear" + botName: {
                 // if (tgMsg.matched.s === 1) {
                 //     return await mod.tgProcessor.replyWithTips("globalCmdToC2C", tgMsg.chat.id, 6);
                 // }
@@ -191,7 +193,8 @@ async function onTGMsg(tgMsg) {
                 await softReboot("User triggered.");
                 return;
             }
-            case "/find": {
+            case "/find":
+            case "/find" + botName: {
                 let form = {
                     reply_markup: JSON.stringify({
                         keyboard: secret.quickFindList,
@@ -209,12 +212,14 @@ async function onTGMsg(tgMsg) {
                 };
                 return;
             }
-            case "/spoiler": {
+            case "/spoiler":
+            case "/spoiler" + botName: {
                 const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Invalid pointer! Are you missing target? ', true, null);
                 state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                 return;
             }
-            case "/keyboard": {
+            case "/keyboard":
+            case "/keyboard" + botName: {
                 let form = {
                     reply_markup: JSON.stringify({
                         keyboard: secret.quickKeyboard,
@@ -228,11 +233,13 @@ async function onTGMsg(tgMsg) {
                 state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                 return;
             }
-            case "/lock": {
+            case "/lock":
+            case "/lock" + botName: {
                 state.lockTarget = state.lockTarget ? 0 : 1;
                 return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.lockTarget);
             }
-            case "/slet": {
+            case "/slet":
+            case "/slet" + botName: {
                 // Set last explicit talker as last talker.
                 const talker = state.lastExplicitTalker;
                 const name = await (talker.name ? talker.name() : talker.topic());
@@ -248,7 +255,8 @@ async function onTGMsg(tgMsg) {
                 await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
                 return;
             }
-            case "/info": {
+            case "/info":
+            case "/info" + botName: {
                 tgLogger.debug(`Generating tgBot status by user operation...`);
                 // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
                 await tgBotDo.SendChatAction("typing", tgMsg.matched);
@@ -258,7 +266,8 @@ async function onTGMsg(tgMsg) {
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
                 return;
             }
-            case "/placeholder": {
+            case "/placeholder":
+            case "/placeholder" + botName: {
                 await tgBotDo.SendMessage(Config.placeholder, true);
                 return;
             }
