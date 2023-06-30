@@ -22,7 +22,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg/*, _.tg_chat_id*/);
-        defLogger.debug(`Merged new msg "${content}" from ${word}: ${name} into 2nd.`);
+        defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into 2nd.`);
         return true;
     } else {
         // Ready to modify first msg, refactoring it.
@@ -31,7 +31,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         _.msgText = newString;
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg/*, _.tg_chat_id*/);
-        defLogger.debug(`Merged new msg "${content}" from ${word}: ${name} into first.`);
+        defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into first.`);
         return true;
     }
 }
