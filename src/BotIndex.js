@@ -569,7 +569,7 @@ async function onWxMessage(msg) {
     with (secret.class) {
         for (const pair of C2C) {
             let matched = 0;
-            if (pair.wx[1] === isGroup) {
+            if (pair.wx[1] === isGroup && isGroup === true) {
                 matched = (pair.wx[0] === topic);
             } else {
                 matched = ((pair.wx[0] === alias) || (pair.wx[0] === name));
