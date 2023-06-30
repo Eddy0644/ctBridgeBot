@@ -104,7 +104,7 @@ async function onTGMsg(tgMsg) {
                 if (!fs.existsSync(file_path)) throw new Error("save file error");
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
                 if (res !== "") {
-                    await tgBotDo.SendMessage(`Transcript:\n<code>${res}</code>`, true, "HTML");
+                    await tgBotDo.SendMessage(tgMsg.matched,`Transcript:\n<code>${res}</code>`, true, "HTML");
                 }
             } catch (e) {
                 await mod.tgProcessor.replyWithTips("audioProcessFail");

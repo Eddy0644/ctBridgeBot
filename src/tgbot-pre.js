@@ -29,22 +29,36 @@ if (isPolling) {
     });
     tgbot.openWebHook();
 }
+
+function parseRecv(receiver, form) {
+    if (receiver && receiver.s && receiver.s === 0) {
+        if (secret.class.def.threadId) form.message_thread_id = secret.class.def.threadId;
+        return secret.class.def.tgid;
+    } else if (receiver && receiver.s) {
+        // incoming object is tgMsg.matched
+        return receiver.p.tgid;
+    } else if (receiver && receiver.tgid) {
+        return receiver.tgid;
+    } else if (typeof receiver === "number") {
+        return receiver;
+    } else {
+        return secret.class.def.tgid;
+    }
+}
+
 const tgBotDo = {
     SendMessage: async (receiver = null, msg, isSilent = false, parseMode = null, form = {}) => {
-        if (receiver && receiver.tgThreadId) form.message_thread_id = receiver.tgThreadId;
         if (isSilent) form.disable_notification = true;
         if (parseMode) form.parse_mode = parseMode;
-        return await tgbot.sendMessage(receiver ? receiver.tgid : secret.class.def.tgid, msg, form).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendMessage(parseRecv(receiver, form), msg, form).catch((e) => logErrorDuringTGSend(e));
     },
-    RevokeMessage: async (msgId, chat_id) => {
-        return await tgbot.deleteMessage(chat_id, msgId).catch((e) => {
+    RevokeMessage: async (msgId, receiver = null) => {
+        return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId).catch((e) => {
             logErrorDuringTGSend(e);
         });
     },
     SendChatAction: async (action, receiver = null) => {
-        const form = {};
-        if (receiver && receiver.tgid) form.message_thread_id = receiver.tgid;
-        return await tgbot.sendChatAction(receiver ? receiver.tgid : secret.class.def.tgid, action).catch((e) => {
+        return await tgbot.sendChatAction(parseRecv(receiver, {}), action).catch((e) => {
             logErrorDuringTGSend(e);
         });
     },
@@ -71,21 +85,20 @@ const tgBotDo = {
             height: 100,
             parse_mode: "HTML",
         };
-        if (receiver && receiver.tgid) form.message_thread_id = receiver.tgid;
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendPhoto(receiver ? receiver.tgid : secret.class.def.tgid, path, form, {contentType: 'image/jpeg'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'}).catch((e) => logErrorDuringTGSend(e));
     },
-    EditMessageText: async (text, former_tgMsg, chat_id = 0) => {
+    EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {
-            chat_id: chat_id ? chat_id : secret.class.def.tgid,
+            chat_id: parseRecv(receiver, {}),
             message_id: former_tgMsg.message_id,
             parse_mode: "HTML"
         };
         return await tgbot.editMessageText(text, form).catch((e) => logErrorDuringTGSend(e));
     },
-    EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false, chat_id = 0) => {
+    EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false, receiver = null) => {
         let form = {
-            chat_id: chat_id ? chat_id : secret.class.def.tgid,
+            chat_id: parseRecv(receiver, {}),
             message_id: formerMsg.message_id,
             parse_mode: "HTML",
         };
@@ -109,18 +122,16 @@ const tgBotDo = {
             caption: msg,
             parse_mode: "HTML",
         };
-        if (receiver && receiver.tgid) form.message_thread_id = receiver.tgid;
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendVoice(receiver ? receiver.tgid : secret.class.def.tgid, path, form, {contentType: 'audio/mp3'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'}).catch((e) => logErrorDuringTGSend(e));
     },
     SendDocument: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
             caption: msg,
             parse_mode: "HTML",
         };
-        if (receiver && receiver.tgid) form.message_thread_id = receiver.tgid;
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendDocument(receiver ? receiver.tgid : secret.class.def.tgid, path, form, {contentType: 'application/octet-stream'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'}).catch((e) => logErrorDuringTGSend(e));
     }
 };
 let errorStat = 0;
