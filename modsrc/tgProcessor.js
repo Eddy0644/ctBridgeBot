@@ -108,7 +108,7 @@ function filterMsgText(inText) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
         const match = txt.match(/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
-        const origMsgClip = (match[2].length > 6) ? match[2].substring(0, 6) : match[2];
+        const origMsgClip = (match[2].length > 8) ? match[2].substring(0, 8) : match[2];
         txt = txt.replace(match[0], ``) + `\n<i>(Quoted "${origMsgClip.replaceAll("<br/>", "\n")}" of ${match[1]})</i>`;
     }
     if (txt.includes("<br/>")) {
@@ -116,6 +116,8 @@ function filterMsgText(inText) {
         tgLogger.warn(`Unsupported <br/> tag found and cleared. Check Raw Log for reason!`);
         txt = txt.replaceAll("<br/>", "\n");
     }
+    // Filter <> for recaller!
+    txt = txt.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     return txt;
 }
 

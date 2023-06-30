@@ -12,6 +12,7 @@ const {
 } = require('./common')();
 
 let msgMappings = [];
+let tgDisabled = 0;
 const state = {
     last: {},
     lastExplicitTalker: null,
@@ -67,6 +68,8 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
+    if (tgMsg.text && tgMsg.text === "/enable" && tgDisabled) {tgDisabled = 0;tgLogger.info("tgDisable lock is now OFF.");return;}
+    else if (tgDisabled) return;
     try {
         if (process.uptime() < 4) return;
         if (!secret.tgAllowList.includes(tgMsg.from.id)) {
@@ -210,6 +213,12 @@ async function onTGMsg(tgMsg) {
                     userPrompt1: tgMsg,
                     botPrompt1: tgMsg2,
                 };
+                return;
+            }
+            case "/disable":
+            case "/disable" + botName: {
+                tgDisabled = 1;
+                tgLogger.info("tgDisable lock is now ON!");
                 return;
             }
             case "/spoiler":
@@ -591,7 +600,8 @@ async function onWxMessage(msg) {
     let content = msg.text().trim(); // 消息内容
     const room = msg.room(); // 是否是群消息
     const isGroup = room !== false;
-    const topic = isGroup ? await room.topic() : "";
+    let topic = "";
+    if (room) topic = await room.topic();
     let name = await contact.name();
     let alias = await contact.alias() || await contact.name(); // 发消息人备注
     let msgDef = {
