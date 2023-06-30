@@ -39,10 +39,10 @@ const state = {
     // store TG messages which failed to deliver due to network problems or so.
     poolFailing: [],
 };
-state.poolToDelete.add = function (tgMsg, delay) {
+state.poolToDelete.add = function (tgMsg, delay, receiver) {
     if (tgMsg !== null) {
         tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${delay})sec.`);
-        state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + delay});
+        state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + delay, receiver});
     } else {
         tgLogger.debug(`Attempting to add message to poolToDelete with timer (${delay})sec, but got null Object.`);
     }
@@ -132,7 +132,7 @@ async function onTGMsg(tgMsg) {
                     const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
                     if (res !== true) {
                         const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Error occurred while setting spoiler for former message :\n<code>${res}</code> ', true, "HTML");
-                        state.poolToDelete.add(tgMsg2, 6);
+                        state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     }
                 }
                 return;
@@ -158,7 +158,7 @@ async function onTGMsg(tgMsg) {
                         };
                         ctLogger.debug(`Upon '@' msg, set '${name}' as last talker and lock-target to 2.`);
                         const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Already set '${name}' as last talker and locked.`, true);
-                        state.poolToDelete.add(tgMsg2, 6);
+                        state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     } else {
                         if (state.lockTarget === 2) {
                             state.lockTarget = 0;
@@ -210,7 +210,7 @@ async function onTGMsg(tgMsg) {
             }
             case "/spoiler": {
                 const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Invalid pointer! Are you missing target? ', true, null);
-                state.poolToDelete.add(tgMsg2, 6);
+                state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                 return;
             }
             case "/keyboard": {
@@ -224,7 +224,7 @@ async function onTGMsg(tgMsg) {
                 };
                 const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Already set quickKeyboard! ', true, null, form);
                 await tgbot.setMyCommands(Config.TGBotCommands);
-                state.poolToDelete.add(tgMsg2, 6);
+                state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                 return;
             }
             case "/lock": {
@@ -501,15 +501,15 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
                 true, "HTML");
-            await addToMsgMappings(tgMsg2.message_id, wxFinded1);
-        } else await addToMsgMappings(alterMsgId, wxFinded1);
+            await addToMsgMappings(tgMsg2.message_id, wxFinded1, null, receiver);
+        } else await addToMsgMappings(alterMsgId, wxFinded1, null, receiver);
     } else if (wxFinded2) {
         wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
                 true, "HTML");
-            await addToMsgMappings(tgMsg2.message_id, wxFinded2);
-        } else await addToMsgMappings(alterMsgId, wxFinded2);
+            await addToMsgMappings(tgMsg2.message_id, wxFinded2, null, receiver,);
+        } else await addToMsgMappings(alterMsgId, wxFinded2, null, receiver,);
     } else {
         await tgBotDo.SendMessage(receiver, `🔍Found Failed. Please enter token again or /clear.`);
         return false;
@@ -518,16 +518,17 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
 
 }
 
-async function addToMsgMappings(tgMsgId, talker, wxMsg) {
+async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
-    msgMappings.push([tgMsgId, talker, name, wxMsg]);
+    msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
     if (state.lockTarget === 0) state.last = {
         s: STypes.Chat,
         target: talker,
         name: name,
         wxMsg: wxMsg || null,
-        isFile: (wxMsg && wxMsg.filesize) || null
+        isFile: (wxMsg && wxMsg.filesize) || null,
+        receiver
     };
     ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
 }
@@ -850,7 +851,7 @@ async function onWxMessage(msg) {
             //     return;
             // }
             const deliverResult = await deliverWxToTG(true, msg, content);
-            if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg);
+            if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg, msg.receiver);
         } else {
             //不是群消息 - - - - - - - -
             if (alias === "微信运动") {
@@ -884,7 +885,7 @@ async function onWxMessage(msg) {
                 if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             const deliverResult = await deliverWxToTG(false, msg, content);
-            if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg);
+            if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg, msg.receiver);
         }
 
         // if (haveLock) talkerLocks.pop();
@@ -912,21 +913,21 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
                 tgMsg = await tgBotDo.SendAnimation(`${template} ns 👆 #sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
                 wxLogger.info(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                tgMsg = await tgBotDo.SendMessage(`${template} [CuEmo](Send Failure)`, true);
+                tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} [CuEmo](Send Failure)`, true);
             }
         } else if (msg.DType === DTypes.Audio) {
             // 语音
             wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAudio(`${template} 🎤` + msg.audioParsed, stream, false);
+            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${template} 🎤` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
             // 正经图片消息
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendPhoto(`${template} 🖼`, stream, true, false);
+            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${template} 🖼`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息,需要二次确认
             wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
-            tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, false, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction
@@ -941,19 +942,21 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             // 仅文本或未分类
             // Plain text or not classified
             wxLogger.debug(`Normal Text message from: ${template} started delivering...`);
-            tgMsg = await tgBotDo.SendMessage(`${template} ${content}`, false, "HTML");
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, false, "HTML");
             if (isRoom && msg.preRoomNeedUpdate) {
                 state.preRoom.topic = topic;
                 state.preRoom.tgMsg = tgMsg;
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom.firstWord = `[<u>${name}</u>] ${content}`;
                 state.preRoom.msgText = `${template} ${content}`;
+                state.preRoom.receiver = msg.receiver;
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson.name = name;
                 state.prePerson.tgMsg = tgMsg;
                 state.prePerson.msgText = `${template} ${content}`;
                 state.prePerson.firstWord = `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`;
+                state.prePerson.receiver = msg.receiver;
             }
         }
 
@@ -980,7 +983,7 @@ async function getFileFromWx(msg) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
             await tgBotDo.SendChatAction("upload_document");
             const stream = fs.createReadStream(filePath);
-            let tgMsg = await tgBotDo.SendDocument("", stream, true, false);
+            let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", stream, true, false);
             if (!tgMsg) {
                 tgLogger.warn("Didn't get valid TG receipt,resend wx file failed.");
                 return "sendFailure";
@@ -1015,7 +1018,7 @@ const timerData = setInterval(async () => {
                 // delete the element first to avoid the same ITEM triggers function again if interrupted by errors.
                 state.poolToDelete.splice(parseInt(itemId), 1);
                 tgLogger.debug(`Attempting to remove expired messages driven by its timer.`);
-                await tgBotDo.RevokeMessage(item.tgMsg.message_id);
+                await tgBotDo.RevokeMessage(item.tgMsg.message_id, item.receiver);
             }
         }
     } catch (e) {

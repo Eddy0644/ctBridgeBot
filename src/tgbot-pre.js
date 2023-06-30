@@ -90,7 +90,7 @@ const tgBotDo = {
     },
     EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {
-            chat_id: parseRecv(receiver, {}),
+            chat_id: parseRecv(receiver || former_tgMsg.matched, {}),
             message_id: former_tgMsg.message_id,
             parse_mode: "HTML"
         };

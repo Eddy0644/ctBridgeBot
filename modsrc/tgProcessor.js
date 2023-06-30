@@ -21,7 +21,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         // Already merged, so just append newer to last
         const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
-        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg/*, _.tg_chat_id*/);
+        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into 2nd.`);
         return true;
     } else {
@@ -30,7 +30,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         const newString = `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n${_.firstWord}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
         _.firstWord = "";
-        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg/*, _.tg_chat_id*/);
+        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into first.`);
         return true;
     }
@@ -71,7 +71,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
         defLogger.debug(`Sent out following tips: {${message}}`);
         if (timeout !== 0) {
             tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${timeout})sec.`);
-            state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + timeout, chat_id: target});
+            state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + timeout, receiver: target});
         }
     } catch (e) {
         defLogger.warn(`Sending Tip failed in post-check, please check!`);
@@ -86,7 +86,7 @@ async function addSelfReplyTs() {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`;
-        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg);
+        _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         ctLogger.debug(`Delivered myself reply stamp into Room:${_.topic} 's former message, and cleared its preRoom.`);
         state.preRoom = {
             firstWord: "",
