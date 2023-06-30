@@ -38,6 +38,7 @@ const state = {
     // {tgMsg:null,toDelTs:0}
     // store TG messages which failed to deliver due to network problems or so.
     poolFailing: [],
+    C2CTemp: [],
 };
 state.poolToDelete.add = function (tgMsg, delay, receiver) {
     if (tgMsg !== null) {
@@ -123,7 +124,7 @@ async function onTGMsg(tgMsg) {
                 while (tgMsg.text.indexOf(pair[0]) !== -1) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
             }
         }
-        if (tgMsg.reply_to_message) {
+        if (tgMsg.matched.s === 0 && tgMsg.reply_to_message) {
             if (tgMsg.text === "/spoiler") {
                 // TG-wide command so not put inside the for loop
                 const orig = tgMsg.reply_to_message;
@@ -290,42 +291,48 @@ async function onTGMsg(tgMsg) {
             return;
         }
 
-        // Last process block  ------------------------
-        {
-            //inline find someone: (priority higher than ops below)
-            if (/*tgMsg.matched.s === 0 &&*/ /(::|：：)\n/.test(tgMsg.text)) {
-                const match = tgMsg.text.match(/^(.{1,12})(::|：：)\n/);
-                if (match && match[1]) {
-                    // Parse Success
-                    let findToken = match[1], found = false;
-                    for (const pair of secret.nameFindReplaceList) {
-                        if (findToken === pair[0]) {
-                            findToken = pair[1];
-                            found = true;
-                            break;
-                        }
+
+        //inline find someone: (priority higher than ops below)
+        if (tgMsg.matched.s === 0 && /(::|：：)\n/.test(tgMsg.text)) {
+            const match = tgMsg.text.match(/^(.{1,12})(::|：：)\n/);
+            if (match && match[1]) {
+                // Parse Success
+                let findToken = match[1], found = false;
+                for (const pair of secret.nameFindReplaceList) {
+                    if (findToken === pair[0]) {
+                        findToken = pair[1];
+                        found = true;
+                        break;
                     }
-                    // if settings.enableInlineSearchForUnreplaced is true,
-                    // then whether findToken is in nameFindReplaceList it will continue.
-                    if (found || secret.settings.enableInlineSearchForUnreplaced) {
-                        wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
-                        const res = await findSbInWechat(findToken, tgMsg.message_id, tgMsg.matched);
-                        if (res) {
-                            // await tgBotDo.RevokeMessage(tgMsg.message_id);
-                            // TODO force override of message content but need a fix
-                            tgMsg.text = tgMsg.text.replace(match[0], "");
-                            // left empty here, to continue forward message to talker and reuse the code
-                        } else return;
-                    } else {
-                        ctLogger.debug(`Message have inline search, but no match in nameFindReplaceList pair.`);
-                        return;
-                    }
-                } else {
-                    ctLogger.debug(`Message have dual colon, but parse search token failed. Please Check.`);
                 }
+                // if settings.enableInlineSearchForUnreplaced is true,
+                // then whether findToken is in nameFindReplaceList it will continue.
+                if (found || secret.settings.enableInlineSearchForUnreplaced) {
+                    wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
+                    const res = await findSbInWechat(findToken, tgMsg.message_id, tgMsg.matched);
+                    if (res) {
+                        // await tgBotDo.RevokeMessage(tgMsg.message_id);
+                        tgMsg.text = tgMsg.text.replace(match[0], "");
+                        // left empty here, to continue forward message to talker and reuse the code
+                    } else return;
+                } else {
+                    ctLogger.debug(`Message have inline search, but no match in nameFindReplaceList pair.`);
+                    return;
+                }
+            } else {
+                ctLogger.debug(`Message have dual colon, but parse search token failed. Please Check.`);
             }
+        }
 
 
+        // Last process block  ------------------------
+        if (tgMsg.matched.s === 1) {
+            const wxTarget = await getC2CPeer(tgMsg.matched);
+            if (!wxTarget) return;
+            await wxTarget.say(tgMsg.text);
+            await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+            ctLogger.debug(`Handled a message send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
+        } else {
             // No valid COMMAND within msg
             if (Object.keys(state.last).length === 0) {
                 // Activate chat & env. set
@@ -453,11 +460,13 @@ async function generateInfo() {
 }
 
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
-    if (state.last.s !== STypes.Chat) {
+    const s = tgMsg.matched.s;
+    if (s === 0 && state.last.s !== STypes.Chat) {
         await tgBotDo.SendMessage("🛠 Sorry, but media sending without last chatter is not implemented.", true);
         // TODO: to be implemented.
         return;
     }
+    const receiver = s === 0 ? null : (s === 1 ? tgMsg.matched.p : null);
     tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     // noinspection JSUnresolvedVariable
@@ -472,7 +481,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
-    await tgBotDo.SendChatAction(action);
+    await tgBotDo.SendChatAction(action, receiver);
     tgLogger.trace(`file_path is ${file_path}.`);
     await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
     let packed;
@@ -482,10 +491,20 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     }
     packed = await FileBox.fromFile(file_path);
 
-    await tgBotDo.SendChatAction("record_video", tgMsg.matched);
-    await state.last.target.say(packed);
-    ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
-    await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+    await tgBotDo.SendChatAction("record_video", receiver);
+    if (s === 0) {
+        await state.last.target.say(packed);
+        ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
+    } else {
+        // C2C media delivery
+        with (tgMsg.matched) {
+            const wxTarget = getC2CPeer(tgMsg.matched);
+            if (!wxTarget) return;
+            await wxTarget.say(packed);
+            defLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
+        }
+    }
+    await tgBotDo.SendChatAction("choose_sticker", receiver);
     return true;
 }
 
@@ -518,6 +537,22 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
 
 }
 
+async function getC2CPeer(pair) {
+    const p = pair.p;
+    let wxTarget;
+    if (!state.C2CTemp[p.tgid]) {
+        if (p.wx[1] === true) {
+            wxTarget = await wxbot.Room.find({topic: p.wx[0]});
+        } else {
+            wxTarget = await wxbot.Contact.find({name: p.wx[0]});
+            wxTarget = wxTarget || await wxbot.Contact.find({alias: p.wx[0]});
+        }
+        if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
+        else state.C2CTemp[p.tgid] = wxTarget;
+    } else wxTarget = state.C2CTemp[p.tgid];
+    return wxTarget;
+}
+
 async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
@@ -547,6 +582,7 @@ async function onWxMessage(msg) {
     let content = msg.text().trim(); // 消息内容
     const room = msg.room(); // 是否是群消息
     const isGroup = room !== false;
+    const topic = isGroup ? await room.topic() : "";
     let name = await contact.name();
     let alias = await contact.alias() || await contact.name(); // 发消息人备注
     let msgDef = {
@@ -559,7 +595,7 @@ async function onWxMessage(msg) {
 
     //提前筛选出自己的消息,避免多次下载媒体
     if (room) {
-        if (msg.self() && await room.topic() !== "CyTest") return;
+        if (msg.self() && topic !== "CyTest") return;
     } else {
         if (msg.self()) return;
     }
