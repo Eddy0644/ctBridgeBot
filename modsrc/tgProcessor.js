@@ -66,12 +66,8 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
             tgLogger.error(`Wrong call of tg replyWithTips() with invalid 'tipMode'. Please check arguments.\n${tipMode}\t${target}`);
             return;
     }
-    if (target === null) {
-        // left this to null means replying to default channel. ---------------
-        target = secret.target_TG_ID;
-    }
     try {
-        const tgMsg = await tgBotDo.SendMessage(/*{tgGroupId: target},*/ message, true, "HTML", form);
+        const tgMsg = await tgBotDo.SendMessage(target, message, true, "HTML", form);
         defLogger.debug(`Sent out following tips: {${message}}`);
         if (timeout !== 0) {
             tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${timeout})sec.`);

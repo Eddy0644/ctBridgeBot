@@ -104,10 +104,10 @@ async function onTGMsg(tgMsg) {
                 if (!fs.existsSync(file_path)) throw new Error("save file error");
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
                 if (res !== "") {
-                    await tgBotDo.SendMessage(tgMsg.matched,`Transcript:\n<code>${res}</code>`, true, "HTML");
+                    await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
                 }
             } catch (e) {
-                await mod.tgProcessor.replyWithTips("audioProcessFail");
+                await mod.tgProcessor.replyWithTips("audioProcessFail", tgMsg.matched);
             }
             return;
         }
@@ -131,8 +131,8 @@ async function onTGMsg(tgMsg) {
                     const file_id = orig.photo[orig.photo.length - 1].file_id;
                     const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
                     if (res !== true) {
-                        const tgMsg = await tgBotDo.SendMessage('Error occurred while setting spoiler for former message :\n<code>${res}</code> ', true, "HTML");
-                        state.poolToDelete.add(tgMsg, 6);
+                        const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Error occurred while setting spoiler for former message :\n<code>${res}</code> ', true, "HTML");
+                        state.poolToDelete.add(tgMsg2, 6);
                     }
                 }
                 return;
@@ -157,8 +157,8 @@ async function onTGMsg(tgMsg) {
                             isFile: null
                         };
                         ctLogger.debug(`Upon '@' msg, set '${name}' as last talker and lock-target to 2.`);
-                        const tgMsg = await tgBotDo.SendMessage(`Already set '${name}' as last talker and locked.`, true);
-                        state.poolToDelete.add(tgMsg, 6);
+                        const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Already set '${name}' as last talker and locked.`, true);
+                        state.poolToDelete.add(tgMsg2, 6);
                     } else {
                         if (state.lockTarget === 2) {
                             state.lockTarget = 0;
@@ -170,7 +170,7 @@ async function onTGMsg(tgMsg) {
                             // the explicit talker - Room matches preRoom
                             await mod.tgProcessor.addSelfReplyTs();
                         }
-                        await tgBotDo.SendChatAction("choose_sticker");
+                        await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
                     }
                     ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                     return;
@@ -199,7 +199,7 @@ async function onTGMsg(tgMsg) {
                         one_time_keyboard: true
                     })
                 };
-                const tgMsg2 = await tgBotDo.SendMessage('Entering find mode; enter token to find it.', true, null, form);
+                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Entering find mode; enter token to find it.', true, null, form);
                 // state.lastOpt = ["/find", tgMsg2];
                 state.last = {
                     s: STypes.FindMode,
@@ -209,8 +209,8 @@ async function onTGMsg(tgMsg) {
                 return;
             }
             case "/spoiler": {
-                const tgMsg = await tgBotDo.SendMessage('Invalid pointer! Are you missing target? ', true, null);
-                state.poolToDelete.add(tgMsg, 6);
+                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Invalid pointer! Are you missing target? ', true, null);
+                state.poolToDelete.add(tgMsg2, 6);
                 return;
             }
             case "/keyboard": {
@@ -222,14 +222,14 @@ async function onTGMsg(tgMsg) {
                         one_time_keyboard: false
                     })
                 };
-                const tgMsg = await tgBotDo.SendMessage('Already set quickKeyboard! ', true, null, form);
+                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Already set quickKeyboard! ', true, null, form);
                 await tgbot.setMyCommands(Config.TGBotCommands);
-                state.poolToDelete.add(tgMsg, 6);
+                state.poolToDelete.add(tgMsg2, 6);
                 return;
             }
             case "/lock": {
                 state.lockTarget = state.lockTarget ? 0 : 1;
-                return await mod.tgProcessor.replyWithTips("lockStateChange", null, 6, state.lockTarget);
+                return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.lockTarget);
             }
             case "/slet": {
                 // Set last explicit talker as last talker.
@@ -243,16 +243,16 @@ async function onTGMsg(tgMsg) {
                     wxMsg: null,
                     isFile: null
                 };
-                await tgBotDo.SendMessage(`Set "${name}" as last Talker By user operation.`, true, null);
-                await tgBotDo.RevokeMessage(tgMsg.message_id);
+                await tgBotDo.SendMessage(tgMsg.matched, `Set "${name}" as last Talker By user operation.`, true, null);
+                await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
                 return;
             }
             case "/info": {
                 tgLogger.debug(`Generating tgBot status by user operation...`);
                 // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-                await tgBotDo.SendChatAction("typing");
+                await tgBotDo.SendChatAction("typing", tgMsg.matched);
                 const statusReport = await generateInfo();
-                await tgBotDo.SendMessage(statusReport, true, null);
+                await tgBotDo.SendMessage(tgMsg.matched, statusReport, true, null);
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
                 return;
@@ -273,8 +273,8 @@ async function onTGMsg(tgMsg) {
                 }
             }
             wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
-            const res = await findSbInWechat(findToken);
-            if (res) await tgBotDo.RevokeMessage(tgMsg.message_id);
+            const res = await findSbInWechat(findToken, 0, tgMsg.matched);
+            if (res) await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             return;
         }
 
@@ -286,7 +286,7 @@ async function onTGMsg(tgMsg) {
             if (tgMsg.text.length > 5) {
                 chars = parseInt(tgMsg.text.replace("/log ", ""));
             }
-            await tgBotDo.SendMessage(`\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
+            await tgBotDo.SendMessage(tgMsg.matched, `\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
             return;
         }
 
@@ -309,7 +309,7 @@ async function onTGMsg(tgMsg) {
                     // then whether findToken is in nameFindReplaceList it will continue.
                     if (found || secret.settings.enableInlineSearchForUnreplaced) {
                         wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
-                        const res = await findSbInWechat(findToken, tgMsg.message_id);
+                        const res = await findSbInWechat(findToken, tgMsg.message_id, tgMsg.matched);
                         if (res) {
                             // await tgBotDo.RevokeMessage(tgMsg.message_id);
                             // TODO force override of message content but need a fix
@@ -345,7 +345,7 @@ async function onTGMsg(tgMsg) {
                     }
                 }
                 const lastState = state.last;
-                const result = await findSbInWechat(findToken);
+                const result = await findSbInWechat(findToken, 0, tgMsg.matched);
                 // Revoke the prompt 'entering find mode'
                 if (result) {
                     await tgBotDo.RevokeMessage(lastState.userPrompt1.message_id);
@@ -357,7 +357,7 @@ async function onTGMsg(tgMsg) {
             if (state.last.s === STypes.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
-                    await tgBotDo.SendChatAction("typing");
+                    await tgBotDo.SendChatAction("typing", tgMsg.matched);
                     await getFileFromWx(state.last.wxMsg);
                     ctLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
                 } else {
@@ -368,7 +368,7 @@ async function onTGMsg(tgMsg) {
                         await mod.tgProcessor.addSelfReplyTs();
                     }
                     ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
-                    await tgBotDo.SendChatAction("choose_sticker");
+                    await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
                 }
             }
             // Empty here.
@@ -482,16 +482,16 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     }
     packed = await FileBox.fromFile(file_path);
 
-    await tgBotDo.SendChatAction("record_video");
+    await tgBotDo.SendChatAction("record_video", tgMsg.matched);
     await state.last.target.say(packed);
     ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
     await tgBotDo.SendChatAction("choose_sticker");
     return true;
 }
 
-async function findSbInWechat(token, alterMsgId = 0) {
+async function findSbInWechat(token, alterMsgId = 0, receiver) {
     const s = alterMsgId === 0;
-    await tgBotDo.SendChatAction("typing");
+    await tgBotDo.SendChatAction("typing", receiver);
     // Find below as: 1.name of Person 2.name of topic 3.alias of person
     let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
@@ -499,19 +499,19 @@ async function findSbInWechat(token, alterMsgId = 0) {
     if (wxFinded1) {
         wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
         if (s) {
-            const tgMsg = await tgBotDo.SendMessage(`🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
+            const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
                 true, "HTML");
-            await addToMsgMappings(tgMsg.message_id, wxFinded1);
+            await addToMsgMappings(tgMsg2.message_id, wxFinded1);
         } else await addToMsgMappings(alterMsgId, wxFinded1);
     } else if (wxFinded2) {
         wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
         if (s) {
-            const tgMsg = await tgBotDo.SendMessage(`🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
+            const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
                 true, "HTML");
-            await addToMsgMappings(tgMsg.message_id, wxFinded2);
+            await addToMsgMappings(tgMsg2.message_id, wxFinded2);
         } else await addToMsgMappings(alterMsgId, wxFinded2);
     } else {
-        await tgBotDo.SendMessage(`🔍Found Failed. Please enter token again or /clear.`);
+        await tgBotDo.SendMessage(receiver, `🔍Found Failed. Please enter token again or /clear.`);
         return false;
     }
     return true;
@@ -545,6 +545,7 @@ async function onWxMessage(msg) {
     const contact = msg.talker(); // 发消息人
     let content = msg.text().trim(); // 消息内容
     const room = msg.room(); // 是否是群消息
+    const isGroup = room !== false;
     let name = await contact.name();
     let alias = await contact.alias() || await contact.name(); // 发消息人备注
     let msgDef = {
@@ -560,6 +561,27 @@ async function onWxMessage(msg) {
         if (msg.self() && await room.topic() !== "CyTest") return;
     } else {
         if (msg.self()) return;
+    }
+
+    // Start deliver process, start fetching from config
+    msg.receiver = null;
+    with (secret.class) {
+        for (const pair of C2C) {
+            let matched = 0;
+            if (pair.wx[1] === isGroup) {
+                matched = (pair.wx[0] === topic);
+            } else {
+                matched = ((pair.wx[0] === alias) || (pair.wx[0] === name));
+            }
+            if (matched) {
+                // Matched pair
+                msg.receiver = pair;
+                break;
+            }
+        }
+        if (!msg.receiver) {
+            msg.receiver = def;
+        }
     }
 
     // TODO delay messages from same talker as many messages may arrive at almost same time
