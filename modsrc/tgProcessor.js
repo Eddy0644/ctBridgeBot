@@ -9,11 +9,21 @@ let env;
 // }
 
 async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
-    const {state, defLogger, tgBotDo} = env;
+    const {state, defLogger, tgBotDo, secret} = env;
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
     const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
-    const newItemTitle = (_.lastTalker === name) ? `|→ ` : `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]`;
+    const newItemTitle = (() => {
+        const s = secret.settings.titleForSameTalkerInMergedRoomMsg;
+        if (s[0] === 0 || _.lastTalker !== name) {
+            _.talkerCount = 0;
+            _.lastTalker = name;
+            return `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]`;
+        }
+        _.talkerCount++;
+        if (s[0] === 1) return s[1] || `|→ `;
+        if (s[0] === 2) return s[1](_.talkerCount);
+    })();
     msg[`pre${word}NeedUpdate`] = false;
     content = filterMsgText(content);
     // from same talker check complete, ready to merge
@@ -21,7 +31,6 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         // Already merged, so just append newer to last
         const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
-        _.lastTalker = name;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into 2nd.`);
         return true;
@@ -31,7 +40,6 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         const newString = `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.firstWord = "";
-        _.lastTalker = name;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into first.`);
         return true;
@@ -39,7 +47,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
 }
 
 async function replyWithTips(tipMode = "", target = null, timeout = 6, additional = null) {
-    const {tgLogger, state, secret, defLogger, tgBotDo} = env;
+    const {tgLogger, state, defLogger, tgBotDo} = env;
     let message = "", form = {};
     switch (tipMode) {
         case "globalCmdToC2C":
@@ -112,7 +120,7 @@ function filterMsgText(inText) {
         const match = txt.match(/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 8) ? match[2].substring(0, 8) : match[2];
-        // Inclip, we do not need <br/> to be revealed
+        // In clip, we do not need <br/> to be revealed
         const origMsgClip2 = origMsgClip.replaceAll("<br/>", " ");
         txt = txt.replace(match[0], ``);
         // to let this <i> not escaped by "Filter <> for recaller"

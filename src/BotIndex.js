@@ -1011,7 +1011,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
                     firstWord: `[<u>${name}</u>] ${content}`,
                     msgText: `${template} ${content}`,
                     receiver: msg.receiver,
-                    lastTalker: "",
+                    lastTalker: name,
+                    talkerCount: 0,
                 }
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
