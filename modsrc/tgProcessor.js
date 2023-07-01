@@ -13,7 +13,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
     const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
-    const newItemTitle = `<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>`;
+    const newItemTitle = (_.lastTalker === name) ? `|→ ` : `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]`;
     msg[`pre${word}NeedUpdate`] = false;
     content = filterMsgText(content);
     // from same talker check complete, ready to merge
@@ -21,15 +21,17 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         // Already merged, so just append newer to last
         const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
         _.msgText = newString;
+        _.lastTalker = name;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into 2nd.`);
         return true;
     } else {
         // Ready to modify first msg, refactoring it.
         ///* C2C msg do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
-        const newString = `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n${_.firstWord}\n[${newItemTitle}] ${content}`;
+        const newString = `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.firstWord = "";
+        _.lastTalker = name;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into first.`);
         return true;

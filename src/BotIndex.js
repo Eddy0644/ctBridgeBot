@@ -22,6 +22,7 @@ const state = {
         tgMsg: null,
         topic: "",
         msgText: "",
+        lastTalker: "",
     },
     prePerson: {
         tgMsg: null,
@@ -68,8 +69,11 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text === "/enable" && tgDisabled) {tgDisabled = 0;tgLogger.info("tgDisable lock is now OFF.");return;}
-    else if (tgDisabled) return;
+    if (tgMsg.text && tgMsg.text === "/enable" && tgDisabled) {
+        tgDisabled = 0;
+        tgLogger.info("tgDisable lock is now OFF.");
+        return;
+    } else if (tgDisabled) return;
     try {
         if (process.uptime() < 4) return;
         if (!secret.tgAllowList.includes(tgMsg.from.id)) {
@@ -422,6 +426,7 @@ async function softReboot(reason) {
         tgMsg: null,
         name: "",
         msgText: "",
+        lastTalker: "",
     };
     timerDataCount = 6;
     msgMergeFailCount = 6;
@@ -1000,12 +1005,14 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             wxLogger.debug(`Normal Text message from: ${template} started delivering...`);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, false, "HTML");
             if (isRoom && msg.preRoomNeedUpdate) {
-                state.preRoom.topic = topic;
-                state.preRoom.tgMsg = tgMsg;
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
-                state.preRoom.firstWord = `[<u>${name}</u>] ${content}`;
-                state.preRoom.msgText = `${template} ${content}`;
-                state.preRoom.receiver = msg.receiver;
+                state.preRoom = {
+                    topic, tgMsg,
+                    firstWord: `[<u>${name}</u>] ${content}`,
+                    msgText: `${template} ${content}`,
+                    receiver: msg.receiver,
+                    lastTalker: "",
+                }
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson.name = name;
