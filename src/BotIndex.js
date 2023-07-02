@@ -121,7 +121,7 @@ async function onTGMsg(tgMsg) {
         }
         // Non-text messages must be filtered ahead of them !---------------
         if (!tgMsg.text) {
-            tgLogger.warn(`A TG message with empty content has passed through text Processor! Check the log for detail.`);
+            tgLogger.info(`A TG message with empty content has passed through text Processor! Check the log for detail.`);
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
             return;
         }
@@ -1027,11 +1027,12 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
                 }
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
-                state.prePerson.name = name;
-                state.prePerson.tgMsg = tgMsg;
-                state.prePerson.msgText = `${template} ${content}`;
-                state.prePerson.firstWord = `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`;
-                state.prePerson.receiver = msg.receiver;
+                state.prePerson = {
+                    topic, tgMsg,
+                    firstWord: `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`,
+                    msgText: `${template} ${content}`,
+                    receiver: msg.receiver,
+                };
             }
         }
 

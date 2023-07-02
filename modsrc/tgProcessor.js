@@ -13,6 +13,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
     const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
+    const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
         const s = secret.settings.changeTitleForSameTalkerInMergedRoomMsg;
         if (s === false || _.lastTalker !== name) {
@@ -34,7 +35,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         const newString = `${_.msgText}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
-        defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into 2nd.`);
+        defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into former.`);
         return true;
     } else {
         // Ready to modify first msg, refactoring it.
@@ -43,7 +44,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         _.msgText = newString;
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
-        defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into first.`);
+        defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into first.`);
         return true;
     }
 }
