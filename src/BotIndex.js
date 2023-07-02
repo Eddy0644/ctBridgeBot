@@ -685,7 +685,7 @@ async function onWxMessage(msg) {
                 let filtered = false;
                 if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
                     // Got duplicate and continuous Sticker, skipping and CONDEMN that!
-                    wxLogger.info(`${contact} sent you a duplicate emotion. Skipped and CONDEMN that!`);
+                    wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
                     //TODO add here to undelivered pool too!
                     //TODO: set this for debugging
                     filtered = true;

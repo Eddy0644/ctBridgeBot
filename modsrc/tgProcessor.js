@@ -14,22 +14,24 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const _ = isGroup ? state.preRoom : state.prePerson;
     const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
     const newItemTitle = (() => {
-        const s = secret.settings.titleForSameTalkerInMergedRoomMsg;
-        if (s[0] === 0 || _.lastTalker !== name) {
+        const s = secret.settings.changeTitleForSameTalkerInMergedRoomMsg;
+        if (s === false || _.lastTalker !== name) {
             _.talkerCount = 0;
             _.lastTalker = name;
             return `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]`;
         }
         _.talkerCount++;
-        if (s[0] === 1) return s[1] || `|→ `;
-        if (s[0] === 2) return s[1](_.talkerCount);
+        if (typeof s === "string") return s || `|→ `;
+        if (typeof s === "function") return s(_.talkerCount);
+        defLogger.warn(`Invalid configuration found for {settings.changeTitleForSameTalkerInMergedRoomMsg}!`);
+        return `|→ `;
     })();
     msg[`pre${word}NeedUpdate`] = false;
     content = filterMsgText(content);
     // from same talker check complete, ready to merge
     if (_.firstWord === "") {
         // Already merged, so just append newer to last
-        const newString = `${_.msgText}\n[${newItemTitle}] ${content}`;
+        const newString = `${_.msgText}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged new msg "${content}" from ${word}: ${isGroup ? `${_.topic}/${name}` : name} into 2nd.`);
