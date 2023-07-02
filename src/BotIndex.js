@@ -93,8 +93,15 @@ async function onTGMsg(tgMsg) {
                     break;
                 }
             }
+            if (tgMsg.chat.id === def.tgid) tgMsg.matched = {s: 0};
+            // TODO push channel should not accept incoming message, need add alert here
+            // if (tgMsg.chat.id === push.tgid) tgMsg.matched = {s: 2};
+
             if (!tgMsg.matched) {
-                tgMsg.matched = {s: 0};
+                // Reject this message
+                tgLogger.info(`Received message from unauthorized origin. Skipping...`);
+                tgLogger.trace(`Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title})`);
+                return;
             }
         }
 
