@@ -51,7 +51,6 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
     }
 };
 const {tgbot, tgBotDo} = require('./tgbot-pre');
-
 const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
 
 // Loading instance modules...
@@ -619,7 +618,8 @@ async function onWxMessage(msg) {
     let msgDef = {
         isSilent: false,
         forceMerge: false,
-        replyTo: null
+        replyTo: null,
+        suppressTitle: false,
     }
 
     msg.DType = DTypes.Default;
@@ -800,6 +800,7 @@ async function onWxMessage(msg) {
                 msg.DType = DTypes.Push;
                 msg.receiver = secret.class.push;
                 msgDef.isSilent = true;
+                msgDef.suppressTitle = true;
                 wxLogger.debug(`Ready to send this push message into 'Push' channel!`);
             }
         } else if (msg.payload.filename.endsWith(".url")) {
@@ -926,7 +927,7 @@ async function onWxMessage(msg) {
             //     tgLogger.debug(`Delivered a room msg in advance as it is system msg.`);
             //     return;
             // }
-            const deliverResult = await deliverWxToTG(true, msg, content);
+            const deliverResult = await deliverWxToTG(true, msg, content, msgDef);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg, msg.receiver);
         } else {
             //不是群消息 - - - - - - - -
@@ -960,7 +961,7 @@ async function onWxMessage(msg) {
                 msgMergeFailCount--;
                 if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
-            const deliverResult = await deliverWxToTG(false, msg, content);
+            const deliverResult = await deliverWxToTG(false, msg, content, msgDef);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg, msg.receiver);
         }
 
@@ -968,7 +969,7 @@ async function onWxMessage(msg) {
     }
 }
 
-async function deliverWxToTG(isRoom = false, msg, contentO) {
+async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     // TODO remove title in C2C chat!
     const contact = msg.talker();
     const room = msg.room();
@@ -978,7 +979,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     let content = contentO.replaceAll("<br/>", "\n");
     const topic = isRoom ? await room.topic() : "";
     const template = (() => {
-        if (msg.receiver.wx) {
+        if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
             return isRoom ? `[<b>${name}</b>]` : ``;
         } else {
@@ -1026,7 +1027,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             // 仅文本或未分类
             // Plain text or not classified
             wxLogger.debug(`Normal Text message from: ${template} started delivering...`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, false, "HTML");
+            tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, msgDef.isSilent, "HTML", {
+                disable_web_page_preview: (msg.DType === DTypes.Push)
+            });
             // Push messages do not need 'state.pre__'
             if (msg.DType === DTypes.Push) return;
             if (isRoom && msg.preRoomNeedUpdate) {

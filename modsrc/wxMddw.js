@@ -20,8 +20,8 @@ async function handlePushMessage(rawContent) {
             let itemStr = "";
             const {title, url, digest, is_pay_subscribe} = item;
             itemStr += `→ <a href="${url[0]}">${title[0]}</a>\n`;
-            itemStr += `  <i>${digest[0]}</i>\n`;
-            if (is_pay_subscribe[0] !== '0') itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
+            if (digest[0].length > 1)           itemStr += `  <i>${digest[0]}</i>\n`;
+            if (is_pay_subscribe[0] !== '0')    itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
             out += itemStr;
         }
         return out.replaceAll("&amp;", "&");
