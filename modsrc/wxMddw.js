@@ -1,0 +1,55 @@
+const xml2js = require("xml2js");
+let env;
+
+async function a() {
+    const {} = env;
+}
+
+async function handlePushMessage(rawContent) {
+    const {defLogger} = env;
+    const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
+    if (ps === false) return 0;
+    // noinspection JSUnresolvedVariable
+    try {
+        // noinspection JSUnresolvedVariable
+        const appname = ps.msg.appinfo[0].appname[0];
+        // noinspection JSUnresolvedVariable
+        const items = ps.msg.appmsg[0].mmreader[0].category[0].item;
+        let out = `📬 Posts from [${appname}]\n`;
+        for (const item of items) {
+            let itemStr = "";
+            const {title, url, digest, is_pay_subscribe} = item;
+            itemStr += `→ <a href="${url[0]}">${title[0]}</a>\n`;
+            itemStr += `  <i>${digest[0]}</i>\n`;
+            if (is_pay_subscribe[0] !== '0') itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
+            out += itemStr;
+        }
+        return out.replaceAll("&amp;", "&");
+    } catch (e) {
+        defLogger.debug(`Error occurred when reading xml detail. Skipping...`);
+        return 0;
+    }
+}
+
+function b() {
+    const {} = env;
+}
+
+function parseXML(xml) {
+    const {defLogger} = env;
+    return new Promise((resolve) => {
+        xml2js.parseString(xml, (err, result) => {
+            if (err) {
+                defLogger.debug(`XML parse to dot notation failed.`);
+                resolve(false);
+            } else {
+                resolve(result);
+            }
+        });
+    });
+}
+
+module.exports = (incomingEnv) => {
+    env = incomingEnv;
+    return {handlePushMessage};
+};

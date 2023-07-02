@@ -62,7 +62,7 @@ const mod = {
     // autoRespond: require('./autoResponder')(env),
     upyunMiddleware: require('../modsrc/upyunMiddleware')(env),
     audioRecognition: require('../modsrc/audioRecognition')(env),
-    // wxProcessor: require('./wxProcessor')(env),
+    wxMddw: require('../modsrc/wxMddw')(env),
     tgProcessor: require('../modsrc/tgProcessor')(env),
 }
 env.mod = mod;
