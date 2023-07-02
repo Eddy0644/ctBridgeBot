@@ -6,7 +6,7 @@ async function a() {
 }
 
 async function handlePushMessage(rawContent) {
-    const {defLogger} = env;
+    const {wxLogger} = env;
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
     if (ps === false) return 0;
     // noinspection JSUnresolvedVariable
@@ -26,7 +26,7 @@ async function handlePushMessage(rawContent) {
         }
         return out.replaceAll("&amp;", "&");
     } catch (e) {
-        defLogger.debug(`Error occurred when reading xml detail. Skipping...`);
+        wxLogger.debug(`Error occurred when reading xml detail. Skipping...`);
         return 0;
     }
 }

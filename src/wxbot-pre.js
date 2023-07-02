@@ -18,6 +18,7 @@ const DTypes = {
     Audio: 3,
     CustomEmotion: 4,
     File: 5,
+    Push: 6,
 };
 
 

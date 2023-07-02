@@ -786,6 +786,15 @@ async function onWxMessage(msg) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
             wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49", "")}].`);
             //TODO add this to msg pool and return
+            const result = await mod.wxMddw.handlePushMessage(content);
+            if (result !== 0) {
+                //Parse successful, ready to overwrite content
+                content = result;
+                msg.DType = DTypes.Push;
+                msg.receiver = secret.class.push;
+                msgDef.isSilent = true;
+                wxLogger.debug(`Ready to send this push message into 'Push' channel!`);
+            }
         } else if (msg.payload.filename.endsWith(".url")) {
             wxLogger.trace(`filename has suffix .url, maybe LINK.`);
             const LinkRegex = new RegExp(/&lt;url&gt;(.*?)&lt;\/url&gt;/);
@@ -1004,6 +1013,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
             // Plain text or not classified
             wxLogger.debug(`Normal Text message from: ${template} started delivering...`);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, false, "HTML");
+            // Push messages do not need 'state.pre__'
+            if (msg.DType === DTypes.Push) return;
             if (isRoom && msg.preRoomNeedUpdate) {
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {
