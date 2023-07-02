@@ -12,7 +12,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const {state, defLogger, tgBotDo, secret} = env;
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
-    const newFirstTitle = isGroup ? _.topic : name;     // await msg.room().topic()
+    const newFirstTitle = (msg.receiver.wx) ? `` : (isGroup ? _.topic : name);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
         const s = secret.settings.changeTitleForSameTalkerInMergedRoomMsg;

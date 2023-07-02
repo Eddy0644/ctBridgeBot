@@ -977,7 +977,14 @@ async function deliverWxToTG(isRoom = false, msg, contentO) {
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
     const topic = isRoom ? await room.topic() : "";
-    const template = isRoom ? `📬[<b>${name}</b>@${topic}]` : `📨[<b>${alias}</b>]`;
+    const template = (() => {
+        if (msg.receiver.wx) {
+            // C2C is present
+            return isRoom ? `[<b>${name}</b>]` : ``;
+        } else {
+            return isRoom ? `📬[<b>${name}</b>@${topic}]` : `📨[<b>${alias}</b>]`;
+        }
+    })();
     let tgMsg, retrySend = 2;
     // TG does not support <br/> in HTML parsed text, so filtering it.
     content = content.replaceAll("<br/>", "\n");
