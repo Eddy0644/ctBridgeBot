@@ -5,8 +5,8 @@ async function a() {
     const {} = env;
 }
 
-async function handlePushMessage(rawContent) {
-    const {wxLogger} = env;
+async function handlePushMessage(rawContent, msg) {
+    const {wxLogger, secret} = env;
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
     if (ps === false) return 0;
     // noinspection JSUnresolvedVariable
@@ -20,9 +20,16 @@ async function handlePushMessage(rawContent) {
             let itemStr = "";
             const {title, url, digest, is_pay_subscribe} = item;
             itemStr += `→ <a href="${url[0]}">${title[0]}</a>\n`;
-            if (digest[0].length > 1)           itemStr += `  <i>${digest[0]}</i>\n`;
-            if (is_pay_subscribe[0] !== '0')    itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
+            if (digest[0].length > 1) itemStr += `  <i>${digest[0]}</i>\n`;
+            if (is_pay_subscribe[0] !== '0') itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
             out += itemStr;
+        }
+        // Success
+        {
+            const s = secret.settings.deliverPushMessage;
+            if (s === false) return 0;
+            if (s === true) msg.receiver = secret.class.push;
+            if (s.tgid) msg.receiver = s;
         }
         return out.replaceAll("&amp;", "&");
     } catch (e) {

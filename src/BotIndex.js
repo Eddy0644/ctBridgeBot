@@ -654,15 +654,6 @@ async function onWxMessage(msg) {
 
     // TODO delay messages from same talker as many messages may arrive at almost same time
     // lock is hard to make; used another strategy here.
-    // let haveLock = false;
-    // for (let i = 0; i < 6 && talkerLocks.includes(contact.id); i++) {
-    //     await delay(200);
-    // }
-    // if (!talkerLocks.includes(contact.id)) {
-    //     haveLock = true;
-    //     talkerLocks.push(contact.id);
-    //     // talkerLocks.re
-    // }
 
     //已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
@@ -793,12 +784,11 @@ async function onWxMessage(msg) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
             wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49", "")}].`);
             //TODO add this to msg pool and return
-            const result = await mod.wxMddw.handlePushMessage(content);
+            const result = await mod.wxMddw.handlePushMessage(content,msg);
             if (result !== 0) {
                 //Parse successful, ready to overwrite content
                 content = result;
                 msg.DType = DTypes.Push;
-                msg.receiver = secret.class.push;
                 msgDef.isSilent = true;
                 msgDef.suppressTitle = true;
                 wxLogger.debug(`Ready to send this push message into 'Push' channel!`);

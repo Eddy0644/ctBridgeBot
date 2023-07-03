@@ -72,9 +72,15 @@ const tgBotDo = {
             parse_mode: "HTML",
             message_thread_id: secret.tgTarget.sticker_topic
         };
+        const receiver = (() => {
+            const s = secret.settings.deliverStickerSeparately;
+            if (s === false) return 0; //TODO
+            if (s === true) return secret.class.push;
+            if (s.tgid) return s;
+        })();
         if (isSilent) form.disable_notification = true;
         // Temp. change for classifying stickers
-        return await tgbot.sendAnimation(secret.tgTarget.id, path, form, {contentType: 'image/gif'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'}).catch((e) => logErrorDuringTGSend(e));
     },
     SendPhoto: async (receiver = null, msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
