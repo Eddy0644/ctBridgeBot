@@ -239,21 +239,21 @@ async function onTGMsg(tgMsg) {
                 state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                 return;
             }
-            case "/keyboard":
-            case "/keyboard" + botName: {
-                let form = {
-                    reply_markup: JSON.stringify({
-                        keyboard: secret.quickKeyboard,
-                        is_persistent: true,
-                        resize_keyboard: true,
-                        one_time_keyboard: false
-                    })
-                };
-                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Already set quickKeyboard! ', true, null, form);
-                await tgbot.setMyCommands(Config.TGBotCommands);
-                state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
-                return;
-            }
+            // case "/keyboard":
+            // case "/keyboard" + botName: {
+            //     let form = {
+            //         reply_markup: JSON.stringify({
+            //             keyboard: secret.quickKeyboard,
+            //             is_persistent: true,
+            //             resize_keyboard: true,
+            //             one_time_keyboard: false
+            //         })
+            //     };
+            //     const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Already set quickKeyboard! ', true, null, form);
+            //     await tgbot.setMyCommands(Config.TGBotCommands);
+            //     state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
+            //     return;
+            // }
             case "/lock":
             case "/lock" + botName: {
                 state.lockTarget = state.lockTarget ? 0 : 1;

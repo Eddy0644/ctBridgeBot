@@ -70,7 +70,6 @@ const tgBotDo = {
             width: 100,
             height: 100,
             parse_mode: "HTML",
-            message_thread_id: secret.tgTarget.sticker_topic
         };
         const receiver = (() => {
             const s = secret.settings.deliverStickerSeparately;
