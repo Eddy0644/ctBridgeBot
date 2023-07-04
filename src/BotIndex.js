@@ -529,7 +529,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     } else {
         // C2C media delivery
         with (tgMsg.matched) {
-            const wxTarget = getC2CPeer(tgMsg.matched);
+            const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
             await wxTarget.say(packed);
             defLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
@@ -811,8 +811,6 @@ async function onWxMessage(msg) {
                 //Parse successful, ready to overwrite content
                 content = result;
                 msg.DType = DTypes.Push;
-                msgDef.isSilent = true;
-                msgDef.suppressTitle = true;
                 wxLogger.debug(`Ready to send this push message into 'Push' channel!`);
             }
         } else if (msg.payload.filename.endsWith(".url")) {
@@ -990,6 +988,13 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
     const topic = isRoom ? await room.topic() : "";
+    /* Update msgDef in batches */
+    {
+        if (msg.DType === DTypes.Push) {
+            msgDef.isSilent = true;
+            msgDef.suppressTitle = true;
+        }
+    }
     const template = (() => {
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
