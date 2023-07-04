@@ -107,7 +107,7 @@ async function addSelfReplyTs() {
         state.preRoom = {
             firstWord: "",
             tgMsg: null,
-            name: "",
+            topic: "",
         };
     } else {
         ctLogger.debug(`PreRoom not valid, skip delivering myself reply stamp into former message.`);

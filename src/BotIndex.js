@@ -361,6 +361,11 @@ async function onTGMsg(tgMsg) {
             if (!wxTarget) return;
             await wxTarget.say(tgMsg.text);
             await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+            const wx1 = tgMsg.matched.p.wx;
+            if (wx1[1] === true && wx1[0] === state.preRoom.topic) {
+                // the C2C Room matches preRoom
+                await mod.tgProcessor.addSelfReplyTs();
+            }
             ctLogger.debug(`Handled a message send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         } else {
             // No valid COMMAND within msg
