@@ -786,19 +786,20 @@ async function onWxMessage(msg) {
             let regResult = VideoRegex.exec(content);
             msg.filesize = parseInt(regResult[1]);
             const videoLength = parseInt(regResult[2]);
-            msgDef.isSilent = false;
             content = `🎦, length:${videoLength}s, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-            if (msg.filesize < Config.wxAutoDownloadThreshold) {
-                msg.autoDownload = true;
-                content += `Smaller than threshold, so we would try download that automatically for you.`;
-            } else {
-                msg.autoDownload = false;
-                content += `Send a single <code>OK</code> to retrieve that.`;
-            }
-            msg.DType = DTypes.File;
         } catch (e) {
             wxLogger.debug(`Detected as Video, but error occurred while getting filesize.`);
+            content = `🎦, length info unavailable, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
         }
+        msgDef.isSilent = false;
+        if (msg.filesize < Config.wxAutoDownloadThreshold) {
+            msg.autoDownload = true;
+            content += `Smaller than threshold, so we would try download that automatically for you.`;
+        } else {
+            msg.autoDownload = false;
+            content += `Send a single <code>OK</code> to retrieve that.`;
+        }
+        msg.DType = DTypes.File;
     }
     // 文件及公众号消息类型
     if (msg.type() === wxbot.Message.Type.Attachment) {
@@ -833,7 +834,7 @@ async function onWxMessage(msg) {
                 let regResult = FileRegex.exec(content);
                 msg.filesize = parseInt(regResult[1]);
                 msgDef.isSilent = false;
-                content = `📎, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+                content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
                 msg.toDownloadPath = `./downloaded/file/${dayjs().unix()}-${msg.payload.filename}`;
                 if (msg.filesize === 0) {
                     wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
