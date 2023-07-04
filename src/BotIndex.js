@@ -1,4 +1,6 @@
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
+// noinspection DuplicatedCode
+
 const secret = require('../config/secret');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
@@ -209,12 +211,12 @@ async function onTGMsg(tgMsg) {
             case "/find":
             case "/find" + botName: {
                 let form = {
-                    reply_markup: JSON.stringify({
-                        keyboard: secret.quickFindList,
-                        is_persistent: false,
-                        resize_keyboard: true,
-                        one_time_keyboard: true
-                    })
+                    // reply_markup: JSON.stringify({
+                    //     keyboard: secret.quickFindList,
+                    //     is_persistent: false,
+                    //     resize_keyboard: true,
+                    //     one_time_keyboard: true
+                    // })
                 };
                 const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Entering find mode; enter token to find it.', true, null, form);
                 // state.lastOpt = ["/find", tgMsg2];
@@ -678,17 +680,18 @@ async function onWxMessage(msg) {
             // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
             const fileExt = ".gif";
             const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+            const stickerUrl = secret.settings.StickerUrlPrefix;
             {
                 // filter duplicate-in-period sticker
                 let filtered = false;
-                if (processor.isTimeValid(state.lastEmotion.ts, 25) && md5 === state.lastEmotion.md5) {
+                if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
                     // Got duplicate and continuous Sticker, skipping and CONDEMN that!
                     wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
                     //TODO add here to undelivered pool too!
                     //TODO: set this for debugging
                     filtered = true;
                 }
-                // Despite match or not, update state.lastEmotion
+                // Regardless match or not, update state.lastEmotion
                 state.lastEmotion = {
                     md5: md5,
                     ts: dayjs().unix()
@@ -703,25 +706,44 @@ async function onWxMessage(msg) {
                     ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
                 } else {
                     // change msg detail so that could be used in merging or so.
-                    content = `[${md5.substring(0, 3)} of #sticker]`;
+                    // content = `[${md5.substring(0, 3)} of #sticker]`;
                     msg.DType = DTypes.Text;
+                    msgDef.isSilent = true;
                     ahead = false;
                     msg.md5 = md5.substring(0, 3);
-                    ctLogger.trace(`Found former msg for '${md5}', replacing to Text.`);
+                    if (typeof fetched[0] === "number") content = `<a href="${stickerUrl}${fetched[0]}">[Sticker](${msg.md5})</a>`;
+                    else content = `[${md5.substring(0, 3)} of #sticker]`;
+                    ctLogger.trace(`Found former msg for '${md5}', replacing to Text. (${content})`);
                 }
             }
+            // const stickerUrl = (() => {
+            //     const s = secret.settings.deliverStickerSeparately;
+            //     if (s === false) return 0; //TODO
+            //     if (s === true) return secret.class.push;
+            //     if (s.tgid) return s;
+            // })();
             if (ahead && !fs.existsSync(cEPath)) {
                 if (await downloader.httpNoProxy(emotionHref, cEPath)) {
                     // downloadFile_old(emotionHref, path + ".backup.gif");
                     msg.downloadedPath = cEPath;
-                    wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}`);
+                    wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
                     msg.md5 = md5.substring(0, 3);
-                    await stickerLib.set(md5, [msg.md5, cEPath]);
+                    const stream = fs.createReadStream(msg.downloadedPath);
+                    const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
+                    await stickerLib.set(md5, [tgMsg2.message_id, cEPath]);
+                    msg.DType = DTypes.Text;
+                    msgDef.isSilent = true;
+                    content = `<a href="${stickerUrl}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
                 } else msg.downloadedPath = null;
             } else if (ahead) {
                 msg.downloadedPath = cEPath;
                 msg.md5 = md5.substring(0, 3);
-                await stickerLib.set(md5, [msg.md5, cEPath]);
+                const stream = fs.createReadStream(msg.downloadedPath);
+                const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
+                await stickerLib.set(md5, [tgMsg2.message_id, cEPath]);
+                msg.DType = DTypes.Text;
+                msgDef.isSilent = true;
+                content = `<a href="${stickerUrl}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
             }
         } catch (e) {
             wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);
@@ -784,7 +806,7 @@ async function onWxMessage(msg) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
             wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49", "")}].`);
             //TODO add this to msg pool and return
-            const result = await mod.wxMddw.handlePushMessage(content,msg);
+            const result = await mod.wxMddw.handlePushMessage(content, msg);
             if (result !== 0) {
                 //Parse successful, ready to overwrite content
                 content = result;
@@ -981,11 +1003,12 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     content = content.replaceAll("<br/>", "\n");
     while (retrySend > 0) {
         if (msg.DType === DTypes.CustomEmotion) {
+            ctLogger.error(`Preset barriers triggered. Check parameter!\n${JSON.stringify(msg)}`);// TODO remove
             // 自定义表情, 已添加读取错误处理
             try {
                 //TODO add CuEmo format conversion to let all msg in GIF state.
                 const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotDo.SendAnimation(`${template} ns 👆 #sticker ${msg.md5}`, stream, true, true);
+                tgMsg = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
                 wxLogger.info(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
                 tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} [CuEmo](Send Failure)`, true);
