@@ -108,7 +108,11 @@ module.exports = (param) => {
                     // Add more commands as needed
                 ],
                 placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
-                wxAutoDownloadThreshold: 3 * 1048576
+                wxAutoDownloadThreshold: 3 * 1048576,
+                wxPushMsgFilterWord: [
+                    ["/cgi-bin/mmwebwx-bin/webwxcheckurl?requrl=http%3A%2F%2Fmp.weixin.qq.com", "已更改名称为"],
+                    ["关于公众号进行帐号迁移的说明"]
+                ],
             },
             downloader: {
                 httpNoProxy: async function (url, pathName) {

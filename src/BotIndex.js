@@ -862,8 +862,9 @@ async function onWxMessage(msg) {
     //文字消息判断:
     if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
 
-    //处理未受支持的emoji表情
+    // Pre-processor for Text
     if (msg.DType === DTypes.Text) {
+        // 处理未解析的emoji表情
         const WxEmojiRegex = new RegExp(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
         let replaceFlag = 1;
         while (replaceFlag > 0) try {
@@ -874,6 +875,17 @@ async function onWxMessage(msg) {
             content = content.replace("_web", "");
         } catch (e) {
             replaceFlag = 0;
+        }
+        // 筛选出公众号等通知消息
+        for (const testPair of Config.wxPushMsgFilterWord) {
+            let s = 0;
+            for (const testPairElement of testPair) {
+                if (!content.includes(testPairElement)) s = 1;
+            }
+            if (s === 0) {
+                msg.DType = DTypes.Push;
+                break;
+            }
         }
     }
 
