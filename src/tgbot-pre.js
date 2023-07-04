@@ -50,7 +50,7 @@ const tgBotDo = {
     SendMessage: async (receiver = null, msg, isSilent = false, parseMode = null, form = {}) => {
         if (isSilent) form.disable_notification = true;
         if (parseMode) form.parse_mode = parseMode;
-        return await tgbot.sendMessage(parseRecv(receiver, form), msg, form).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendMessage(parseRecv(receiver, form), msg, form).catch(e => logErrorDuringTGSend(e));
     },
     RevokeMessage: async (msgId, receiver = null) => {
         return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId).catch((e) => {
@@ -80,7 +80,7 @@ const tgBotDo = {
         })();
         if (isSilent) form.disable_notification = true;
         // Temp. change for classifying stickers
-        return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'}).catch(e => logErrorDuringTGSend(e));
     },
     SendPhoto: async (receiver = null, msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
@@ -92,7 +92,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'}).catch(e => logErrorDuringTGSend(e));
     },
     EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {
@@ -100,7 +100,7 @@ const tgBotDo = {
             message_id: former_tgMsg.message_id,
             parse_mode: "HTML"
         };
-        return await tgbot.editMessageText(text, form).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.editMessageText(text, form).catch(e => logErrorDuringTGSend(e));
     },
     EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false, receiver = null) => {
         let form = {
@@ -129,7 +129,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'}).catch(e => logErrorDuringTGSend(e));
     },
     SendDocument: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -137,7 +137,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'}).catch((e) => logErrorDuringTGSend(e));
+        return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'}).catch(e => logErrorDuringTGSend(e));
     }
 };
 let errorStat = 0;
