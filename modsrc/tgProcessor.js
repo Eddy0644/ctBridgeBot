@@ -135,7 +135,17 @@ function filterMsgText(inText) {
         txt = txt.replaceAll("<br/>", "\n");
     }
     // Filter <> for recaller!
-    txt = txt.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    // txt = txt.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    // This function helps reduce the possibility of mistaken substitution
+    txt = (t => {
+        // noinspection RegExpUnnecessaryNonCapturingGroup
+        const tagRegex = /<\/?(\w+)(?:\s+[\w\-.:]+\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))*\s*\/?>/g;
+        // Replace all HTML entities with &__; except excluded tags.
+        return t.replace(tagRegex, (match, tagName) => {
+            const isExcludedTag = ['a', 'b', 'i', 'pre', 'code', 'u', 's'].includes(tagName.toLowerCase());
+            return isExcludedTag ? match : match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        });
+    })(txt);
     return txt + appender;
 }
 
