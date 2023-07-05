@@ -492,7 +492,7 @@ async function generateInfo() {
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const s = tgMsg.matched.s;
     if (s === 0 && state.last.s !== STypes.Chat) {
-        await tgBotDo.SendMessage(tgMsg.matched,"🛠 Sorry, but media sending in non-C2C chat without last chatter is not implemented.", true);
+        await tgBotDo.SendMessage(tgMsg.matched, "🛠 Sorry, but media sending in non-C2C chat without last chatter is not implemented.", true);
         // TODO: to be implemented: media sending in non-C2C chat with reply_to
         return;
     }
@@ -587,10 +587,10 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
     const name = await (talker.name ? talker.name() : talker.topic());
     msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
-    if (state.lockTarget === 0) state.last = {
+    if (state.lockTarget === 0 && !receiver.wx) state.last = {
         s: STypes.Chat,
         target: talker,
-        name: name,
+        name,
         wxMsg: wxMsg || null,
         isFile: (wxMsg && wxMsg.filesize) || null,
         receiver
