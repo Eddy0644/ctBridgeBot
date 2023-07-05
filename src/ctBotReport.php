@@ -82,8 +82,8 @@ if (isset($_REQUEST["s"])) {
     </li>
     <li>
         <details open>
-            <summary>Last 3600 chars of log</summary>
-            <pre><?= $c["logText"] ?></pre>
+            <summary>Last 5000 chars of log</summary>
+            <pre><?= str_replace(["<", ">"], ["&lt;", "&gt;"], $c["logText"]) ?></pre>
         </details>
     </li>
 </ul>

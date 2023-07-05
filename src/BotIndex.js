@@ -446,7 +446,7 @@ async function generateInfo() {
     const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
     const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
     let log = (await fs.promises.readFile(path)).toString();
-    const logText = log.substring(log.length - 3600, log.length);
+    const logText = (log.length > 5000) ? log.substring(log.length - 5000, log.length) : log;
     const dtInfo = {
         status: true,
         lastOperation: state.last ? state.last.s : 0,

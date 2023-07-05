@@ -150,7 +150,8 @@ module.exports = (param) => {
                         https.get(url, {}, () => {
                             resolve("SUCCESS");
                         }).on('error', (error) => {
-                            reject(error);
+                            console.error(`[Error] Failed on httpsCurl request. Probably network has been disconnected, so notifications have no need to launch now. Wait for Exit...`);
+                            setTimeout(e => resolve("NETWORK_DISCONNECTED"), 10000);
                         });
                     });
                 },
