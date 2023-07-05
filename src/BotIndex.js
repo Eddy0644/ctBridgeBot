@@ -155,7 +155,7 @@ async function onTGMsg(tgMsg) {
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             for (const mapPair of msgMappings) {
-                if (mapPair[0] === tgMsg.reply_to_message.message_id) {
+                if (mapPair[0] === tgMsg.reply_to_message.message_id && JSON.stringify(mapPair[4]) === JSON.stringify(tgMsg.matched)) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
@@ -537,7 +537,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
             await wxTarget.say(packed);
-            defLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
+            ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         }
     }
     await tgBotDo.SendChatAction("choose_sticker", receiver);
@@ -563,8 +563,8 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
                 true, "HTML");
-            await addToMsgMappings(tgMsg2.message_id, wxFinded2, null, receiver,);
-        } else await addToMsgMappings(alterMsgId, wxFinded2, null, receiver,);
+            await addToMsgMappings(tgMsg2.message_id, wxFinded2, null, receiver);
+        } else await addToMsgMappings(alterMsgId, wxFinded2, null, receiver);
     } else {
         await tgBotDo.SendMessage(receiver, `🔍Found Failed. Please enter token again or /clear.`);
         return false;

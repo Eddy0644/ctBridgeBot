@@ -38,6 +38,7 @@ function parseRecv(receiver, form) {
         // incoming object is tgMsg.matched
         return receiver.p.tgid;
     } else if (receiver && receiver.tgid) {
+        if (receiver.threadId) form.message_thread_id = receiver.threadId;
         return receiver.tgid;
     } else if (typeof receiver === "number") {
         return receiver;
