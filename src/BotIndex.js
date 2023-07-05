@@ -239,21 +239,6 @@ async function onTGMsg(tgMsg) {
                 state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                 return;
             }
-            // case "/keyboard":
-            // case "/keyboard" + botName: {
-            //     let form = {
-            //         reply_markup: JSON.stringify({
-            //             keyboard: secret.quickKeyboard,
-            //             is_persistent: true,
-            //             resize_keyboard: true,
-            //             one_time_keyboard: false
-            //         })
-            //     };
-            //     const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Already set quickKeyboard! ', true, null, form);
-            //     await tgbot.setMyCommands(Config.TGBotCommands);
-            //     state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
-            //     return;
-            // }
             case "/lock":
             case "/lock" + botName: {
                 state.lockTarget = state.lockTarget ? 0 : 1;
@@ -810,7 +795,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
-            wxLogger.debug(`Attachment from [${name}] has suffix [.49], classified as push message.\n\tTitle:[${msg.payload.filename.replace(".49", "")}].`);
+            wxLogger.debug(`Received Post Message from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
             //TODO add this to msg pool and return
             const result = await mod.wxMddw.handlePushMessage(content, msg);
             if (result !== 0) {
@@ -960,9 +945,12 @@ async function onWxMessage(msg) {
         } else {
             //不是群消息 - - - - - - - -
             if (alias === "微信运动") {
-                wxLogger.debug(`[微信运动] says: ${msg.payload.filename.replace(".1", "")}`);
-                //TODO: add to subscribe channel!
-                return;
+                content = `[微信运动] ` + msg.payload.filename.replace(".1", "");
+                wxLogger.debug(`[WeRun] says: ${msg.payload.filename.replace(".1", "")}`);
+                if (content.includes("Champion")) {
+                    return; //Champion Message Not available, exiting
+                }
+                msg.DType = DTypes.Push;
             }
             // 筛选掉符合exclude keyword的个人消息
             for (const keyword of secret.nameExcludeKeyword) {
@@ -1062,8 +1050,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         } else {
             // 仅文本或未分类
             // Plain text or not classified
-            wxLogger.debug(`Normal Text message from: ${template} started delivering...`);
-            tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
+            if (msg.DType !== DTypes.Push) {
+                wxLogger.debug(`Text message from: ${template} started delivering...`);
+                tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
+            }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, msgDef.isSilent, "HTML", {
                 disable_web_page_preview: (msg.DType === DTypes.Push)
             });
