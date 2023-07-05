@@ -12,7 +12,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const {state, defLogger, tgBotDo, secret} = env;
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
-    const newFirstTitle = (msg.receiver.wx) ? `` : (isGroup ? _.topic : name);
+    const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : name);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
         const s = secret.settings.changeTitleForSameTalkerInMergedRoomMsg;
@@ -40,7 +40,8 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     } else {
         // Ready to modify first msg, refactoring it.
         ///* C2C msg do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
-        const newString = `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n${_.firstWord}\n${newItemTitle} ${content}`;
+        const newString = (newFirstTitle === 0 ? `` : `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n`) +
+            `${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);

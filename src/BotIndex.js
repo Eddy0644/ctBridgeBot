@@ -87,16 +87,25 @@ async function onTGMsg(tgMsg) {
         // s=0 -> default, s=1 -> C2C
         with (secret.class) {
             for (const pair of C2C) {
-                //TODO add thread_id verification
-                if (tgMsg.chat.id === pair.tgid) {
+                // thread_id verification without reply-to support
+                const thread_verify = (() => {
+                    if (pair.threadId) {
+                        if (tgMsg.reply_to_message) {
+                            return pair.threadId === tgMsg.reply_to_message.message_id;
+                        } else return false;
+                    } else return true;
+                })();
+                if (tgMsg.chat.id === pair.tgid && thread_verify) {
                     tgMsg.matched = {s: 1, p: pair};
                     tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
                     break;
                 }
             }
             if (tgMsg.chat.id === def.tgid) tgMsg.matched = {s: 0};
-            // TODO push channel should not accept incoming message, need add alert here
-            // if (tgMsg.chat.id === push.tgid) tgMsg.matched = {s: 2};
+            if (tgMsg.chat.id === push.tgid) {
+                tgLogger.info(`Messages sent to Push channel are ignored now.`);
+                return; // tgMsg.matched = {s: 2};
+            }
 
             if (!tgMsg.matched) {
                 // Reject this message
@@ -483,8 +492,8 @@ async function generateInfo() {
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const s = tgMsg.matched.s;
     if (s === 0 && state.last.s !== STypes.Chat) {
-        await tgBotDo.SendMessage("🛠 Sorry, but media sending without last chatter is not implemented.", true);
-        // TODO: to be implemented.
+        await tgBotDo.SendMessage(tgMsg.matched,"🛠 Sorry, but media sending in non-C2C chat without last chatter is not implemented.", true);
+        // TODO: to be implemented: media sending in non-C2C chat with reply_to
         return;
     }
     const receiver = s === 0 ? null : (s === 1 ? tgMsg.matched.p : null);
@@ -644,7 +653,6 @@ async function onWxMessage(msg) {
         }
     }
 
-    // TODO delay messages from same talker as many messages may arrive at almost same time
     // lock is hard to make; used another strategy here.
 
     //已撤回的消息单独处理
@@ -677,8 +685,6 @@ async function onWxMessage(msg) {
                 if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
                     // Got duplicate and continuous Sticker, skipping and CONDEMN that!
                     wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
-                    //TODO add here to undelivered pool too!
-                    //TODO: set this for debugging
                     filtered = true;
                 }
                 // Regardless match or not, update state.lastEmotion
@@ -985,7 +991,6 @@ async function onWxMessage(msg) {
 }
 
 async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
-    // TODO remove title in C2C chat!
     const contact = msg.talker();
     const room = msg.room();
     const name = await contact.name();
@@ -1016,7 +1021,6 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             ctLogger.error(`Preset barriers triggered. Check parameter!\n${JSON.stringify(msg)}`);// TODO remove
             // 自定义表情, 已添加读取错误处理
             try {
-                //TODO add CuEmo format conversion to let all msg in GIF state.
                 const stream = fs.createReadStream(msg.downloadedPath);
                 tgMsg = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
