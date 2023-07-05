@@ -5,8 +5,16 @@ async function a() {
     const {} = env;
 }
 
-async function handlePushMessage(rawContent, msg) {
+async function handlePushMessage(rawContent, msg, name) {
     const {wxLogger, secret} = env;
+    let filtered = false;
+    for (const one of secret.settings.wxPostOriginBlackList) {
+        if (name === one) filtered = true;
+    }
+    if (filtered) {
+        wxLogger.trace(`Match BlackList, no delivery!`);
+        return 0;
+    }
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
     if (ps === false) return 0;
     // noinspection JSUnresolvedVariable

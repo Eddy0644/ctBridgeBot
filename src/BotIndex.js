@@ -796,8 +796,7 @@ async function onWxMessage(msg) {
         if (msg.payload.filename.endsWith(".49")) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
             wxLogger.debug(`Received Post Message from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
-            //TODO add this to msg pool and return
-            const result = await mod.wxMddw.handlePushMessage(content, msg);
+            const result = await mod.wxMddw.handlePushMessage(content, msg, name);
             if (result !== 0) {
                 //Parse successful, ready to overwrite content
                 content = result;
