@@ -281,7 +281,7 @@ async function onTGMsg(tgMsg) {
             }
             case "/placeholder":
             case "/placeholder" + botName: {
-                await tgBotDo.SendMessage(Config.placeholder, true);
+                await tgBotDo.SendMessage(tgMsg.matched, Config.placeholder, true);
                 return;
             }
         }
@@ -908,7 +908,7 @@ async function onWxMessage(msg) {
             // 群系统消息中先过滤出红包
             if (name === topic) {
                 if (content.includes("Red packet") || content.includes("红包")) {
-                    await tgBotDo.SendMessage(`🧧🧧[in ${topic}] ${content}`, 0);
+                    await tgBotDo.SendMessage(msg.receiver, `[🧧 in ${topic}]`, 0);
                     tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
                     return;
                 } else {
@@ -954,6 +954,7 @@ async function onWxMessage(msg) {
                     return; //Champion Message Not available, exiting
                 }
                 msg.DType = DTypes.Push;
+                msg.receiver = secret.class.push;
             }
             // 筛选掉符合exclude keyword的个人消息
             for (const keyword of secret.nameExcludeKeyword) {
