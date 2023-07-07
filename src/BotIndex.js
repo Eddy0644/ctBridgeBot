@@ -126,19 +126,17 @@ async function onTGMsg(tgMsg) {
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
             await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
             try {
-                if (!fs.existsSync(file_path)) throw new Error("save file error");
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
-                if (res !== "") {
-                    await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
-                }
+                if (res !== "") await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
             } catch (e) {
                 await mod.tgProcessor.replyWithTips("audioProcessFail", tgMsg.matched);
             }
             return;
         }
+
         // Non-text messages must be filtered ahead of them !---------------
         if (!tgMsg.text) {
-            tgLogger.info(`A TG message with empty content has passed through text Processor! Check the log for detail.`);
+            tgLogger.info(`A TG message with empty text has passed through text Processor. Skipped.`);
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
             return;
         }
@@ -164,7 +162,7 @@ async function onTGMsg(tgMsg) {
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             for (const mapPair of msgMappings) {
-                if (mapPair[0] === tgMsg.reply_to_message.message_id && JSON.stringify(mapPair[4]) === JSON.stringify(tgMsg.matched)) {
+                if (mapPair[0] === tgMsg.reply_to_message.message_id && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);

@@ -98,20 +98,20 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
 }
 
 async function addSelfReplyTs() {
-    const {processor, state, ctLogger} = env;
+    const {processor, state, defLogger} = env;
     if (processor.isPreRoomValid(state.preRoom, state.last.name) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
-        ctLogger.debug(`Delivered myself reply stamp into Room:${_.topic} 's former message, and cleared its preRoom.`);
+        defLogger.debug(`Delivered myself reply stamp into Room:${_.topic} 's former message, and cleared its preRoom.`);
         state.preRoom = {
             firstWord: "",
             tgMsg: null,
             topic: "",
         };
     } else {
-        ctLogger.debug(`PreRoom not valid, skip delivering myself reply stamp into former message.`);
+        defLogger.debug(`PreRoom not valid, skip delivering myself reply stamp into former message.`);
     }
 }
 
@@ -150,7 +150,28 @@ function filterMsgText(inText) {
     return txt + appender;
 }
 
+
+function isSameTGTarget(in1, in2) {
+    const {secret} = env;
+    const parser = in0 => {
+        // in <-- <C2C-pair> / secret.class.def  ( msg.receiver )
+        if (in0.tgid) {
+            // if (in0.threadId) return [in0.tgid, 1, in0.threadId];
+            // else return [in0.tgid, 0];
+            return in0;
+        }
+        // in <-- tgMsg.matched <-- s=?, p={}
+        if (in0.s) {
+            if (in0.s === 1) return in0.p;
+            else if (in0.s === 0) return secret.class.def;
+        }
+    };
+    const p1 = parser(in1), p2 = parser(in2);
+    // TODO no thread verify now
+    if (p1.tgid === p2.tgid) return true;
+}
+
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg};
+    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget};
 };

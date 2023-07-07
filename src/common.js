@@ -190,6 +190,7 @@ module.exports = (param) => {
                         const nowDate = dayjs().unix();
                         return (_.topic === targetTopic && (nowDate - lastDate < 60 || forceMerge));
                     } catch (e) {
+                        console.info(`Maybe bug here!`);
                         log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
                         return false;
                     }
