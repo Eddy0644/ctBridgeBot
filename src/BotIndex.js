@@ -109,7 +109,7 @@ async function onTGMsg(tgMsg) {
 
             if (!tgMsg.matched) {
                 // Reject this message
-                tgLogger.info(`Received message from unauthorized origin. Skipping...`);
+                tgLogger.debug(`Received message from unauthorized origin. Skipping...`);
                 tgLogger.trace(`Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title})`);
                 return;
             }
@@ -1010,7 +1010,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // C2C is present
             return isRoom ? `[<b>${name}</b>]` : ``;
         } else {
-            return isRoom ? `📬[<b>${name}</b>@${topic}]` : `📨[<b>${alias}</b>]`;
+            return isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
         }
     })();
     let tgMsg, retrySend = 2;

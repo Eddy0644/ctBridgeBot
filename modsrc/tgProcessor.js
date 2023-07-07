@@ -40,7 +40,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     } else {
         // Ready to modify first msg, refactoring it.
         ///* C2C msg do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
-        const newString = (newFirstTitle === 0 ? `` : `📨⛓️ [<b>${newFirstTitle}</b>] - - - -\n`) +
+        const newString = (newFirstTitle === 0 ? `` : `📨⛓️ [#<b>${newFirstTitle}</b>] - - - -\n`) +
             `${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.firstWord = "";
