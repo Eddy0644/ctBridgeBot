@@ -1074,7 +1074,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson = {
-                    topic, tgMsg,
+                    name, tgMsg,
                     firstWord: `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`,
                     msgText: `${template} ${content}`,
                     receiver: msg.receiver,
