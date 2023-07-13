@@ -356,7 +356,7 @@ async function onTGMsg(tgMsg) {
             const wx1 = tgMsg.matched.p.wx;
             if (wx1[1] === true && wx1[0] === state.preRoom.topic) {
                 // the C2C Room matches preRoom
-                await mod.tgProcessor.addSelfReplyTs();
+                await mod.tgProcessor.addSelfReplyTs(wx1[0]);
             }
             ctLogger.debug(`Handled a message send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         } else {
@@ -1056,6 +1056,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 wxLogger.debug(`Text message from: ${template} started delivering...`);
                 tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
             }
+            content = mod.tgProcessor.filterMsgText(content);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, msgDef.isSilent, "HTML", {
                 disable_web_page_preview: (msg.DType === DTypes.Push)
             });

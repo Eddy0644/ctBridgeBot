@@ -97,9 +97,10 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
 
 }
 
-async function addSelfReplyTs() {
+async function addSelfReplyTs(name = null) {
     const {processor, state, defLogger} = env;
-    if (processor.isPreRoomValid(state.preRoom, state.last.name) && state.preRoom.firstWord === "") {
+    if (name === null) name = state.last.name;
+    if (processor.isPreRoomValid(state.preRoom, name) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n⬅️[${dayjs().format("H:mm:ss")}] {My Reply}`;
@@ -173,5 +174,5 @@ function isSameTGTarget(in1, in2) {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget};
+    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText};
 };
