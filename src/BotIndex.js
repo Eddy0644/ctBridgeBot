@@ -793,7 +793,7 @@ async function onWxMessage(msg) {
             msgDef.isSilent = false;
             if (msg.filesize < Config.wxAutoDownloadThreshold) {
                 msg.autoDownload = true;
-                content += `Smaller than threshold, so we would try download that automatically for you.`;
+                content += `Trying download as size is smaller than threshold.`;
             } else {
                 msg.autoDownload = false;
                 content += `Send a single <code>OK</code> to retrieve that.`;
@@ -847,7 +847,7 @@ async function onWxMessage(msg) {
                     wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}`);
                 } else if (msg.filesize < Config.wxAutoDownloadThreshold) {
                     msg.autoDownload = true;
-                    content += `Smaller than threshold, so we would try download that automatically for you.`/*Remember to change the prompt in two locations!*/;
+                    content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
                 } else {
                     msg.autoDownload = false;
                     content += `Send a single <code>OK</code> to retrieve that.`;
@@ -1051,7 +1051,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             if (msg.autoDownload) {
                 const result = await getFileFromWx(msg);
                 if (result === "Success") {
-                    tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Smaller than threshold, so we would try download that automatically for you.", "Auto Downloaded Already."), tgMsg);
+                    // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
+                    return await tgBotDo.RevokeMessage(tgMsg.message_id, msg.receiver);
                 }
             }
             // return;
