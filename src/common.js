@@ -132,6 +132,7 @@ module.exports = (param) => {
                 },
                 httpsWithProxy: async function (url, pathName) {
                     return new Promise((resolve, reject) => {
+                        if (!pathName) log4js.getLogger("default").error(`Undefined Download target!`);
                         const file = fs.createWriteStream(pathName);
                         const agent = new agentEr.HttpsProxyAgent(proxy);
                         https.get(url, {agent: agent}, (response) => {

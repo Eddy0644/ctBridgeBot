@@ -775,23 +775,29 @@ async function onWxMessage(msg) {
     }
     // 视频消息处理或自动下载
     if (msg.type() === wxbot.Message.Type.Video) {
-        const VideoRegex = new RegExp(/length="(.*?)" playlength="(.*?)"/);
-        try {
-            let regResult = VideoRegex.exec(content);
-            msg.filesize = parseInt(regResult[1]);
-            const videoLength = parseInt(regResult[2]);
-            content = `🎦, length:${videoLength}s, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-        } catch (e) {
-            wxLogger.debug(`Detected as Video, but error occurred while getting filesize.`);
-            content = `🎦, length info unavailable, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-        }
-        msgDef.isSilent = false;
-        if (msg.filesize < Config.wxAutoDownloadThreshold) {
-            msg.autoDownload = true;
-            content += `Smaller than threshold, so we would try download that automatically for you.`;
-        } else {
-            msg.autoDownload = false;
-            content += `Send a single <code>OK</code> to retrieve that.`;
+        msg.toDownloadPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp4`;
+        msg.autoDownload = true;
+        content = `🎦(Override downloading...)`;
+        // TODO  override auto download
+        if (0) {
+            const VideoRegex = new RegExp(/length="(.*?)" playlength="(.*?)"/);
+            try {
+                let regResult = VideoRegex.exec(content);
+                msg.filesize = parseInt(regResult[1]);
+                const videoLength = parseInt(regResult[2]);
+                content = `🎦, length:${videoLength}s, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+            } catch (e) {
+                wxLogger.debug(`Detected as Video, but error occurred while getting filesize.`);
+                content = `🎦, length info unavailable, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+            }
+            msgDef.isSilent = false;
+            if (msg.filesize < Config.wxAutoDownloadThreshold) {
+                msg.autoDownload = true;
+                content += `Smaller than threshold, so we would try download that automatically for you.`;
+            } else {
+                msg.autoDownload = false;
+                content += `Send a single <code>OK</code> to retrieve that.`;
+            }
         }
         msg.DType = DTypes.File;
     }
@@ -1095,7 +1101,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     }
 }
 
-async function getFileFromWx(msg) {
+async function getFileFromWx(msg, video = false) {
     try {
         const fBox = await msg.toFileBox();
         const filePath = msg.toDownloadPath;
@@ -1106,9 +1112,9 @@ async function getFileFromWx(msg) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
             await tgBotDo.SendChatAction("upload_document");
             const stream = fs.createReadStream(filePath);
-            let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", stream, true, false);
+            let tgMsg = await (video ? tgBotDo.SendVideo : tgBotDo.SendDocument)(msg.receiver, "", stream, true, false);
             if (!tgMsg) {
-                tgLogger.warn("Didn't get valid TG receipt,resend wx file failed.");
+                tgLogger.warn("Didn't get valid TG receipt, resend wx file failed.");
                 return "sendFailure";
             } else return "Success";
         } else {

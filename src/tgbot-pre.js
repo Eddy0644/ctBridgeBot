@@ -138,6 +138,14 @@ const tgBotDo = {
         };
         if (isSilent) form.disable_notification = true;
         return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'}).catch(e => logErrorDuringTGSend(e));
+    },
+    SendVideo: async (receiver = null, msg, path, isSilent = false) => {
+        let form = {
+            caption: msg,
+            parse_mode: "HTML",
+        };
+        if (isSilent) form.disable_notification = true;
+        return await tgbot.sendVideo(parseRecv(receiver, form), path, form, {contentType: 'video/mp4'}).catch(e => logErrorDuringTGSend(e));
     }
 };
 let errorStat = 0;
