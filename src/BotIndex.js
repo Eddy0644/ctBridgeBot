@@ -146,7 +146,8 @@ async function onTGMsg(tgMsg) {
                 while (tgMsg.text.indexOf(pair[0]) !== -1) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
             }
         }
-        if (tgMsg.matched.s === 0 && tgMsg.reply_to_message) {
+        if (tgMsg.reply_to_message) {
+            // TODO refactor this area
             if (tgMsg.text === "/spoiler") {
                 // TG-wide command so not put inside the for loop
                 const orig = tgMsg.reply_to_message;
@@ -161,8 +162,9 @@ async function onTGMsg(tgMsg) {
                 return;
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
+            let success = 0;
             for (const mapPair of msgMappings) {
-                if (mapPair[0] === tgMsg.reply_to_message.message_id && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
+                if (mapPair[0] === tgMsg.reply_to_message.message_id/*fixme also verify chat_id here*/ && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
@@ -183,24 +185,31 @@ async function onTGMsg(tgMsg) {
                         const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Already set '${name}' as last talker and locked.`, true);
                         state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     } else {
-                        if (state.lockTarget === 2) {
-                            state.lockTarget = 0;
-                            ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
+                        if (tgMsg.matched.s === 0) {
+                            if (state.lockTarget === 2) {
+                                state.lockTarget = 0;
+                                ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
+                            }
+                            state.lastExplicitTalker = mapPair[1];
+                            await mapPair[1].say(tgMsg.text);
+                            if (mapPair[2] === state.preRoom.topic) {
+                                // the explicit talker - Room matches preRoom
+                                await mod.tgProcessor.addSelfReplyTs();
+                            }
+                            await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+                            ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
+                            return;
+                        } else {
+                            ctLogger.info(`In C2C chat found a message with reply flag which is not OK or @. Sending...`);
+                            success = 1;
                         }
-                        state.lastExplicitTalker = mapPair[1];
-                        await mapPair[1].say(tgMsg.text);
-                        if (mapPair[2] === state.preRoom.topic) {
-                            // the explicit talker - Room matches preRoom
-                            await mod.tgProcessor.addSelfReplyTs();
-                        }
-                        await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
                     }
-                    ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
-                    return;
                 }
             }
-            ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
-            return;
+            if (!success) {
+                ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
+                return;
+            }
             // !tgMsg.reply_to_message  ------------------
         }
 
@@ -349,6 +358,7 @@ async function onTGMsg(tgMsg) {
 
         // Last process block  ------------------------
         if (tgMsg.matched.s === 1) {
+
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
             await wxTarget.say(tgMsg.text);
