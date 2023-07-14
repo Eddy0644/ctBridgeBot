@@ -141,9 +141,9 @@ async function onTGMsg(tgMsg) {
             return;
         }
         for (const pair of secret.tgContentReplaceList) {
-            if (tgMsg.text.indexOf(pair[0]) !== -1) {
-                tgLogger.trace(`Replaced pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
-                while (tgMsg.text.indexOf(pair[0]) !== -1) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
+            if (tgMsg.text.includes(pair[0])) {
+                tgLogger.trace(`Replacing pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
+                while (tgMsg.text.includes(pair[0])) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
             }
         }
         if (tgMsg.reply_to_message) {
@@ -367,6 +367,13 @@ async function onTGMsg(tgMsg) {
             if (wx1[1] === true && wx1[0] === state.preRoom.topic) {
                 // the C2C Room matches preRoom
                 await mod.tgProcessor.addSelfReplyTs(wx1[0]);
+            } else if (wx1[1] === false && wx1[0] === state.prePerson.name) {
+                // the C2C Room matches prePerson, clear latter
+                state.prePerson = {
+                    firstWord: "",
+                    tgMsg: null,
+                    name: "",
+                };
             }
             ctLogger.debug(`Handled a message send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         } else {
