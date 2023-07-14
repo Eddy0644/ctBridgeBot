@@ -124,6 +124,7 @@ async function onTGMsg(tgMsg) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
             // noinspection JSUnresolvedVariable
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
+            await tgBotDo.SendChatAction("record_voice", tgMsg.matched);
             await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
             try {
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
