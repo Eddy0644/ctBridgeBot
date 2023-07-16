@@ -427,8 +427,8 @@ async function onTGMsg(tgMsg) {
 
         }
     } catch (e) {
-        tgLogger.warn(`Uncaught Error while handling TG message: ${e.message}`);
-        tgLogger.debug(`Stack: ${e.stack.split("\n")[0]}\nCause: ${e.cause}`);
+        tgLogger.warn(`{onTGMsg()}: ${e.message}`);
+        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
 
 }
@@ -1110,7 +1110,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
 
         if (!tgMsg) {
             if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secret.network_issue_webhook);
-            tgLogger.warn("Didn't get valid TG receipt, bind Mapping failed. " +
+            // todo add undelivered pool
+            tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
             if (retrySend-- > 0) continue;
             return "sendFailure";
@@ -1133,7 +1134,7 @@ async function getFileFromWx(msg, video = false) {
             const stream = fs.createReadStream(filePath);
             let tgMsg = await (video ? tgBotDo.SendVideo : tgBotDo.SendDocument)(msg.receiver, "", stream, true, false);
             if (!tgMsg) {
-                tgLogger.warn("Didn't get valid TG receipt, resend wx file failed.");
+                tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
                 return "sendFailure";
             } else return "Success";
         } else {
