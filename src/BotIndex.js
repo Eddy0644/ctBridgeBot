@@ -166,7 +166,7 @@ async function onTGMsg(tgMsg) {
             let success = 0;
             for (const mapPair of msgMappings) {
                 if (mapPair[0] === tgMsg.reply_to_message.message_id/*fixme also verify chat_id here*/ && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
-                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.length === 4 && mapPair[3].filesize) {
+                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair[3] && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
                         return await tgBotDo.SendChatAction("upload_document");
