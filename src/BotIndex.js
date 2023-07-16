@@ -159,7 +159,7 @@ async function onTGMsg(tgMsg) {
                         const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Error occurred while setting spoiler for former message :\n<code>${res}</code> ', true, "HTML");
                         state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     }
-                }
+                }//todo else is text
                 return;
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
@@ -656,7 +656,7 @@ async function onWxMessage(msg) {
             if (pair.wx[1] === isGroup && isGroup === true) {
                 matched = (pair.wx[0] === topic);
             } else {
-                matched = ((pair.wx[0] === alias) || (pair.wx[0] === name));
+                matched = ((pair.wx[0] === alias) || (pair.wx[0] === name)) && isGroup === false && pair.wx[1] === false;
             }
             if (matched) {
                 // Matched pair
