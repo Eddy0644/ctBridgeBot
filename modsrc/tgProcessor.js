@@ -162,7 +162,7 @@ function isSameTGTarget(in1, in2) {
             return in0;
         }
         // in <-- tgMsg.matched <-- s=?, p={}
-        if (in0.s) {
+        if (typeof in0.s === "number") {/* s may be 0 so must do like this! */
             if (in0.s === 1) return in0.p;
             else if (in0.s === 0) return secret.class.def;
         }
