@@ -23,7 +23,7 @@ async function handlePushMessage(rawContent, msg, name) {
         const appname = ps.msg.appinfo[0].appname[0];
         // noinspection JSUnresolvedVariable
         const items = ps.msg.appmsg[0].mmreader[0].category[0].item;
-        let out = `📬 Posts from [${appname}]\n`;
+        let out = `📬 Posts from [#${appname}]\n`;
         for (const item of items) {
             let itemStr = "";
             const {title, url, digest, is_pay_subscribe} = item;

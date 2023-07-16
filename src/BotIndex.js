@@ -852,7 +852,7 @@ async function onWxMessage(msg) {
                 msg.filesize = parseInt(regResult[1]);
                 msgDef.isSilent = false;
                 content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                msg.toDownloadPath = `./downloaded/file/${dayjs().unix()}-${msg.payload.filename}`;
+                msg.toDownloadPath = `./downloaded/file/${dayjs().unix() % 1000}-${msg.payload.filename}`;
                 if (msg.filesize === 0) {
                     wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
                     return;
