@@ -881,7 +881,7 @@ async function onWxMessage(msg) {
     if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
 
     // Pre-processor for Text
-    if (msg.DType === DTypes.Text) {
+    if (msg.DType === DTypes.Text || msg.DType === DTypes.Push) {
         // 处理未解析的emoji表情
         const WxEmojiRegex = new RegExp(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
         let replaceFlag = 1;
@@ -894,7 +894,7 @@ async function onWxMessage(msg) {
         } catch (e) {
             replaceFlag = 0;
         }
-        // 筛选出公众号等通知消息
+        // 筛选出公众号等通知消息，归类为Push
         for (const testPair of Config.wxPushMsgFilterWord) {
             let s = 0;
             for (const testPairElement of testPair) {
