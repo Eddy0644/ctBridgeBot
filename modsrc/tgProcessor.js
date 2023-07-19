@@ -122,22 +122,24 @@ function filterMsgText(inText) {
     const {tgLogger} = env;
     let txt = inText;
     let appender = "";
-    if (/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/.test(txt)) {
+    txt = txt.replaceAll("<br/>", "\n");
+    if (/"(.{1,10}): (.*?)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
-        const match = txt.match(/"(.{1,10}): (.*?)"<br\/>- - - - - - - - - - - - - - -<br\/>/);
+        const match = txt.match(/"(.{1,10}): (.*?)"\n- - - - - - - - - - - - - - -\n/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 8) ? match[2].substring(0, 8) : match[2];
         // In clip, we do not need <br/> to be revealed
-        const origMsgClip2 = origMsgClip.replaceAll("<br/>", " ");
+        const origMsgClip2 = origMsgClip.replaceAll("\n", " ");
         txt = txt.replace(match[0], ``);
         // to let this <i> not escaped by "Filter <> for recaller"
         appender += `\n<i>(Quoted "${origMsgClip2}" of ${match[1]})</i>`;
     }
-    if (txt.includes("<br/>")) {
-        // Telegram would not accept this tag in all mode! Must remind.
-        tgLogger.warn(`Unsupported <br/> tag found and cleared. Check Raw Log for reason!`);
-        txt = txt.replaceAll("<br/>", "\n");
-    }
+    // if (txt.includes("<br/>")) {
+    //     // Telegram would not accept this tag in all mode! Must remind.
+    //     tgLogger.warn(`Unsupported <br/> tag found and cleared. Check Raw Log for reason!`);
+    //     txt = txt.replaceAll("<br/>", "\n");
+    // }
+
     // Filter <> for recaller!
     // txt = txt.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     // This function helps reduce the possibility of mistaken substitution
