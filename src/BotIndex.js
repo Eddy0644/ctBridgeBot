@@ -981,9 +981,9 @@ async function onWxMessage(msg) {
                 msg.receiver = secret.class.push;
             }
             // 筛选掉符合exclude keyword的个人消息
-            for (const keyword of secret.nameExcludeKeyword) {
+            if (msg.DType !== DTypes.Push) for (const keyword of secret.nameExcludeKeyword) {
                 if (name.includes(keyword)) {
-                    wxLogger.debug(`来自此人[in ${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
+                    wxLogger.debug(`来自[${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
                 }
             }
