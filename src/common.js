@@ -7,7 +7,7 @@ const http = require("http");
 const agentEr = require("https-proxy-agent");
 
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
-const logger_pattern_console = "[%d{yy/MM/dd hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
+const logger_pattern_console = "[%d{dd/hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
 
 process.env.TZ = 'Asia/Shanghai';
 
@@ -96,13 +96,13 @@ module.exports = (param) => {
             },
             Config: {
                 TGBotCommands: [
-                    {command: '/find', description: 'Find Person or Group Chat'},
+                    // {command: '/find', description: 'Find Person or Group Chat'},
                     {command: '/clear', description: 'Clear Selection'},
-                    {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
-                    {command: '/info', description: 'Get current system variables'},
+                    // {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
+                    // {command: '/info', description: 'Get current system variables'},
                     {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
-                    {command: '/slet', description: 'Set last explicit talker as last talker.'},
-                    {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
+                    // {command: '/slet', description: 'Set last explicit talker as last talker.'},
+                    // {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
                     {command: '/lock', description: 'Lock the target talker to avoid being interrupted.'},
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                     // Add more commands as needed

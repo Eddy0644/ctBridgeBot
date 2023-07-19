@@ -627,7 +627,7 @@ async function onWxMessage(msg) {
     const contact = msg.talker(); // 发消息人
     let content = msg.text().trim(); // 消息内容
     const room = msg.room(); // 是否是群消息
-    const isGroup = room !== false;
+    const isGroup = room !== undefined;
     let topic = "";
     if (room) topic = await room.topic();
     let name = await contact.name();
