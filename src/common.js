@@ -7,7 +7,7 @@ const http = require("http");
 const agentEr = require("https-proxy-agent");
 
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
-const logger_pattern_console = "[%d{dd/hh:mm:ss}] %[%3.3c:[%5.5p]%] %m";
+const logger_pattern_console = "%[[%d{dd/hh:mm:ss}] %1.1p/%c%] %m";
 
 process.env.TZ = 'Asia/Shanghai';
 
