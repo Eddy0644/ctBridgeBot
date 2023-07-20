@@ -823,13 +823,13 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Attachment) {
         if (msg.payload.filename.endsWith(".49")) {
             // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
-            wxLogger.debug(`Received Post Message from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
+            wxLogger.debug(`Received Posts from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
             const result = await mod.wxMddw.handlePushMessage(content, msg, name);
             if (result !== 0) {
                 //Parse successful, ready to overwrite content
                 content = result;
                 msg.DType = DTypes.Push;
-                wxLogger.debug(`Ready to send this push message into 'Push' channel!`);
+                wxLogger.debug(`Parse successful, ready to send into 'Push' channel.`);
             }
         } else if (msg.payload.filename.endsWith(".url")) {
             wxLogger.trace(`filename has suffix .url, maybe LINK.`);
@@ -1028,14 +1028,19 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             msgDef.suppressTitle = true;
         }
     }
-    const template = (() => {
+    const {tmpl, tmplc} = (() => {
+        let tmpl, tmplc;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            return isRoom ? `[<b>${name}</b>]` : ``;
+            tmpl = isRoom ? `[<b>${name}</b>]` : ``;
+            // tmplc = name;
         } else {
-            return isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
+            tmpl = isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
         }
+        tmplc = isRoom ? `${name}/#${topic}` : `${alias}`;
+        return {tmpl, tmplc};
     })();
+
     let tgMsg, retrySend = 2;
     // TG does not support <br/> in HTML parsed text, so filtering it.
     content = content.replaceAll("<br/>", "\n");
@@ -1048,21 +1053,21 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 tgMsg = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
             } catch (e) {
                 wxLogger.info(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} [CuEmo](Send Failure)`, true);
+                tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} [CuEmo](Send Failure)`, true);
             }
         } else if (msg.DType === DTypes.Audio) {
             // 语音
-            wxLogger.debug(`发消息人: ${template} 消息内容为语音，保存至 ${msg.downloadedPath}.`);
+            wxLogger.debug(`Got New Voice message from ${tmplc}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${template} 🎤` + msg.audioParsed, stream, false);
+            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmpl} 🎤` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
             // 正经图片消息
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${template} 🖼`, stream, true, false);
+            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmpl} 🖼`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息,需要二次确认
-            wxLogger.debug(`发消息人: ${template} 消息内容为文件: ${content}`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, false, "HTML");
+            wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, false, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction
@@ -1078,11 +1083,11 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 仅文本或未分类
             // Plain text or not classified
             if (msg.DType !== DTypes.Push) {
-                wxLogger.debug(`Text message from: ${template} started delivering...`);
+                wxLogger.debug(`Received Text from (${tmplc}).`);
                 tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
             }
             content = mod.tgProcessor.filterMsgText(content);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${template} ${content}`, msgDef.isSilent, "HTML", {
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
                 disable_web_page_preview: (msg.DType === DTypes.Push)
             });
             // Push messages do not need 'state.pre__'
@@ -1092,7 +1097,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 state.preRoom = {
                     topic, tgMsg,
                     firstWord: `[<u>${name}</u>] ${content}`,
-                    msgText: `${template} ${content}`,
+                    msgText: `${tmpl} ${content}`,
                     receiver: msg.receiver,
                     lastTalker: name,
                     talkerCount: 0,
@@ -1102,7 +1107,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 state.prePerson = {
                     name, tgMsg,
                     firstWord: `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`,
-                    msgText: `${template} ${content}`,
+                    msgText: `${tmpl} ${content}`,
                     receiver: msg.receiver,
                 };
             }
