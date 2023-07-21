@@ -728,12 +728,6 @@ async function onWxMessage(msg) {
                     ctLogger.trace(`Found former msg for '${md5}', replacing to Text. (${content})`);
                 }
             }
-            // const stickerUrl = (() => {
-            //     const s = secret.settings.deliverStickerSeparately;
-            //     if (s === false) return 0; //TODO
-            //     if (s === true) return secret.class.push;
-            //     if (s.tgid) return s;
-            // })();
             if (ahead && !fs.existsSync(cEPath)) {
                 if (await downloader.httpNoProxy(emotionHref, cEPath)) {
                     // downloadFile_old(emotionHref, path + ".backup.gif");
@@ -793,30 +787,12 @@ async function onWxMessage(msg) {
     }
     // 视频消息处理或自动下载
     if (msg.type() === wxbot.Message.Type.Video) {
-        msg.toDownloadPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp4`;
-        msg.autoDownload = true;
-        content = `🎦(Override downloading...)`;
-        // TODO  override auto download
-        if (0) {
-            const VideoRegex = new RegExp(/length="(.*?)" playlength="(.*?)"/);
-            try {
-                let regResult = VideoRegex.exec(content);
-                msg.filesize = parseInt(regResult[1]);
-                const videoLength = parseInt(regResult[2]);
-                content = `🎦, length:${videoLength}s, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-            } catch (e) {
-                wxLogger.debug(`Detected as Video, but error occurred while getting filesize.`);
-                content = `🎦, length info unavailable, size:${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-            }
-            msgDef.isSilent = false;
-            if (msg.filesize < Config.wxAutoDownloadThreshold) {
-                msg.autoDownload = true;
-                content += `Trying download as size is smaller than threshold.`;
-            } else {
-                msg.autoDownload = false;
-                content += `Send a single <code>OK</code> to retrieve that.`;
-            }
-        }
+        msg.videoPresent = 1;
+        // await mod.wxMddw.handleVideoMessage(msg, alias);
+        content = `🎦(Downloading...)`;
+        msg.autoDownload = 1;
+        // Due to a recent change in web-wx video, method below which can get video length and playlength
+        // failed to work now. Using default no-info method now.
         msg.DType = DTypes.File;
     }
     // 文件及公众号消息类型
@@ -1037,7 +1013,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         } else {
             tmpl = isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
         }
-        tmplc = isRoom ? `${name}/#${topic}` : `${alias}`;
+        tmplc = isRoom ? `${name}/${topic}` : `${alias}`;
         return {tmpl, tmplc};
     })();
 
@@ -1049,20 +1025,24 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 语音
             wxLogger.debug(`Got New Voice message from ${tmplc}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmpl} 🎤` + msg.audioParsed, stream, false);
+            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmpl}` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
-            // 正经图片消息
+            // 正常图片消息
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmpl} 🖼`, stream, true, false);
+            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmpl}`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
-            // 文件消息,需要二次确认
+            // 文件消息, 需要二次确认
             wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, false, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction
             if (msg.autoDownload) {
-                const result = await getFileFromWx(msg);
+                // const result = await (msg.videoPresent?getFileFromWx)(msg);
+                let result;
+                if (msg.videoPresent) {
+                    result = await mod.wxMddw.handleVideoMessage(msg, alias);
+                } else result = await getFileFromWx(msg);
                 if (result === "Success") {
                     // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
                     return await tgBotDo.RevokeMessage(tgMsg.message_id, msg.receiver);
@@ -1116,7 +1096,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     }
 }
 
-async function getFileFromWx(msg, video = false) {
+async function getFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
         const filePath = msg.toDownloadPath;
@@ -1127,7 +1107,7 @@ async function getFileFromWx(msg, video = false) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
             await tgBotDo.SendChatAction("upload_document");
             const stream = fs.createReadStream(filePath);
-            let tgMsg = await (video ? tgBotDo.SendVideo : tgBotDo.SendDocument)(msg.receiver, "", stream, true, false);
+            let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", stream, true, false);
             if (!tgMsg) {
                 tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
                 return "sendFailure";
