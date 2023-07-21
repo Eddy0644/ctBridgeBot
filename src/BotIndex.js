@@ -892,9 +892,13 @@ async function onWxMessage(msg) {
             content = content.replace("[收到了一个表情，请在手机上查看]", "{--🫥--}").replace("[Send an emoji, view it on mobile]", "{--🫥--}");
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
-        // TODO add special action to these two snippet
-        content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", "{📞📲}")
-            .replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
+        if (content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")) {
+            content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", "{📞📲}");
+            await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias));
+            wxLogger.debug(`Sending call from (${alias}) to User.`);
+        }
+
+        content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
 
         for (const pair of secret.wxContentReplaceList) {
             if (content.includes(pair[0])) {
