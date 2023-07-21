@@ -54,6 +54,7 @@ async function handleVideoMessage(msg, name) {
     const {wxLogger, tgBotDo, tgLogger} = env;
     let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name}).mp4`;
     wxLogger.debug(`Detected as Video, Downloading...`);
+    await tgBotDo.SendChatAction("record_video", msg.receiver);
     const fBox = await msg.toFileBox();
     await fBox.toFile(videoPath);
     if (!fs.existsSync(videoPath)) {
@@ -68,9 +69,12 @@ async function handleVideoMessage(msg, name) {
         wxLogger.info(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length( PARSE FAILURE )`);
     } else if (videoInfo[0] === 1) {
         wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}).\n${videoInfo[3]}`);
+        wxLogger.trace(`video local path for above:(${videoInfo}), more info: ${JSON.stringify(videoInfo[4])}`);
     }
+    await tgBotDo.SendChatAction("upload_video", msg.receiver);
     const stream = fs.createReadStream(videoPath);
     let tgMsg = await tgBotDo.SendVideo(msg.receiver, "", stream, true, false);
+    await tgBotDo.SendChatAction("choose_sticker", msg.receiver);
     if (!tgMsg) {
         tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
         return "sendFailure";
@@ -90,15 +94,15 @@ async function getVideoFileInfo(videoPath) {
         const fileSizeMB = fileSizeBytes / (1024 * 1024);
 
         const info = await ffprobeAsync(videoPath, ffprobeOptions);
-        if (info.stream && info.stream.length > 0 && info.stream[0].duration) {
-            const playlengthSeconds = parseFloat(info.stream[0].duration);
+        if (info.streams && info.streams.length > 0 && info.streams[0].duration) {
+            const playlengthSeconds = parseFloat(info.streams[0].duration);
             const playlengthMinutes = Math.floor(playlengthSeconds / 60);
             const playlengthSecondsRemaining = Math.floor(playlengthSeconds % 60);
             // noinspection JSUnresolvedVariable
-            const additional = `Codec: ${info.stream[0].codec_name}/${info.stream[0].codec_tag_string}, `
-                + `Frame: ${info.stream[0].coded_width}x${info.stream[0].coded_height}, `
-                + `Bitrate: ${parseInt(info.stream[0].bit_rate) / 1000}Kbps, ${info.stream[0].avg_frame_rate}s`;
-            return [1, fileSizeMB, `${playlengthMinutes}:${playlengthSecondsRemaining}`, additional];
+            const additional = `Codec: ${info.streams[0].codec_name}/${info.streams[0].codec_tag_string}, `
+                + `Frame: ${info.streams[0].coded_width}x${info.streams[0].coded_height}, `
+                + `Bitrate: ${parseInt(info.streams[0].bit_rate) / 1000}Kbps, ${info.streams[0].avg_frame_rate}s`;
+            return [1, fileSizeMB, `${playlengthMinutes}:${playlengthSecondsRemaining}`, additional, info.streams];
         } else {
             return [0, fileSizeMB];
         }

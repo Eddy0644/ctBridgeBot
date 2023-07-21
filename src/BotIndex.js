@@ -791,6 +791,7 @@ async function onWxMessage(msg) {
         // await mod.wxMddw.handleVideoMessage(msg, alias);
         content = `🎦(Downloading...)`;
         msg.autoDownload = 1;
+        msgDef.isSilent = true;
         // Due to a recent change in web-wx video, method below which can get video length and playlength
         // failed to work now. Using default no-info method now.
         msg.DType = DTypes.File;
@@ -1032,8 +1033,9 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmpl}`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认
-            wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, false, "HTML");
+            if (!msg.videoPresent) wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
+            else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction
@@ -1044,6 +1046,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                     result = await mod.wxMddw.handleVideoMessage(msg, alias);
                 } else result = await getFileFromWx(msg);
                 if (result === "Success") {
+                    tgLogger.debug(`Media Delivery Success.`);
                     // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
                     return await tgBotDo.RevokeMessage(tgMsg.message_id, msg.receiver);
                 }
