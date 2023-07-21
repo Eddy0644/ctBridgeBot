@@ -1,4 +1,7 @@
 const xml2js = require("xml2js");
+const dayjs = require("dayjs");
+const fs = require("fs");
+const {tgBotDo} = require("../src/tgbot-pre");
 let env;
 
 async function a() {
@@ -46,6 +49,59 @@ async function handlePushMessage(rawContent, msg, name) {
     }
 }
 
+
+async function handleVideoMessage(msg, name) {
+    const {wxLogger, tgBotDo, tgLogger} = env;
+    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name}).mp4`;
+    wxLogger.debug(`Detected as Video, Downloading...`);
+    const fBox = await msg.toFileBox();
+    await fBox.toFile(videoPath);
+    if (!fs.existsSync(videoPath)) {
+        wxLogger.info("Download Video failed. Please remind the console.");
+        return 0;
+    }
+    const videoInfo = await getVideoFileInfo(videoPath);
+    if (videoInfo[0] === -1) {
+        wxLogger.info("Parse Video Info failed.");
+    } else if (videoInfo[0] === 0) {
+        wxLogger.info("Parse Video Info (Play Length) failed.");
+    } else if (videoInfo[0] === 1) {
+        wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}:${videoInfo[3]})`);
+    }
+    const stream = fs.createReadStream(videoPath);
+    let tgMsg = await tgBotDo.SendVideo(msg.receiver, "", stream, true, false);
+    if (!tgMsg) {
+        tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
+        return "sendFailure";
+    } else return "Success";
+}
+
+async function getVideoFileInfo(videoPath) {
+    const util = require('util');
+    const ffprobePath = require('ffprobe-static').path;
+    const ffprobe = require('ffprobe');
+    const ffprobeOptions = {path: ffprobePath};
+    const statAsync = util.promisify(fs.stat);
+    const ffprobeAsync = util.promisify(ffprobe);
+    try {
+        const stats = await statAsync(videoPath);
+        const fileSizeBytes = stats.size;
+        const fileSizeMB = fileSizeBytes / (1024 * 1024);
+
+        const info = await ffprobeAsync(videoPath, ffprobeOptions);
+        if (info.format && info.format.duration) {
+            const playlengthSeconds = parseFloat(info.format.duration);
+            const playlengthMinutes = Math.floor(playlengthSeconds / 60);
+            const playlengthSecondsRemaining = Math.floor(playlengthSeconds % 60);
+            return [1, fileSizeMB, playlengthMinutes, playlengthSecondsRemaining];
+        } else {
+            return [0, fileSizeMB];
+        }
+    } catch (err) {
+        return [-1, err];
+    }
+}
+
 function b() {
     const {} = env;
 }
@@ -66,5 +122,5 @@ function parseXML(xml) {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {handlePushMessage};
+    return {handlePushMessage, handleVideoMessage};
 };
