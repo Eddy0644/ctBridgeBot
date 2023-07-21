@@ -51,7 +51,9 @@ const tgBotDo = {
     SendMessage: async (receiver = null, msg, isSilent = false, parseMode = null, form = {}) => {
         if (isSilent) form.disable_notification = true;
         if (parseMode) form.parse_mode = parseMode;
-        return await tgbot.sendMessage(parseRecv(receiver, form), msg, form).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendMessage(parseRecv(receiver, form), msg, form);
+        }, 3, 3000);
     },
     RevokeMessage: async (msgId, receiver = null) => {
         return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId).catch((e) => {
@@ -152,7 +154,7 @@ const tgBotDo = {
 };
 let errorStat = 0;
 tgbot.on('polling_error', async (e) => {
-    const msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "[Error]\t";
+    const msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "[ERR]\t";
     if (errorStat === 0) {
         errorStat = 1;
         setTimeout(async () => {
@@ -178,6 +180,24 @@ tgbot.on('polling_error', async (e) => {
 tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
+const retryWithLogging = async (func, maxRetries, retryDelay = 5000) => {
+    let retries = 0;
+    while (retries <= maxRetries) {
+        try {
+            return await func();
+        } catch (error) {
+            let errorMessage = 'MsgSendFail:' + error.message.replace(/(Error:)|(EFATAL)|(ETELEGRAM)/g, '').trim();
+            tgLogger.warn(errorMessage);
+            if (error.code === 'ETELEGRAM') {
+                return; // Directly exit if the error code is 'ETELEGRAM'
+            }
+            await delay(retryDelay);
+            retries++;
+        }
+    }
+    // If the maximum number of retries is reached, you can handle it here if needed.
+    tgLogger.warn("Maximum retries reached. Could not complete the operation.");
+};
 
 function logErrorDuringTGSend(err) {
     let err2 = err.toString().replaceAll("Error:", "");
