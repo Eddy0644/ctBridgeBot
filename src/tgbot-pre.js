@@ -82,7 +82,9 @@ const tgBotDo = {
         })();
         if (isSilent) form.disable_notification = true;
         // Temp. change for classifying stickers
-        return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'}).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'})
+        }, 3, 3000);
     },
     SendPhoto: async (receiver = null, msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
@@ -94,7 +96,9 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'}).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'});
+        }, 3, 3000);
     },
     EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {
@@ -139,7 +143,9 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'}).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'})
+        }, 3, 3000);
     },
     SendVideo: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -186,7 +192,7 @@ const retryWithLogging = async (func, maxRetries, retryDelay = 5000) => {
         try {
             return await func();
         } catch (error) {
-            let errorMessage = 'MsgSendFail:' + error.message.replace(/(Error:)|(EFATAL)|(ETELEGRAM)/g, '').trim();
+            let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim();
             tgLogger.warn(errorMessage);
             if (error.code === 'ETELEGRAM') {
                 return; // Directly exit if the error code is 'ETELEGRAM'
