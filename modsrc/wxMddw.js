@@ -54,7 +54,7 @@ async function handleVideoMessage(msg, name) {
     const {wxLogger, tgBotDo, tgLogger} = env;
     let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name}).mp4`;
     wxLogger.debug(`Detected as Video, Downloading...`);
-    await tgBotDo.SendChatAction("record_video", msg.receiver);
+    tgBotDo.SendChatAction("record_video", msg.receiver).then(() => {});
     const fBox = await msg.toFileBox();
     await fBox.toFile(videoPath);
     if (!fs.existsSync(videoPath)) {
@@ -71,10 +71,10 @@ async function handleVideoMessage(msg, name) {
         wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}).\n${videoInfo[3]}`);
         wxLogger.trace(`video local path for above:(${videoInfo}), more info: ${JSON.stringify(videoInfo[4])}`);
     }
-    await tgBotDo.SendChatAction("upload_video", msg.receiver);
+    tgBotDo.SendChatAction("upload_video", msg.receiver).then(() => {});
     const stream = fs.createReadStream(videoPath);
     let tgMsg = await tgBotDo.SendVideo(msg.receiver, "", stream, true, false);
-    await tgBotDo.SendChatAction("choose_sticker", msg.receiver);
+    tgBotDo.SendChatAction("choose_sticker", msg.receiver).then(() => {});
     if (!tgMsg) {
         tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
         return "sendFailure";
