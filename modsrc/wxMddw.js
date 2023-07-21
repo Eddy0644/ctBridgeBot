@@ -65,8 +65,9 @@ async function handleVideoMessage(msg, name) {
         wxLogger.info("Parse Video Info failed.");
     } else if (videoInfo[0] === 0) {
         wxLogger.info("Parse Video Info (Play Length) failed.");
+        wxLogger.info(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length( PARSE FAILURE )`);
     } else if (videoInfo[0] === 1) {
-        wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}:${videoInfo[3]})`);
+        wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}).\n${videoInfo[3]}`);
     }
     const stream = fs.createReadStream(videoPath);
     let tgMsg = await tgBotDo.SendVideo(msg.receiver, "", stream, true, false);
@@ -89,11 +90,15 @@ async function getVideoFileInfo(videoPath) {
         const fileSizeMB = fileSizeBytes / (1024 * 1024);
 
         const info = await ffprobeAsync(videoPath, ffprobeOptions);
-        if (info.format && info.format.duration) {
-            const playlengthSeconds = parseFloat(info.format.duration);
+        if (info.stream && info.stream.length > 0 && info.stream[0].duration) {
+            const playlengthSeconds = parseFloat(info.stream[0].duration);
             const playlengthMinutes = Math.floor(playlengthSeconds / 60);
             const playlengthSecondsRemaining = Math.floor(playlengthSeconds % 60);
-            return [1, fileSizeMB, playlengthMinutes, playlengthSecondsRemaining];
+            // noinspection JSUnresolvedVariable
+            const additional = `Codec: ${info.stream[0].codec_name}/${info.stream[0].codec_tag_string}, `
+                + `Frame: ${info.stream[0].coded_width}x${info.stream[0].coded_height}, `
+                + `Bitrate: ${parseInt(info.stream[0].bit_rate) / 1000}Kbps, ${info.stream[0].avg_frame_rate}s`;
+            return [1, fileSizeMB, `${playlengthMinutes}:${playlengthSecondsRemaining}`, additional];
         } else {
             return [0, fileSizeMB];
         }
