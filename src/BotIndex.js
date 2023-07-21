@@ -1045,17 +1045,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     // TG does not support <br/> in HTML parsed text, so filtering it.
     content = content.replaceAll("<br/>", "\n");
     while (retrySend > 0) {
-        if (msg.DType === DTypes.CustomEmotion) {
-            ctLogger.error(`Preset barriers triggered. Check parameter!\n${JSON.stringify(msg)}`);// TODO remove
-            // 自定义表情, 已添加读取错误处理
-            try {
-                const stream = fs.createReadStream(msg.downloadedPath);
-                tgMsg = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
-            } catch (e) {
-                wxLogger.info(`Attempt to read CuEmo file but ENOENT. Please check environment.`);
-                tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} [CuEmo](Send Failure)`, true);
-            }
-        } else if (msg.DType === DTypes.Audio) {
+        if (msg.DType === DTypes.Audio) {
             // 语音
             wxLogger.debug(`Got New Voice message from ${tmplc}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
