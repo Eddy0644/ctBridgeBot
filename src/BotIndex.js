@@ -601,7 +601,7 @@ async function getC2CPeer(pair) {
 
 async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
-    const name = await (talker.name ? talker.name() : talker.topic());
+    const name = (talker.name ? (await talker.alias() || await talker.name()) : await talker.topic());
     msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
     if (state.lockTarget === 0 && !receiver.wx) state.last = {
         s: STypes.Chat,
@@ -1049,6 +1049,9 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                     tgLogger.debug(`Media Delivery Success.`);
                     // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
                     return await tgBotDo.RevokeMessage(tgMsg.message_id, msg.receiver);
+                } else if (result === "sizeLimit") {
+                    tgLogger.info(`Due to bot filesize limit, media delivery failure.`);
+                    tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("(Downloading...)", "(Size exceeds 50MB, couldn't upload)"), tgMsg, msg.receiver);
                 }
             }
             // return;

@@ -70,7 +70,8 @@ async function handleVideoMessage(msg, name) {
         wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}).\n${videoInfo[3]}`);
         wxLogger.trace(`video local path for above:(${videoInfo}), more info: ${JSON.stringify(videoInfo[4])}`);
     }
-    tgBotDo.SendChatAction("upload_video", msg.receiver).then(() => {});
+    if (videoInfo[1] > 49) return "sizeLimit";
+    tgBotDo.SendChatAction("upload_video", msg.receiver).then(tgBotDo.empty)
     const stream = fs.createReadStream(videoPath);
     let tgMsg = await tgBotDo.SendVideo(msg.receiver, "", stream, true, false);
     tgBotDo.SendChatAction("choose_sticker", msg.receiver).then(tgBotDo.empty)
