@@ -14,7 +14,7 @@ async function handlePushMessage(rawContent, msg, name) {
         if (name === one) filtered = true;
     }
     if (filtered) {
-        wxLogger.trace(`Match BlackList, no delivery!`);
+        wxLogger.debug(`This Post matches BlackList, no delivery!`);
         return 0;
     }
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));

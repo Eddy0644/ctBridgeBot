@@ -11,7 +11,7 @@ let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secret.botToken,
         {polling: {interval: 2000}, request: {proxy: require("../proxy")},});
-    tgbot.deleteWebHook();
+    tgbot.deleteWebHook().then(() => {});
 } else {
     tgbot = new TelegramBot(secret.botToken, {
         webHook: {
@@ -26,8 +26,8 @@ if (isPolling) {
     tgbot.setWebHook(`${secret.webHookUrlPrefix}${process.argv[3]}/bot${secret.botToken}`, {
         drop_pending_updates: true
         /* Please, remove this line after the bot have ability to control messages between instances!!! */
-    });
-    tgbot.openWebHook();
+    }).then(() => {});
+    tgbot.openWebHook().then(() => {});
 }
 
 function parseRecv(receiver, form) {
@@ -190,7 +190,9 @@ const retryWithLogging = async (func, maxRetries, retryDelay = 5000) => {
     let retries = 0;
     while (retries <= maxRetries) {
         try {
-            return await func();
+            const res = await func();
+            errorStat = 0;
+            return res;
         } catch (error) {
             let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim();
             tgLogger.warn(errorMessage);
