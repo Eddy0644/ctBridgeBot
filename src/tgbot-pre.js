@@ -146,6 +146,8 @@ const tgBotDo = {
         };
         if (isSilent) form.disable_notification = true;
         return await tgbot.sendVideo(parseRecv(receiver, form), path, form, {contentType: 'video/mp4'}).catch(e => logErrorDuringTGSend(e));
+    },
+    empty: () => {
     }
 };
 let errorStat = 0;

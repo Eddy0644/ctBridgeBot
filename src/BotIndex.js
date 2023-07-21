@@ -124,7 +124,7 @@ async function onTGMsg(tgMsg) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
             // noinspection JSUnresolvedVariable
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
-            await tgBotDo.SendChatAction("record_voice", tgMsg.matched);
+            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty)
             await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
             try {
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
@@ -169,7 +169,7 @@ async function onTGMsg(tgMsg) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair[3] && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
-                        return await tgBotDo.SendChatAction("upload_document");
+                        return tgBotDo.SendChatAction("upload_document");
                     }
                     if (tgMsg.text === "@") {
                         // Trigger special operation: Lock and set as explicit
@@ -197,7 +197,7 @@ async function onTGMsg(tgMsg) {
                                 // the explicit talker - Room matches preRoom
                                 await mod.tgProcessor.addSelfReplyTs();
                             }
-                            await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+                            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
                             ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
                             return;
                         } else {
@@ -282,7 +282,7 @@ async function onTGMsg(tgMsg) {
             case "/info" + botName: {
                 tgLogger.debug(`Generating tgBot status by user operation...`);
                 // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-                await tgBotDo.SendChatAction("typing", tgMsg.matched);
+                tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
                 const statusReport = await generateInfo();
                 await tgBotDo.SendMessage(tgMsg.matched, statusReport, true, null);
                 const result = await tgbot.setMyCommands(Config.TGBotCommands);
@@ -363,7 +363,7 @@ async function onTGMsg(tgMsg) {
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
             await wxTarget.say(tgMsg.text);
-            await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
             const wx1 = tgMsg.matched.p.wx;
             if (wx1[1] === true && wx1[0] === state.preRoom.topic) {
                 // the C2C Room matches preRoom
@@ -409,7 +409,7 @@ async function onTGMsg(tgMsg) {
             if (state.last.s === STypes.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
-                    await tgBotDo.SendChatAction("typing", tgMsg.matched);
+                    tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
                     await getFileFromWx(state.last.wxMsg);
                     ctLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
                 } else {
@@ -420,7 +420,7 @@ async function onTGMsg(tgMsg) {
                         await mod.tgProcessor.addSelfReplyTs();
                     }
                     ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
-                    await tgBotDo.SendChatAction("choose_sticker", tgMsg.matched);
+                    tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty);
                 }
             }
             // Empty here.
@@ -527,7 +527,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
-    await tgBotDo.SendChatAction(action, receiver);
+    tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
     await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
     let packed;
@@ -537,7 +537,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     }
     packed = await FileBox.fromFile(file_path);
 
-    await tgBotDo.SendChatAction("record_video", receiver);
+    tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
     if (s === 0) {
         await state.last.target.say(packed);
         ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
@@ -550,13 +550,13 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
             ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         }
     }
-    await tgBotDo.SendChatAction("choose_sticker", receiver);
+    tgBotDo.SendChatAction("choose_sticker", receiver).then(tgBotDo.empty)
     return true;
 }
 
 async function findSbInWechat(token, alterMsgId = 0, receiver) {
     const s = alterMsgId === 0;
-    await tgBotDo.SendChatAction("typing", receiver);
+    tgBotDo.SendChatAction("typing", receiver).then(tgBotDo.empty)
     // Find below as: 1.name of Person 2.name of topic 3.alias of person
     let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
@@ -1108,7 +1108,7 @@ async function getFileFromWx(msg) {
         await downloader.httpsWithWx(fBox.remoteUrl, filePath, cookieStr);
         if (fs.existsSync(filePath)) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
-            await tgBotDo.SendChatAction("upload_document");
+            tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty)
             const stream = fs.createReadStream(filePath);
             let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", stream, true, false);
             if (!tgMsg) {
