@@ -46,7 +46,7 @@ async function VTT_by_tx(audioPath, voiceFormat = "mp3") {
 async function wx_audio_VTT(saveTarget, audioPath, voiceFormat = "mp3") {
     const result = await VTT_by_tx(audioPath, "mp3");
     if (result !== "ERR!.") {
-        saveTarget.audioParsed = `, recognition:\n"${result}"`;
+        saveTarget.audioParsed = ` :\n"${result}"`;
     } else saveTarget.audioParsed = "";
 }
 
