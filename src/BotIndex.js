@@ -74,7 +74,10 @@ async function onTGMsg(tgMsg) {
         tgDisabled = 0;
         tgLogger.info("tgDisable lock is now OFF.");
         return;
-    } else if (tgDisabled) return;
+    } else if (tgDisabled) {
+        tgLogger.debug(`During TG-side lock ON, recv: ${Object.getOwnPropertyNames(tgMsg).join(', ')}`);
+        return;
+    }
     try {
         if (process.uptime() < 4) return;
         if (!secret.tgAllowList.includes(tgMsg.from.id)) {
