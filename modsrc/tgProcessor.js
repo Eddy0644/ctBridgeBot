@@ -125,7 +125,7 @@ function filterMsgText(inText) {
     txt = txt.replaceAll("<br/>", "\n");
     if (/"(.{1,10}): \n?(.*?)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
-        const match = txt.match(/"(.{1,10}): (.*?)"\n- - - - - - - - - - - - - - -\n/);
+        const match = txt.match(/"(.{1,10}): \n?(.*?)"\n- - - - - - - - - - - - - - -\n/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 8) ? match[2].substring(0, 8) : match[2];
         // In clip, we do not need <br/> to be revealed
