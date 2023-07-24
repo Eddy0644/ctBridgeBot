@@ -123,7 +123,7 @@ function filterMsgText(inText) {
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
-    if (/"(.{1,10}): (.*?)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
+    if (/"(.{1,10}): \n?(.*?)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
         const match = txt.match(/"(.{1,10}): (.*?)"\n- - - - - - - - - - - - - - -\n/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
