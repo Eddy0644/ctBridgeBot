@@ -98,6 +98,7 @@ module.exports = (param) => {
                 TGBotCommands: [
                     // {command: '/find', description: 'Find Person or Group Chat'},
                     {command: '/clear', description: 'Clear Selection'},
+                    {command: '/help', description: 'Get a detail of bot commands.'},
                     // {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
                     // {command: '/info', description: 'Get current system variables'},
                     {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
