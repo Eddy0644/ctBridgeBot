@@ -101,7 +101,7 @@ async function onTGMsg(tgMsg) {
                 if (tgMsg.chat.id === pair.tgid && thread_verify) {
                     tgMsg.matched = {s: 1, p: pair};
                     tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
-                    if (pair.mixed &&
+                    if (pair.flag.includes("mixed") &&
                         ((tgMsg.text && tgMsg.text.startsWith("*")) || (tgMsg.caption && tgMsg.caption.startsWith("*")))
                     ) {
                         tgLogger.debug(`Message started with * and is in mixed C2C chat, skipping...`);
