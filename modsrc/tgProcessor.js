@@ -122,7 +122,7 @@ async function addSelfReplyTs(name = null) {
 }
 
 function filterMsgText(inText) {
-    const {tgLogger} = env;
+    // const {tgLogger} = env;
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");

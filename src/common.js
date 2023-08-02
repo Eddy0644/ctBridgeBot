@@ -111,7 +111,7 @@ module.exports = (param) => {
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],
                     ["关于公众号进行帐号迁移的说明"],
-                    ["关于公众号进行账号迁移的说明"], // must f*k wechat here
+                    ["关于公众号进行账号迁移的说明"], // must f*k WeChat here
                 ],
             },
             downloader: {
@@ -147,12 +147,12 @@ module.exports = (param) => {
                     });
                 },
                 httpsCurl: async function (url) {
-                    return new Promise((resolve, reject) => {
+                    return new Promise((resolve) => {
                         https.get(url, {}, () => {
                             resolve("SUCCESS");
-                        }).on('error', (error) => {
+                        }).on('error', () => {
                             console.error(`[Error] Failed on httpsCurl request. Probably network has been disconnected, so notifications have no need to launch now. Wait for Exit...`);
-                            setTimeout(e => resolve("NETWORK_DISCONNECTED"), 10000);
+                            setTimeout(() => resolve("NETWORK_DISCONNECTED"), 10000);
                         });
                     });
                 },

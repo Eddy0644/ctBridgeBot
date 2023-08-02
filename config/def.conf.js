@@ -41,7 +41,10 @@ module.exports = {
         tgContentReplaceList: [
             ["😡", "[Pout]"],
             ["😄", "[Doge]"],
+            ["😭😭", "[Hurt]"],
             ["😏", "[Onlooker]"],
+            ["😣", "[Panic]"],
+            ["😮‍💨", "[Sigh]"],
         ],
         wxNameExcludeKeyword: [
             "美团",
@@ -65,7 +68,7 @@ module.exports = {
         // s=false, no title-changing;
         // s=<string>, use customized new-title as [1] specified;
         // s=<function>, the func. would be executed with parameter 'count'
-        changeTitleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
+        changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
 
         // s=false, no delivery
         // s=true, send to Push channel
