@@ -94,7 +94,7 @@ module.exports = (param) => {
                 Chat: 1,
                 FindMode: 2,
             },
-            Config: {
+            CommonData: {
                 TGBotCommands: [
                     // {command: '/find', description: 'Find Person or Group Chat'},
                     {command: '/clear', description: 'Clear Selection'},
@@ -108,12 +108,10 @@ module.exports = (param) => {
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                     // Add more commands as needed
                 ],
-                placeholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
-                wxAutoDownloadThreshold: 3 * 1048576,
                 wxPushMsgFilterWord: [
-                    ["/cgi-bin/mmwebwx-bin/webwxcheckurl?requrl=http%3A%2F%2Fmp.weixin.qq.com", "已更改名称为"],
+                    ["公众号", "已更改名称为", "查看详情"],
                     ["关于公众号进行帐号迁移的说明"],
-                    ["关于公众号进行账号迁移的说明"],// must f*k wechat here
+                    ["关于公众号进行账号迁移的说明"], // must f*k wechat here
                 ],
             },
             downloader: {

@@ -76,6 +76,8 @@ module.exports = {
             urlPrefix: "https://t.me/c/000/777/",
         },
         addSelfReplyTimestampToRoomMergedMsg: false,
+        wxAutoDownloadSizeThreshold: 3 * 1048576,
+        tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
     },
     txyun: {
         switch: "off",

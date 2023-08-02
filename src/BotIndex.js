@@ -9,7 +9,7 @@ const DataStorage = require('./dataStorage.api');
 const stickerLib = new DataStorage("./stickers.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg,
-    Config, STypes,
+    CommonData, STypes,
     downloader, processor,
 } = require('./common')();
 
@@ -291,12 +291,12 @@ async function onTGMsg(tgMsg) {
                 tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
                 const statusReport = await generateInfo();
                 await tgBotDo.SendMessage(tgMsg.matched, statusReport, true, null);
-                const result = await tgbot.setMyCommands(Config.TGBotCommands);
+                const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
                 return;
             }
             case "/placeholder": {
-                await tgBotDo.SendMessage(tgMsg.matched, Config.placeholder, true);
+                await tgBotDo.SendMessage(tgMsg.matched, secret.misc.tgCmdPlaceholder, true);
                 return;
             }
         }
@@ -387,7 +387,7 @@ async function onTGMsg(tgMsg) {
             if (Object.keys(state.last).length === 0) {
                 // Activate chat & env. set
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
-                const result = await tgbot.setMyCommands(Config.TGBotCommands);
+                const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
                 tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
                 return;
             }
@@ -853,7 +853,7 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     content += `Too small, so it maybe not a valid file. Check DT log for detail.`
                     wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}`);
-                } else if (msg.filesize < Config.wxAutoDownloadThreshold) {
+                } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
                     msg.autoDownload = true;
                     content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
                 } else {
@@ -885,7 +885,7 @@ async function onWxMessage(msg) {
             replaceFlag = 0;
         }
         // 筛选出公众号等通知消息，归类为Push
-        for (const testPair of Config.wxPushMsgFilterWord) {
+        for (const testPair of CommonData.wxPushMsgFilterWord) {
             let s = 0;
             for (const testPairElement of testPair) {
                 if (!content.includes(testPairElement)) s = 1;
