@@ -1,14 +1,18 @@
 // noinspection SpellCheckingInspection
-
+// Template ‘secret.js' from v2.0.8
 module.exports = {
     botToken: '5000:ABCDE',
-    webHookUrlPrefix: 'https://www.gov.cn/webHook',
-    txyun_credential: {
+    botName: '@your_bot_username_bot',
+    ctToken: '',
+    webHookUrlPrefix: 'https://baidu.com/webHook',
+    statusReport: ['yourdomain.commmmmm', '/ctBot/rp.php'],
+    txyun: {
         secretId: "",
         secretKey: "",
     },
-    target_TG_ID: 55012345678900,
+    tgAllowList: [5000000001],
     upyun: {
+        status: "off",
         password: "operator_password",
         webFilePathPrefix: "/BUCKETNAME/ctBotAsset/stickerTG",
         urlPathPrefix: "{webFilePathPrefix}-'/BUCKETNAME'",
@@ -49,7 +53,7 @@ module.exports = {
         ["😮‍💨", "[Sigh]"],
     ],
     nameExcludeKeyword: [
-        "美团", "..."
+        "美团"
     ],
     messageExcludeKeyword: [],
     notification: {
@@ -75,7 +79,7 @@ module.exports = {
         "StickerUrlPrefix": "https://t.me/c/1944729618/777/",
 
         "wxPostOriginBlackList": [
-            "不接收消息的订阅号",
+            "不接收消息的订阅号名称",
         ],
         "addSelfReplyTimestampToRoomMergedMsg": false,
     }

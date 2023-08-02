@@ -1142,7 +1142,7 @@ wxbot.on('login', async user => {
     // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
 wxbot.start()
-    .then(() => wxLogger.info('开始登陆大而丑...'))
+    .then(() => wxLogger.info('开始登陆微信...'))
     .catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
