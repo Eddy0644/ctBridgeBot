@@ -10,7 +10,7 @@ async function a() {
 async function handlePushMessage(rawContent, msg, name) {
     const {wxLogger, secret} = env;
     let filtered = false;
-    for (const one of secret.settings.wxPostOriginBlackList) {
+    for (const one of secret.filtering.wxPostOriginBlackList) {
         if (name === one) filtered = true;
     }
     if (filtered) {
@@ -36,7 +36,7 @@ async function handlePushMessage(rawContent, msg, name) {
         }
         // Success
         {
-            const s = secret.settings.deliverPushMessage;
+            const s = secret.misc.deliverPushMessage;
             if (s === false) return 0;
             if (s === true) msg.receiver = secret.class.push;
             if (s.tgid) msg.receiver = s;

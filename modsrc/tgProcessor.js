@@ -15,7 +15,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : name);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
-        const s = secret.settings.changeTitleForSameTalkerInMergedRoomMsg;
+        const s = secret.misc.changeTitleForSameTalkerInMergedRoomMsg;
         if (s === false || _.lastTalker !== name) {
             _.talkerCount = 0;
             _.lastTalker = name;
@@ -104,7 +104,7 @@ async function addSelfReplyTs(name = null) {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n← [${dayjs().format("H:mm:ss")}] {My Reply}`;
-        if (secret.settings.addSelfReplyTimestampToRoomMergedMsg) {
+        if (secret.misc.addSelfReplyTimestampToRoomMergedMsg) {
             _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
             defLogger.debug(`Delivered myself reply stamp into Room:${_.topic} 's former message, and cleared its preRoom.`);
         }

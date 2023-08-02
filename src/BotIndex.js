@@ -80,7 +80,7 @@ async function onTGMsg(tgMsg) {
     }
     try {
         if (process.uptime() < 4) return;
-        if (!secret.tgAllowList.includes(tgMsg.from.id)) {
+        if (!secret.tgbot.tgAllowList.includes(tgMsg.from.id)) {
             tgLogger.trace(`Got TG message (#${tgMsg.message_id}) from unauthorized user (${tgMsg.from.id}), Ignoring.`);
             return;
         }
@@ -134,7 +134,7 @@ async function onTGMsg(tgMsg) {
             // noinspection JSUnresolvedVariable
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
             tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty)
-            await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
+            await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.tgbot.botToken}/${fileCloudPath}`, file_path);
             try {
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
                 if (res !== "") await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
@@ -223,7 +223,7 @@ async function onTGMsg(tgMsg) {
             // !tgMsg.reply_to_message  ------------------
         }
         // Not replacing the original tgMsg.text here
-        switch (tgMsg.text.replace(secret.botName, "")) {
+        switch (tgMsg.text.replace(secret.tgbot.botName, "")) {
             case "/clear": {
                 // if (tgMsg.matched.s === 1) {
                 //     return await mod.tgProcessor.replyWithTips("globalCmdToC2C", tgMsg.chat.id, 6);
@@ -304,7 +304,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
             let findToken = tgMsg.text.replace("F$", "");
-            for (const pair of secret.nameFindReplaceList) {
+            for (const pair of secret.filtering.nameFindReplaceList) {
                 if (findToken === pair[0]) {
                     findToken = pair[1];
                     break;
@@ -335,7 +335,7 @@ async function onTGMsg(tgMsg) {
             if (match && match[1]) {
                 // Parse Success
                 let findToken = match[1], found = false;
-                for (const pair of secret.nameFindReplaceList) {
+                for (const pair of secret.filtering.nameFindReplaceList) {
                     if (findToken === pair[0]) {
                         findToken = pair[1];
                         found = true;
@@ -344,7 +344,7 @@ async function onTGMsg(tgMsg) {
                 }
                 // if settings.enableInlineSearchForUnreplaced is true,
                 // then whether findToken is in nameFindReplaceList it will continue.
-                if (found || secret.settings.enableInlineSearchForUnreplaced) {
+                if (found || secret.misc.enableInlineSearchForUnreplaced) {
                     wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
                     const res = await findSbInWechat(findToken, tgMsg.message_id, tgMsg.matched);
                     if (res) {
@@ -395,7 +395,7 @@ async function onTGMsg(tgMsg) {
                 ctLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
-                for (const pair of secret.nameFindReplaceList) {
+                for (const pair of secret.filtering.nameFindReplaceList) {
                     if (findToken === pair[0]) {
                         findToken = pair[1];
                         break;
@@ -478,9 +478,9 @@ async function generateInfo() {
     };
     const postData = JSON.stringify(dtInfo);
     const options = {
-        hostname: secret.statusReport[0],
+        hostname: secret.tgbot.statusReport[0],
         port: 443,
-        path: secret.statusReport[1] + '?s=create',
+        path: secret.tgbot.statusReport[1] + '?s=create',
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -501,7 +501,7 @@ async function generateInfo() {
             req.end();
         });
 
-        url = `https://${options.hostname}${secret.statusReport[1]}?n=${res}`;
+        url = `https://${options.hostname}${secret.tgbot.statusReport[1]}?n=${res}`;
         if (res.indexOf('<html') > -1) throw new Error("Upload error");
     } catch (e) {
         ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
@@ -534,7 +534,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
-    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.botToken}/${fileCloudPath}`, file_path);
+    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.tgbot.botToken}/${fileCloudPath}`, file_path);
     let packed;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
@@ -699,7 +699,7 @@ async function onWxMessage(msg) {
             // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
             const fileExt = ".gif";
             const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
-            const stickerUrl = secret.settings.StickerUrlPrefix;
+            const stickerUrl = secret.misc.StickerUrlPrefix;
             {
                 // filter duplicate-in-period sticker
                 let filtered = false;
@@ -905,7 +905,7 @@ async function onWxMessage(msg) {
 
         content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
 
-        for (const pair of secret.wxContentReplaceList) {
+        for (const pair of secret.filtering.wxContentReplaceList) {
             if (content.includes(pair[0])) {
                 wxLogger.trace(`Replaced wx emoji ${pair[0]} to corresponding universal emoji. (config :->secret.js)`);
                 while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
@@ -930,7 +930,7 @@ async function onWxMessage(msg) {
                 }
             }
             // 再筛选掉符合exclude keyword的群聊消息
-            for (const keyword of secret.nameExcludeKeyword) {
+            for (const keyword of secret.filtering.nameExcludeKeyword) {
                 if (topic.includes(keyword)) {
                     wxLogger.debug(`[in ${topic}]符合黑名单关键词“${keyword}”： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -967,7 +967,7 @@ async function onWxMessage(msg) {
                 msg.receiver = secret.class.push;
             }
             // 筛选掉符合exclude keyword的个人消息
-            if (msg.DType !== DTypes.Push) for (const keyword of secret.nameExcludeKeyword) {
+            if (msg.DType !== DTypes.Push) for (const keyword of secret.filtering.nameExcludeKeyword) {
                 if (name.includes(keyword)) {
                     wxLogger.debug(`来自[${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -1099,7 +1099,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         }
 
         if (!tgMsg) {
-            if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secret.network_issue_webhook);
+            if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secret.notification.network_issue_webhook);
             // todo add undelivered pool
             tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);

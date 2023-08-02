@@ -14,7 +14,7 @@
 .env
 *.memory-card.json
 package-lock.json
-*/downloaded/
+*/downloaded/*
 /default.log
 /log/
 /proxy.js
@@ -26,3 +26,5 @@ package-lock.json
 /test.json
 /config/temp.txt
 /IGNT/
+/config/user.conf.js
+/downloaded/*/*

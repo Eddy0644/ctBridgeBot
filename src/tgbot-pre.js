@@ -9,11 +9,11 @@ const {downloader} = require("./common")();
 
 let tgbot;
 if (isPolling) {
-    tgbot = new TelegramBot(secret.botToken,
+    tgbot = new TelegramBot(secret.tgbot.botToken,
         {polling: {interval: 2000}, request: {proxy: require("../proxy")},});
     tgbot.deleteWebHook().then(() => {});
 } else {
-    tgbot = new TelegramBot(secret.botToken, {
+    tgbot = new TelegramBot(secret.tgbot.botToken, {
         webHook: {
             port: 8443,
             max_connections: 3,
@@ -23,7 +23,7 @@ if (isPolling) {
         },
         request: {proxy: require("../proxy")}
     });
-    tgbot.setWebHook(`${secret.webHookUrlPrefix}${process.argv[3]}/bot${secret.botToken}`, {
+    tgbot.setWebHook(`${secret.tgbot.webHookUrlPrefix}${process.argv[3]}/bot${secret.tgbot.botToken}`, {
         drop_pending_updates: true
         /* Please, remove this line after the bot have ability to control messages between instances!!! */
     }).then(() => {});
@@ -75,7 +75,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         const receiver = (() => {
-            const s = secret.settings.deliverStickerSeparately;
+            const s = secret.misc.deliverStickerSeparately;
             if (s === false) return 0; //TODO
             if (s === true) return secret.class.push;
             if (s.tgid) return s;
