@@ -1,4 +1,4 @@
-const secret = require('../config/secret');
+const secret = require('../config/confLoader');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger} = require('./common')();
@@ -166,7 +166,7 @@ tgbot.on('polling_error', async (e) => {
         setTimeout(async () => {
             if (errorStat === 2) {
                 // still have errors after the timer been set up triggered by first error
-                await downloader.httpsCurl(secret.notification.baseUrl + secret.notification.prompt_network_problematic);
+                with(secret.notification)await downloader.httpsCurl(baseUrl + prompt_network_problematic + default_arg);
                 tgLogger.warn(`Frequent network issue detected! Please check network!\n${msg}`);
             } else {
                 // no other error during this period, discarding notify initiation

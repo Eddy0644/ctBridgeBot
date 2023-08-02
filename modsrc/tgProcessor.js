@@ -15,7 +15,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : name);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
-        const s = secret.misc.changeTitleForSameTalkerInMergedRoomMsg;
+        const s = secret.misc.changeTitleForSameTalkerInMerged;
         if (s === false || _.lastTalker !== name) {
             _.talkerCount = 0;
             _.lastTalker = name;
@@ -24,7 +24,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         _.talkerCount++;
         if (typeof s === "string") return s || `|→ `;
         if (typeof s === "function") return s(_.talkerCount);
-        defLogger.warn(`Invalid configuration found for {settings.changeTitleForSameTalkerInMergedRoomMsg}!`);
+        defLogger.warn(`Invalid configuration found for {settings.changeTitleForSameTalkerInMerged}!`);
         return `|→ `;
     })();
     msg[`pre${word}NeedUpdate`] = false;

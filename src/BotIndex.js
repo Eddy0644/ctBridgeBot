@@ -1,7 +1,7 @@
 // Note that ES module loaded in cjs usually have extra closure like require("file-box").FileBox, remind!
 // noinspection DuplicatedCode
 
-const secret = require('../config/secret');
+const secret = require('../config/confLoader');
 const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
@@ -304,7 +304,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.text.indexOf("F$") === 0) {
             // Want to find somebody, and have inline parameters
             let findToken = tgMsg.text.replace("F$", "");
-            for (const pair of secret.filtering.nameFindReplaceList) {
+            for (const pair of secret.filtering.wxFindNameReplaceList) {
                 if (findToken === pair[0]) {
                     findToken = pair[1];
                     break;
@@ -335,7 +335,7 @@ async function onTGMsg(tgMsg) {
             if (match && match[1]) {
                 // Parse Success
                 let findToken = match[1], found = false;
-                for (const pair of secret.filtering.nameFindReplaceList) {
+                for (const pair of secret.filtering.wxFindNameReplaceList) {
                     if (findToken === pair[0]) {
                         findToken = pair[1];
                         found = true;
@@ -343,7 +343,7 @@ async function onTGMsg(tgMsg) {
                     }
                 }
                 // if settings.enableInlineSearchForUnreplaced is true,
-                // then whether findToken is in nameFindReplaceList it will continue.
+                // then whether findToken is in wxFindNameReplaceList it will continue.
                 if (found || secret.misc.enableInlineSearchForUnreplaced) {
                     wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
                     const res = await findSbInWechat(findToken, tgMsg.message_id, tgMsg.matched);
@@ -395,7 +395,7 @@ async function onTGMsg(tgMsg) {
                 ctLogger.trace(`Finding [${tgMsg.text}] in wx by user prior "/find".`);
                 // const msgToRevoke1 = state.lastOpt[1];
                 let findToken = tgMsg.text;
-                for (const pair of secret.filtering.nameFindReplaceList) {
+                for (const pair of secret.filtering.wxFindNameReplaceList) {
                     if (findToken === pair[0]) {
                         findToken = pair[1];
                         break;
@@ -930,7 +930,7 @@ async function onWxMessage(msg) {
                 }
             }
             // 再筛选掉符合exclude keyword的群聊消息
-            for (const keyword of secret.filtering.nameExcludeKeyword) {
+            for (const keyword of secret.filtering.wxNameExcludeKeyword) {
                 if (topic.includes(keyword)) {
                     wxLogger.debug(`[in ${topic}]符合黑名单关键词“${keyword}”： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -967,7 +967,7 @@ async function onWxMessage(msg) {
                 msg.receiver = secret.class.push;
             }
             // 筛选掉符合exclude keyword的个人消息
-            if (msg.DType !== DTypes.Push) for (const keyword of secret.filtering.nameExcludeKeyword) {
+            if (msg.DType !== DTypes.Push) for (const keyword of secret.filtering.wxNameExcludeKeyword) {
                 if (name.includes(keyword)) {
                     wxLogger.debug(`来自[${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
                     return;
@@ -1099,7 +1099,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         }
 
         if (!tgMsg) {
-            if (globalNetworkErrorCount-- < 0) await downloader.httpsCurl(secret.notification.network_issue_webhook);
+            if (globalNetworkErrorCount-- < 0) with(secret.notification)await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
             // todo add undelivered pool
             tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
