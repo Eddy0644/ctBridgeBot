@@ -707,7 +707,7 @@ async function onWxMessage(msg) {
             // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
             const fileExt = ".gif";
             const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
-            const stickerUrl = secret.misc.StickerUrlPrefix;
+            const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
             {
                 // filter duplicate-in-period sticker
                 let filtered = false;
@@ -736,7 +736,7 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     ahead = false;
                     msg.md5 = md5.substring(0, 3);
-                    if (typeof fetched[0] === "number") content = `<a href="${stickerUrl}${fetched[0]}">[Sticker](${msg.md5})</a>`;
+                    if (typeof fetched[0] === "number") content = `<a href="${stickerUrlPrefix}${fetched[0]}">[Sticker](${msg.md5})</a>`;
                     else content = `[${md5.substring(0, 3)} of #sticker]`;
                     ctLogger.trace(`Found former msg for '${md5}', replacing to Text. (${content})`);
                 }
@@ -752,7 +752,7 @@ async function onWxMessage(msg) {
                     await stickerLib.set(md5, [tgMsg2.message_id, cEPath]);
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
-                    content = `<a href="${stickerUrl}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
+                    content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
                 } else msg.downloadedPath = null;
             } else if (ahead) {
                 msg.downloadedPath = cEPath;
@@ -762,7 +762,7 @@ async function onWxMessage(msg) {
                 await stickerLib.set(md5, [tgMsg2.message_id, cEPath]);
                 msg.DType = DTypes.Text;
                 msgDef.isSilent = true;
-                content = `<a href="${stickerUrl}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
+                content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
             }
         } catch (e) {
             wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);

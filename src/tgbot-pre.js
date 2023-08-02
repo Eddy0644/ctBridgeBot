@@ -75,7 +75,7 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         const receiver = (() => {
-            const s = secret.misc.deliverStickerSeparately;
+            const s = secret.misc.deliverSticker;
             if (s === false) return 0; //TODO
             if (s === true) return secret.class.push;
             if (s.tgid) return s;

@@ -71,8 +71,10 @@ module.exports = {
         // s=true, send to Push channel
         // s=<tgTargetObj>, send to this target
         deliverPushMessage: true,
-        deliverStickerSeparately: {tgid: -100000, threadId: 777},
-        StickerUrlPrefix: "https://t.me/c/000/777/",
+        deliverSticker: {
+            tgid: -100000, threadId: 777,
+            urlPrefix: "https://t.me/c/000/777/",
+        },
         addSelfReplyTimestampToRoomMergedMsg: false,
     },
     txyun: {
