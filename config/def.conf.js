@@ -60,20 +60,20 @@ module.exports = {
         incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBotCall/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge`,
     },
     misc: {
-        "enableInlineSearchForUnreplaced": true,
+        enableInlineSearchForUnreplaced: true,
 
         // s=false, no title-changing;
         // s=<string>, use customized new-title as [1] specified;
         // s=<function>, the func. would be executed with parameter 'count'
-        "changeTitleForSameTalkerInMergedRoomMsg": c => `<code>${c}|→</code> `,
+        changeTitleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
 
         // s=false, no delivery
         // s=true, send to Push channel
         // s=<tgTargetObj>, send to this target
-        "deliverPushMessage": true,
-        "deliverStickerSeparately": {tgid: -100000, threadId: 777},
-        "StickerUrlPrefix": "https://t.me/c/000/777/",
-        "addSelfReplyTimestampToRoomMergedMsg": false,
+        deliverPushMessage: true,
+        deliverStickerSeparately: {tgid: -100000, threadId: 777},
+        StickerUrlPrefix: "https://t.me/c/000/777/",
+        addSelfReplyTimestampToRoomMergedMsg: false,
     },
     txyun: {
         switch: "off",

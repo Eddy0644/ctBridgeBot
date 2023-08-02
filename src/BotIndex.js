@@ -542,7 +542,8 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
         if (secret.upyun.switch !== "on") {
-            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled.`);
+            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled. Message not delivered.`);
+            await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
             return;
         }
         file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
