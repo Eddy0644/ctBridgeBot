@@ -150,7 +150,7 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
             return;
         }
-        for (const pair of secret.tgContentReplaceList) {
+        for (const pair of secret.filtering.tgContentReplaceList) {
             if (tgMsg.text.includes(pair[0])) {
                 tgLogger.trace(`Replacing pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
                 while (tgMsg.text.includes(pair[0])) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
@@ -477,10 +477,11 @@ async function generateInfo() {
         logText: logText.replaceAll(`<img class="qqemoji`, `&lt;img class="qqemoji`),
     };
     const postData = JSON.stringify(dtInfo);
-    const options = {
-        hostname: secret.tgbot.statusReport[0],
+    let options;
+    with (secret.tgbot.statusReport) options = {
+        hostname: host || "",
         port: 443,
-        path: secret.tgbot.statusReport[1] + '?s=create',
+        path: (path || "") + '?s=create',
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -488,6 +489,7 @@ async function generateInfo() {
         }
     };
     let url;
+    if (secret.tgbot.statusReport.switch !== "on") return `Local-Version statusReport:\n<code>${statusReport}</code>`;
     try {
         const res = await new Promise((resolve, reject) => {
             const req = require('https').request(options, (res) => {
@@ -507,6 +509,7 @@ async function generateInfo() {
         ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
         url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
     }
+
     return url;
 }
 
@@ -538,6 +541,10 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     let packed;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
+        if (secret.upyun.switch !== "on") {
+            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled.`);
+            return;
+        }
         file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
     }
     packed = await FileBox.fromFile(file_path);
@@ -1099,7 +1106,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         }
 
         if (!tgMsg) {
-            if (globalNetworkErrorCount-- < 0) with(secret.notification)await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
+            if (globalNetworkErrorCount-- < 0) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
             // todo add undelivered pool
             tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);

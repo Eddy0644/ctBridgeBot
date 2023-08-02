@@ -14,10 +14,11 @@ let env;
 
 async function VTT_by_tx(audioPath, voiceFormat = "mp3") {
     const {secret, defLogger} = env;
+    if (secret.txyun.switch !== "on") return "ERR!."; // VTT disabled!
     try {
         // 尝试调用腾讯云一句话识别API自动转文字（准确率略低于wx）
         const client = new AsrClient({
-            credential: secret.txyun_credential,
+            credential: secret.txyun,
             region: "",
             profile: {
                 httpProfile: {
