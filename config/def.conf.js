@@ -60,11 +60,11 @@ module.exports = {
     },
     notification: {
         baseUrl: "https://(YourBarkAddress)/BridgeBot_WARN[ct]/",
-        default_arg: "?group=ctBridge",
+        default_arg: "?group=ctBridge&icon=https://ccdn.ryancc.top/bot.jpg",
         prompt_network_problematic: "Several network connectivity problems have been noticed. Please settle that immediately.",
         prompt_relogin_required: "Your previous login credential have already expired. Please re-login soon.",
         prompt_network_issue_happened: "ctBridgeBot is expericing network issue!",
-        incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBotCall/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge`,
+        incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBotCall/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge&icon=https://ccdn.ryancc.top/call.jpg`,
     },
     misc: {
         enableInlineSearchForUnreplaced: true,
@@ -87,6 +87,7 @@ module.exports = {
         deliverRoomRedPacketInAdvance: 2,
 
         titleForSystemMsgInRoom: "(System)",
+
         addSelfReplyTimestampToRoomMergedMsg: false,
 
         wxAutoDownloadSizeThreshold: 3 * 1048576,
