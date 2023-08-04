@@ -937,12 +937,30 @@ async function onWxMessage(msg) {
                     name = `<System>`;
                 }
             }
-            // 再筛选掉符合exclude keyword的群聊消息
-            for (const keyword of secret.filtering.wxNameExcludeKeyword) {
-                if (topic.includes(keyword)) {
-                    wxLogger.debug(`[in ${topic}]符合黑名单关键词“${keyword}”： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
-                    return;
+            {   // do exclude or include according to Config
+                const strategy = secret.filtering.wxNameFilterStrategy;
+                let ahead;
+                const originName = topic,
+                    contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
+                if (strategy.useBlackList) {
+                    ahead = true;
+                    for (const keyword of strategy.blackList) {
+                        if (originName.includes(keyword)) {
+                            wxLogger.debug(`来自此群[${topic}]的消息因名称符合黑名单关键词“${keyword}”，未递送： ${contentSub}`);
+                            ahead = false;
+                        }
+                    }
+                } else {  // Use whitelist
+                    ahead = false;
+                    for (const keyword of strategy.whiteList) {
+                        if (originName.includes(keyword)) {
+                            ahead = true;
+                            break;
+                        }
+                    }
+                    if (!ahead) wxLogger.debug(`来自此群[${topic}]的消息因名称不符合任何白名单关键词，未递送： ${contentSub}`);
                 }
+                if (!ahead) return;
             }
             try {
                 if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge) && msg.DType === DTypes.Text) {

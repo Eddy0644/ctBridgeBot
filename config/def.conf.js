@@ -46,6 +46,15 @@ module.exports = {
             ["😣", "[Panic]"],
             ["😮‍💨", "[Sigh]"],
         ],
+        wxNameFilterStrategy:{
+            useBlackList:true,
+            blackList:[
+                "美团",
+            ],
+            whiteList:[
+
+            ]
+        },
         wxNameExcludeKeyword: [
             "美团",
         ],
