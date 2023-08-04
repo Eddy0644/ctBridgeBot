@@ -682,6 +682,7 @@ async function onWxMessage(msg) {
 
     // lock is hard to make; used another strategy.
 
+
     {   // do exclude or include according to Config
         const strategy = secret.filtering.wxNameFilterStrategy;
         let ahead;
@@ -937,6 +938,8 @@ async function onWxMessage(msg) {
 
         content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
 
+        content = mod.tgProcessor.filterMsgText(content);
+
         for (const pair of secret.filtering.wxContentReplaceList) {
             if (content.includes(pair[0])) {
                 wxLogger.trace(`Replaced wx emoji ${pair[0]} to corresponding universal emoji. (config :->secret.js)`);
@@ -1091,7 +1094,6 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 wxLogger.debug(`Received Text from (${tmplc}).`);
                 tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
             }
-            content = mod.tgProcessor.filterMsgText(content);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
                 disable_web_page_preview: (msg.DType === DTypes.Push)
             });
