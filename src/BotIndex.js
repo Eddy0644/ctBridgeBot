@@ -970,16 +970,14 @@ async function onWxMessage(msg) {
         }
         if (room) {
             // 是群消息 - - - - - - - -
-            const topic = await room.topic();
 
-            // 群系统消息中先过滤出红包
+            // 群系统消息设为静音
             if (name === topic) {
                 // Did system message have any impact on me? No. So silent them.
                 msgDef.isSilent = true;
                 msgDef.forceMerge = true;
                 // Force override {name} to let system message seems better
                 name = secret.misc.titleForSystemMsgInRoom;
-
             }
 
             try {
@@ -1178,7 +1176,6 @@ async function getFileFromWx(msg) {
 wxbot.on('message', onWxMessage);
 wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
-    // await tgBotDo.SendMessage(`[Cy Notice] Service Started.`,1);
 });
 wxbot.start()
     .then(() => wxLogger.info('开始登陆微信...'))

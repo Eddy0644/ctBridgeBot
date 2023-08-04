@@ -67,11 +67,14 @@ module.exports = (param) => {
 `);
     // else return log4js.getLogger(param);
     else { // noinspection JSUnresolvedVariable
-        return {
+        const part1 = {
             wxLogger: log4js.getLogger("wx"),
             tgLogger: log4js.getLogger("tg"),
             // conLogger: log4js.getLogger("con"),
             ctLogger: log4js.getLogger("ct"),
+        };
+        if (param === "logger") return part1;
+        const part2 = {
             wxMsgLogger: log4js.getLogger("wxMsg"),
 
             LogWxMsg: (msg, isMessageDropped) => {
@@ -202,5 +205,6 @@ module.exports = (param) => {
                 }
             },
         }
+        return {...part1, ...part2};
     }
 }
