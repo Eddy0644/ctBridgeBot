@@ -35,8 +35,6 @@ const state = {
         md5: "",
         ts: 0
     },
-    // store messages which has no need to deliver
-    poolDropped: [],
     // store TG messages which need to be revoked after a period of time
     poolToDelete: [],
     // {tgMsg:null,toDelTs:0}
@@ -682,7 +680,33 @@ async function onWxMessage(msg) {
         }
     }
 
-    // lock is hard to make; used another strategy here.
+    // lock is hard to make; used another strategy.
+
+    {   // do exclude or include according to Config
+        const strategy = secret.filtering.wxNameFilterStrategy;
+        let ahead;
+        const originName = room ? topic : alias,
+            contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
+        if (strategy.useBlackList) {
+            ahead = true;
+            for (const keyword of strategy.blackList) {
+                if (originName.includes(keyword)) {
+                    wxLogger.debug(`来自[${topic}]的消息因名称符合黑名单关键词“${keyword}”，未递送： ${contentSub}`);
+                    ahead = false;
+                }
+            }
+        } else {  // Use whitelist
+            ahead = false;
+            for (const keyword of strategy.whiteList) {
+                if (originName.includes(keyword)) {
+                    ahead = true;
+                    break;
+                }
+            }
+            if (!ahead) wxLogger.debug(`来自[${topic}]的消息因名称不符合任何白名单关键词，未递送： ${contentSub}`);
+        }
+        if (!ahead) return;
+    }
 
     //已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
@@ -937,31 +961,7 @@ async function onWxMessage(msg) {
                     name = `<System>`;
                 }
             }
-            {   // do exclude or include according to Config
-                const strategy = secret.filtering.wxNameFilterStrategy;
-                let ahead;
-                const originName = topic,
-                    contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
-                if (strategy.useBlackList) {
-                    ahead = true;
-                    for (const keyword of strategy.blackList) {
-                        if (originName.includes(keyword)) {
-                            wxLogger.debug(`来自此群[${topic}]的消息因名称符合黑名单关键词“${keyword}”，未递送： ${contentSub}`);
-                            ahead = false;
-                        }
-                    }
-                } else {  // Use whitelist
-                    ahead = false;
-                    for (const keyword of strategy.whiteList) {
-                        if (originName.includes(keyword)) {
-                            ahead = true;
-                            break;
-                        }
-                    }
-                    if (!ahead) wxLogger.debug(`来自此群[${topic}]的消息因名称不符合任何白名单关键词，未递送： ${contentSub}`);
-                }
-                if (!ahead) return;
-            }
+
             try {
                 if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge) && msg.DType === DTypes.Text) {
                     const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name);
@@ -992,13 +992,7 @@ async function onWxMessage(msg) {
                 msg.DType = DTypes.Push;
                 msg.receiver = secret.class.push;
             }
-            // 筛选掉符合exclude keyword的个人消息
-            if (msg.DType !== DTypes.Push) for (const keyword of secret.filtering.wxNameExcludeKeyword) {
-                if (name.includes(keyword)) {
-                    wxLogger.debug(`来自[${name}]的以下消息符合名称关键词“${keyword}”，未递送： ${content.substring(0, (content.length > 50 ? 50 : content.length))}`);
-                    return;
-                }
-            }
+
             if (content.includes("tickled")) {
                 wxLogger.trace(`Updated msgDef to Silent by keyword 'tickled'.`);
                 msgDef.isSilent = true;

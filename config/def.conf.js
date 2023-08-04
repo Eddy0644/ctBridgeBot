@@ -46,18 +46,13 @@ module.exports = {
             ["😣", "[Panic]"],
             ["😮‍💨", "[Sigh]"],
         ],
-        wxNameFilterStrategy:{
-            useBlackList:true,
-            blackList:[
+        wxNameFilterStrategy: {
+            useBlackList: true,
+            blackList: [
                 "美团",
             ],
-            whiteList:[
-
-            ]
+            whiteList: [],
         },
-        wxNameExcludeKeyword: [
-            "美团",
-        ],
         wxMessageExcludeKeyword: [],
         wxPostOriginBlackList: [
             "不接收消息的订阅号名称列表",
