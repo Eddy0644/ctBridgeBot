@@ -73,7 +73,10 @@ module.exports = (param) => {
             // conLogger: log4js.getLogger("con"),
             ctLogger: log4js.getLogger("ct"),
         };
-        if (param === "logger") return part1;
+        if (param === "lite") return part1;
+
+        //// End Lite Version ---------------
+
         const part2 = {
             wxMsgLogger: log4js.getLogger("wxMsg"),
 
@@ -204,7 +207,8 @@ module.exports = (param) => {
                     return (nowDate - targetTS < maxDelay);
                 }
             },
-        }
+        };
+
         return {...part1, ...part2};
     }
 }

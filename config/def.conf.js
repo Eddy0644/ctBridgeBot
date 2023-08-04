@@ -2,12 +2,12 @@
 // -------------
 // Configuration File, updated upon every version update:
 module.exports = {
-    ctToken: '',
+    ctToken: 'EnterYourCtTokenHere',
     tgbot: {
         botToken: '5000:ABCDE',
         botName: '@your_bot_username_ending_in_bot',
         tgAllowList: [5000000001],
-        webHookUrlPrefix: 'https://baidu.com/webHook',
+        webHookUrlPrefix: 'https://your.domain/webHook',
         statusReport: {
             switch: "off",
             host: "your.domain",

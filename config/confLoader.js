@@ -2,7 +2,7 @@
 
 const defaultConfig = require("./def.conf.js");
 const userConfigPath = require("path").join(__dirname, "user.conf.js");
-const {ctLogger} = require('../src/common')();
+const {ctLogger} = require('../src/common')("lite");
 
 function mergeConfig(defaultConfig, userConfig) {
 
