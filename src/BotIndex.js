@@ -958,7 +958,7 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     msgDef.forceMerge = true;
                     // Force override {name} to let system message seems better
-                    name = `<System>`;
+                    name = secret.misc.titleForSystemMsgInRoom;
                 }
             }
 

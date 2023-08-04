@@ -82,7 +82,13 @@ module.exports = {
             tgid: -100000, threadId: 777,
             urlPrefix: "https://t.me/c/000/777/",
         },
+
+        // =0,
+        deliverRedPacket: 0,
+
+        titleForSystemMsgInRoom: "(System)",
         addSelfReplyTimestampToRoomMergedMsg: false,
+
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
     },
