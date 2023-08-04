@@ -706,6 +706,28 @@ async function onWxMessage(msg) {
             }
             if (!ahead) wxLogger.debug(`来自[${topic}]的消息因名称不符合任何白名单关键词，未递送： ${contentSub}`);
         }
+
+        // Some code must be executed before filtering; so put it here. --------------
+        if (room) {
+            if (name === topic) if (content.includes("Red packet") || content.includes("红包")) {
+                const strategy = secret.misc.deliverRoomRedPacketInAdvance;
+                if (strategy === 0) {
+                    content = `[🧧]`;
+                } else {
+                    if (strategy === 2 || (strategy === 1 && ahead)) {
+                        // satisfy the condition for deliver in advance
+                        await tgBotDo.SendMessage(msg.receiver, `[🧧 in ${topic}]`, 0);
+                        tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
+                        return;
+                    }
+                    tgLogger.info(`A Red Packet Message not handled! topic=(${topic}), strategy=(${strategy}), ahead=(${ahead})`);
+                    return;
+                }
+            }
+        } else {
+
+        }
+        // End up the filtering block. -----------------
         if (!ahead) return;
     }
 
@@ -952,17 +974,12 @@ async function onWxMessage(msg) {
 
             // 群系统消息中先过滤出红包
             if (name === topic) {
-                if (content.includes("Red packet") || content.includes("红包")) {
-                    await tgBotDo.SendMessage(msg.receiver, `[🧧 in ${topic}]`, 0);
-                    tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
-                    return;
-                } else {
-                    // Did system message have any impact on me? So silent them.
-                    msgDef.isSilent = true;
-                    msgDef.forceMerge = true;
-                    // Force override {name} to let system message seems better
-                    name = secret.misc.titleForSystemMsgInRoom;
-                }
+                // Did system message have any impact on me? No. So silent them.
+                msgDef.isSilent = true;
+                msgDef.forceMerge = true;
+                // Force override {name} to let system message seems better
+                name = secret.misc.titleForSystemMsgInRoom;
+
             }
 
             try {

@@ -83,8 +83,8 @@ module.exports = {
             urlPrefix: "https://t.me/c/000/777/",
         },
 
-        // =0,
-        deliverRedPacket: 0,
+        // 0, no advance (default); 1, only not filtered; 2, apply on all room chats
+        deliverRoomRedPacketInAdvance: 2,
 
         titleForSystemMsgInRoom: "(System)",
         addSelfReplyTimestampToRoomMergedMsg: false,
