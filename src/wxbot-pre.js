@@ -39,7 +39,7 @@ module.exports = (tgbot, wxLogger) => {
                 needLoginStat = 1;
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
-                        with(secret.notification)await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
+                        with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
                         wxLogger.info(`Already send re-login reminder to user.`);
                     } else {
 

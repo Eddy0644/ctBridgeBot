@@ -766,7 +766,6 @@ async function onWxMessage(msg) {
         }
 
         content = content.replace("[收到一条微信转账消息，请在手机上查看]", titles.recvTransfer);
-
         content = content.replace("[收到一条暂不支持的消息类型，请在手机上查看]", titles.msgTypeNotSupported);
 
         content = mod.tgProcessor.filterMsgText(content);
@@ -787,7 +786,7 @@ async function onWxMessage(msg) {
                 msgDef.isSilent = true;
                 msgDef.forceMerge = true;
                 // Force override {name} to let system message seems better
-                name = secret.misc.titleForSystemMsgInRoom;
+                name = titles.systemMsgInRoom;
             }
 
             try {

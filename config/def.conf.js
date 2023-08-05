@@ -113,8 +113,8 @@ module.exports = {
         switch: "off",
         password: "----",
         webFilePathPrefix: "/Bucket____name/ctBotAsset/stickerTG",
-        urlPathPrefix: "/ctBotAsset/stickerTG",
         operatorName: "----",
-        urlPrefix: "https://---.test.upcdn.net"
+        urlPrefix: "https://---.test.upcdn.net",
+        urlPathPrefix: "/ctBotAsset/stickerTG"
     }
 };
