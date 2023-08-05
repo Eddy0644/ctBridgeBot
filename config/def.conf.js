@@ -90,7 +90,13 @@ module.exports = {
 
         titles: {
             systemMsgInRoom: "(System)",
+            // If you want to disable any of these replacements here,
+            // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
+            // original text here, to suppress replacing here.
             unsupportedSticker: "{--🧩--}",
+            recvCall: "{📞📲}",
+            recvTransfer: "{💰📥}",
+            msgTypeNotSupported: "{📩❎, 👉📱}",
         },
 
         addSelfReplyTimestampToRoomMergedMsg: false,

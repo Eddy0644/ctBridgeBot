@@ -763,30 +763,32 @@ async function onWxMessage(msg) {
 
     // 正式处理消息--------------
     if (msg.DType > 0) {
+        const titles = secret.misc.titles;
         if (content.includes("[收到了一个表情，请在手机上查看]") || content.includes("[Send an emoji, view it on mobile]")) {
-
             msgDef.isSilent = true;
-            // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊
-            const replTo = secret.misc.titles.unsupportedSticker;
-            content = content.replace("[收到了一个表情，请在手机上查看]", replTo).replace("[Send an emoji, view it on mobile]", replTo);
+            // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
+            content = content.replace("[收到了一个表情，请在手机上查看]", titles.unsupportedSticker).replace("[Send an emoji, view it on mobile]", titles.unsupportedSticker);
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
         if (content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")) {
-            content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", "{📞📲}");
+            content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", titles.recvCall);
             await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias));
-            wxLogger.debug(`Sending call from (${alias}) to User.`);
+            wxLogger.debug(`Sending call notification from (${alias}) to User.`);
         }
 
-        content = content.replace("[收到一条微信转账消息，请在手机上查看]", "{💰📥}");
+        content = content.replace("[收到一条微信转账消息，请在手机上查看]", titles.recvTransfer);
+
+        content = content.replace("[收到一条暂不支持的消息类型，请在手机上查看]", titles.msgTypeNotSupported);
 
         content = mod.tgProcessor.filterMsgText(content);
 
         for (const pair of secret.filtering.wxContentReplaceList) {
             if (content.includes(pair[0])) {
-                wxLogger.trace(`Replaced wx emoji ${pair[0]} to corresponding universal emoji. (config :->secret.js)`);
+                wxLogger.trace(`Replaced wx (${pair[0]}) to (${pair[1]})`);
                 while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
             }
         }
+
         if (room) {
             // 是群消息 - - - - - - - -
 
