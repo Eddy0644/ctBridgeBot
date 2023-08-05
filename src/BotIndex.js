@@ -949,7 +949,9 @@ async function onWxMessage(msg) {
         if (content.includes("[收到了一个表情，请在手机上查看]") || content.includes("[Send an emoji, view it on mobile]")) {
 
             msgDef.isSilent = true;
-            content = content.replace("[收到了一个表情，请在手机上查看]", "{--🫥--}").replace("[Send an emoji, view it on mobile]", "{--🫥--}");
+            // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊
+            const replTo = secret.misc.titles.unsupportedSticker;
+            content = content.replace("[收到了一个表情，请在手机上查看]", replTo).replace("[Send an emoji, view it on mobile]", replTo);
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
         if (content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")) {

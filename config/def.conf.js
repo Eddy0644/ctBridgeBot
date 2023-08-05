@@ -88,7 +88,10 @@ module.exports = {
         // 0, no advance (default); 1, only not filtered; 2, apply on all room chats
         deliverRoomRedPacketInAdvance: 2,
 
-        titleForSystemMsgInRoom: "(System)",
+        titles: {
+            systemMsgInRoom: "(System)",
+            unsupportedSticker: "{--🧩--}",
+        },
 
         addSelfReplyTimestampToRoomMergedMsg: false,
 
