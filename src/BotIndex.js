@@ -435,197 +435,9 @@ async function onTGMsg(tgMsg) {
     }
 
 }
-
 tgbot.on('message', onTGMsg);
 
-async function softReboot(reason) {
-    const userDo = (reason === "User triggered.") || (reason === "");
-    // state.lastOpt = null;
-    state.last = {};
-    state.prePerson = {
-        tgMsg: null,
-        name: "",
-        msgText: "",
-    };
-    state.preRoom = {
-        firstWord: "",
-        tgMsg: null,
-        name: "",
-        msgText: "",
-        lastTalker: "",
-    };
-    timerDataCount = 6;
-    msgMergeFailCount = 6;
-    globalNetworkErrorCount = 3;
 
-    await mod.tgProcessor.replyWithTips("softReboot", null, userDo ? 6 : 25, reason);
-}
-
-async function generateInfo() {
-    const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-    const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
-    let log = (await fs.promises.readFile(path)).toString();
-    const logText = (log.length > 5000) ? log.substring(log.length - 5000, log.length) : log;
-    const dtInfo = {
-        status: true,
-        lastOperation: state.last ? state.last.s : 0,
-        _last: state.last,
-        runningTime: process.uptime(),
-        poolToDelete: state.poolToDelete,
-        logText: logText.replaceAll(`<img class="qqemoji`, `&lt;img class="qqemoji`),
-    };
-    const postData = JSON.stringify(dtInfo);
-    let options;
-    with (secret.tgbot.statusReport) options = {
-        hostname: host || "",
-        port: 443,
-        path: (path || "") + '?s=create',
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            // 'Content-Length': postData.length
-        }
-    };
-    let url;
-    if (secret.tgbot.statusReport.switch !== "on") return `Local-Version statusReport:\n<code>${statusReport}</code>`;
-    try {
-        const res = await new Promise((resolve, reject) => {
-            const req = require('https').request(options, (res) => {
-                let data = '';
-                res.on('data', (chunk) => data += chunk);
-                res.on('end', () => resolve(data));
-            });
-            req.on('error', (err) => reject(err));
-
-            req.write(postData);
-            req.end();
-        });
-
-        url = `https://${options.hostname}${secret.tgbot.statusReport[1]}?n=${res}`;
-        if (res.indexOf('<html') > -1) throw new Error("Upload error");
-    } catch (e) {
-        ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
-        url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
-    }
-
-    return url;
-}
-
-async function deliverTGToWx(tgMsg, tg_media, media_type) {
-    const s = tgMsg.matched.s;
-    if (s === 0 && state.last.s !== STypes.Chat) {
-        await tgBotDo.SendMessage(tgMsg.matched, "🛠 Sorry, but media sending in non-C2C chat without last chatter is not implemented.", true);
-        // TODO: to be implemented: media sending in non-C2C chat with reply_to
-        return;
-    }
-    const receiver = s === 0 ? null : (s === 1 ? tgMsg.matched.p : null);
-    tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
-    const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
-    // noinspection JSUnresolvedVariable
-    const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-    const rand1 = Math.random();
-    // noinspection JSUnresolvedVariable
-    let file_path = './downloaded/' + (
-        (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
-            (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-                (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
-                    (`videoTG/${rand1}.mp4`))));
-    // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
-    // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
-    const action = `upload_${media_type}`;
-    tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
-    tgLogger.trace(`file_path is ${file_path}.`);
-    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.tgbot.botToken}/${fileCloudPath}`, file_path);
-    let packed;
-    if (tgMsg.sticker) {
-        tgLogger.trace(`Invoking TG sticker pre-process...`);
-        if (secret.upyun.switch !== "on") {
-            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled. Message not delivered.`);
-            await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
-            return;
-        }
-        file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
-    }
-    packed = await FileBox.fromFile(file_path);
-
-    tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
-    if (s === 0) {
-        await state.last.target.say(packed);
-        ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
-    } else {
-        // C2C media delivery
-        with (tgMsg.matched) {
-            const wxTarget = await getC2CPeer(tgMsg.matched);
-            if (!wxTarget) return;
-            await wxTarget.say(packed);
-            ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
-        }
-    }
-    tgBotDo.SendChatAction("choose_sticker", receiver).then(tgBotDo.empty)
-    return true;
-}
-
-async function findSbInWechat(token, alterMsgId = 0, receiver) {
-    const s = alterMsgId === 0;
-    tgBotDo.SendChatAction("typing", receiver).then(tgBotDo.empty)
-    // Find below as: 1.name of Person 2.name of topic 3.alias of person
-    let wxFinded1 = await wxbot.Contact.find({name: token});
-    const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
-    wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
-    if (wxFinded1) {
-        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
-        if (s) {
-            const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
-                true, "HTML");
-            await addToMsgMappings(tgMsg2.message_id, wxFinded1, null, receiver);
-        } else await addToMsgMappings(alterMsgId, wxFinded1, null, receiver);
-    } else if (wxFinded2) {
-        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
-        if (s) {
-            const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
-                true, "HTML");
-            await addToMsgMappings(tgMsg2.message_id, wxFinded2, null, receiver);
-        } else await addToMsgMappings(alterMsgId, wxFinded2, null, receiver);
-    } else {
-        await tgBotDo.SendMessage(receiver, `🔍Found Failed. Please enter token again or /clear.`);
-        return false;
-    }
-    return true;
-
-}
-
-async function getC2CPeer(pair) {
-    const p = pair.p;
-    let wxTarget;
-    if (!state.C2CTemp[p.tgid]) {
-        if (p.wx[1] === true) {
-            wxTarget = await wxbot.Room.find({topic: p.wx[0]});
-        } else {
-            wxTarget = await wxbot.Contact.find({name: p.wx[0]});
-            wxTarget = wxTarget || await wxbot.Contact.find({alias: p.wx[0]});
-        }
-        if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
-        else state.C2CTemp[p.tgid] = wxTarget;
-    } else wxTarget = state.C2CTemp[p.tgid];
-    return wxTarget;
-}
-
-async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
-    // if(talker instanceof wxbot.Message)
-    const name = (talker.name ? (await talker.alias() || await talker.name()) : await talker.topic());
-    msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
-    if (state.lockTarget === 0 && !receiver.wx) state.last = {
-        s: STypes.Chat,
-        target: talker,
-        name,
-        wxMsg: wxMsg || null,
-        isFile: (wxMsg && wxMsg.filesize) || null,
-        receiver
-    };
-    ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
-}
-
-// 监听对话
 async function onWxMessage(msg) {
     // 按照距今时间来排除wechaty重启时的重复消息
     // sometimes there are delayed messages `by wechaty` for 150s age or more, so altered this.
@@ -1038,6 +850,7 @@ async function onWxMessage(msg) {
         // if (haveLock) talkerLocks.pop();
     }
 }
+wxbot.on('message', onWxMessage);
 
 async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const contact = msg.talker();
@@ -1150,6 +963,193 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     }
 }
 
+async function softReboot(reason) {
+    const userDo = (reason === "User triggered.") || (reason === "");
+    // state.lastOpt = null;
+    state.last = {};
+    state.prePerson = {
+        tgMsg: null,
+        name: "",
+        msgText: "",
+    };
+    state.preRoom = {
+        firstWord: "",
+        tgMsg: null,
+        name: "",
+        msgText: "",
+        lastTalker: "",
+    };
+    timerDataCount = 6;
+    msgMergeFailCount = 6;
+    globalNetworkErrorCount = 3;
+
+    await mod.tgProcessor.replyWithTips("softReboot", null, userDo ? 6 : 25, reason);
+}
+
+async function generateInfo() {
+    const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+    const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
+    let log = (await fs.promises.readFile(path)).toString();
+    const logText = (log.length > 5000) ? log.substring(log.length - 5000, log.length) : log;
+    const dtInfo = {
+        status: true,
+        lastOperation: state.last ? state.last.s : 0,
+        _last: state.last,
+        runningTime: process.uptime(),
+        poolToDelete: state.poolToDelete,
+        logText: logText.replaceAll(`<img class="qqemoji`, `&lt;img class="qqemoji`),
+    };
+    const postData = JSON.stringify(dtInfo);
+    let options;
+    with (secret.tgbot.statusReport) options = {
+        hostname: host || "",
+        port: 443,
+        path: (path || "") + '?s=create',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            // 'Content-Length': postData.length
+        }
+    };
+    let url;
+    if (secret.tgbot.statusReport.switch !== "on") return `Local-Version statusReport:\n<code>${statusReport}</code>`;
+    try {
+        const res = await new Promise((resolve, reject) => {
+            const req = require('https').request(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => resolve(data));
+            });
+            req.on('error', (err) => reject(err));
+
+            req.write(postData);
+            req.end();
+        });
+
+        url = `https://${options.hostname}${secret.tgbot.statusReport[1]}?n=${res}`;
+        if (res.indexOf('<html') > -1) throw new Error("Upload error");
+    } catch (e) {
+        ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
+        url = `Error occurred while uploading report. Here is fallback version.\n${statusReport}`;
+    }
+
+    return url;
+}
+
+async function deliverTGToWx(tgMsg, tg_media, media_type) {
+    const s = tgMsg.matched.s;
+    if (s === 0 && state.last.s !== STypes.Chat) {
+        await tgBotDo.SendMessage(tgMsg.matched, "🛠 Sorry, but media sending in non-C2C chat without last chatter is not implemented.", true);
+        // TODO: to be implemented: media sending in non-C2C chat with reply_to
+        return;
+    }
+    const receiver = s === 0 ? null : (s === 1 ? tgMsg.matched.p : null);
+    tgLogger.trace(`Received TG ${media_type} message, proceeding...`);
+    const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
+    // noinspection JSUnresolvedVariable
+    const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
+    const rand1 = Math.random();
+    // noinspection JSUnresolvedVariable
+    let file_path = './downloaded/' + (
+        (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
+            (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
+                (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
+                    (`videoTG/${rand1}.mp4`))));
+    // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
+    // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
+    const action = `upload_${media_type}`;
+    tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
+    tgLogger.trace(`file_path is ${file_path}.`);
+    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.tgbot.botToken}/${fileCloudPath}`, file_path);
+    let packed;
+    if (tgMsg.sticker) {
+        tgLogger.trace(`Invoking TG sticker pre-process...`);
+        if (secret.upyun.switch !== "on") {
+            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled. Message not delivered.`);
+            await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
+            return;
+        }
+        file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
+    }
+    packed = await FileBox.fromFile(file_path);
+
+    tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
+    if (s === 0) {
+        await state.last.target.say(packed);
+        ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
+    } else {
+        // C2C media delivery
+        with (tgMsg.matched) {
+            const wxTarget = await getC2CPeer(tgMsg.matched);
+            if (!wxTarget) return;
+            await wxTarget.say(packed);
+            ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
+        }
+    }
+    tgBotDo.SendChatAction("choose_sticker", receiver).then(tgBotDo.empty)
+    return true;
+}
+
+async function findSbInWechat(token, alterMsgId = 0, receiver) {
+    const s = alterMsgId === 0;
+    tgBotDo.SendChatAction("typing", receiver).then(tgBotDo.empty)
+    // Find below as: 1.name of Person 2.name of topic 3.alias of person
+    let wxFinded1 = await wxbot.Contact.find({name: token});
+    const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
+    wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
+    if (wxFinded1) {
+        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
+        if (s) {
+            const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
+                true, "HTML");
+            await addToMsgMappings(tgMsg2.message_id, wxFinded1, null, receiver);
+        } else await addToMsgMappings(alterMsgId, wxFinded1, null, receiver);
+    } else if (wxFinded2) {
+        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
+        if (s) {
+            const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
+                true, "HTML");
+            await addToMsgMappings(tgMsg2.message_id, wxFinded2, null, receiver);
+        } else await addToMsgMappings(alterMsgId, wxFinded2, null, receiver);
+    } else {
+        await tgBotDo.SendMessage(receiver, `🔍Found Failed. Please enter token again or /clear.`);
+        return false;
+    }
+    return true;
+
+}
+
+async function getC2CPeer(pair) {
+    const p = pair.p;
+    let wxTarget;
+    if (!state.C2CTemp[p.tgid]) {
+        if (p.wx[1] === true) {
+            wxTarget = await wxbot.Room.find({topic: p.wx[0]});
+        } else {
+            wxTarget = await wxbot.Contact.find({name: p.wx[0]});
+            wxTarget = wxTarget || await wxbot.Contact.find({alias: p.wx[0]});
+        }
+        if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
+        else state.C2CTemp[p.tgid] = wxTarget;
+    } else wxTarget = state.C2CTemp[p.tgid];
+    return wxTarget;
+}
+
+async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
+    // if(talker instanceof wxbot.Message)
+    const name = (talker.name ? (await talker.alias() || await talker.name()) : await talker.topic());
+    msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
+    if (state.lockTarget === 0 && !receiver.wx) state.last = {
+        s: STypes.Chat,
+        target: talker,
+        name,
+        wxMsg: wxMsg || null,
+        isFile: (wxMsg && wxMsg.filesize) || null,
+        receiver
+    };
+    ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
+}
+
 async function getFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
@@ -1174,8 +1174,6 @@ async function getFileFromWx(msg) {
     }
 }
 
-
-wxbot.on('message', onWxMessage);
 wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
 });
