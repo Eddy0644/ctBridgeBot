@@ -126,9 +126,17 @@ function filterMsgText(inText) {
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
-    if (/"(.{1,10}): \n?(.*?)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
+
+    // process wx original emoji
+    while (/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/.test(txt)) {
+        const match = txt.match(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
+        txt = txt.replaceAll(match[0], match[2].replace("_web", ""));
+    }
+
+    // process quoted message
+    if (/"(.{1,10}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
-        const match = txt.match(/"(.{1,10}): \n?(.*?)"\n- - - - - - - - - - - - - - -\n/);
+        const match = txt.match(/"(.{1,10}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 8) ? match[2].substring(0, 8) : match[2];
         // In clip, we do not need <br/> to be revealed

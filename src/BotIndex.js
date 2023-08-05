@@ -736,18 +736,7 @@ async function onWxMessage(msg) {
 
     // Pre-processor for Text
     if (msg.DType === DTypes.Text || msg.DType === DTypes.Push) {
-        // 处理未解析的emoji表情
-        const WxEmojiRegex = new RegExp(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
-        let replaceFlag = 1;
-        while (replaceFlag > 0) try {
-            WxEmojiRegex.lastIndex = 0;
-            let execResult = WxEmojiRegex.exec(content);
-            wxLogger.trace('WxEmoji Replaced,' + JSON.stringify([execResult[1], execResult[2]]));
-            content = content.replace(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/, `${execResult[2]}`);
-            content = content.replace("_web", "");
-        } catch (e) {
-            replaceFlag = 0;
-        }
+
         // 筛选出公众号等通知消息，归类为Push
         for (const testPair of CommonData.wxPushMsgFilterWord) {
             let s = 0;
