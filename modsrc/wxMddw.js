@@ -17,6 +17,10 @@ async function handlePushMessage(rawContent, msg, name) {
         wxLogger.debug(`This Post matches BlackList, no delivery!`);
         return 0;
     }
+    if (secret.misc.deliverPushMessage === false) {
+        wxLogger.debug(`A Post Collection from (${name}) is skipped by denial config.`);
+        return 0;
+    }
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
     if (ps === false) return 0;
     // noinspection JSUnresolvedVariable
@@ -37,7 +41,6 @@ async function handlePushMessage(rawContent, msg, name) {
         // Success
         {
             const s = secret.misc.deliverPushMessage;
-            if (s === false) return 0;
             if (s === true) msg.receiver = secret.class.push;
             if (s.tgid) msg.receiver = s;
         }

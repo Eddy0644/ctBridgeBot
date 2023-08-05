@@ -435,6 +435,7 @@ async function onTGMsg(tgMsg) {
     }
 
 }
+
 tgbot.on('message', onTGMsg);
 
 
@@ -566,6 +567,10 @@ async function onWxMessage(msg) {
             // const fileExt = msg.payload.filename.substring(19, 22) || ".gif";
             const fileExt = ".gif";
             const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+            if (secret.misc.deliverSticker === false) {
+                wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
+                return;
+            }
             const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
             {
                 // filter duplicate-in-period sticker
@@ -850,6 +855,7 @@ async function onWxMessage(msg) {
         // if (haveLock) talkerLocks.pop();
     }
 }
+
 wxbot.on('message', onWxMessage);
 
 async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
