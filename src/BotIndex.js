@@ -505,7 +505,7 @@ async function onWxMessage(msg) {
             ahead = true;
             for (const keyword of strategy.blackList) {
                 if (originName.includes(keyword)) {
-                    wxLogger.debug(`来自[${topic}]的消息因名称符合黑名单关键词“${keyword}”，未递送： ${contentSub}`);
+                    wxLogger.debug(`来自[${originName}]的消息因名称符合黑名单关键词“${keyword}”，未递送： ${contentSub}`);
                     ahead = false;
                 }
             }
