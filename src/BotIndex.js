@@ -6,7 +6,7 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
-const stickerLib = new DataStorage("./stickers.json");
+const stickerLib = new DataStorage("./config/stickers.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg,
     CommonData, STypes,
@@ -600,9 +600,9 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     ahead = false;
                     msg.md5 = md5.substring(0, 3);
-                    if (typeof fetched[0] === "number") content = `<a href="${stickerUrlPrefix}${fetched[0]}">[Sticker](${msg.md5})</a>`;
+                    if (typeof fetched.msgId === "number") content = secret.misc.titles.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
                     else content = `[${md5.substring(0, 3)} of #sticker]`;
-                    ctLogger.trace(`Found former msg for '${md5}', replacing to Text. (${content})`);
+                    ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
                 }
             }
             if (ahead && !fs.existsSync(cEPath)) {
@@ -613,7 +613,9 @@ async function onWxMessage(msg) {
                     msg.md5 = md5.substring(0, 3);
                     const stream = fs.createReadStream(msg.downloadedPath);
                     const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
-                    await stickerLib.set(md5, [tgMsg2.message_id, cEPath]);
+                    await stickerLib.set(md5, {
+                        msgId: tgMsg2.message_id, path: cEPath, hint: "",
+                    });
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
                     content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
@@ -623,7 +625,9 @@ async function onWxMessage(msg) {
                 msg.md5 = md5.substring(0, 3);
                 const stream = fs.createReadStream(msg.downloadedPath);
                 const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
-                await stickerLib.set(md5, [tgMsg2.message_id, cEPath]);
+                await stickerLib.set(md5, {
+                    msgId: tgMsg2.message_id, path: cEPath, hint: "",
+                });
                 msg.DType = DTypes.Text;
                 msgDef.isSilent = true;
                 content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;

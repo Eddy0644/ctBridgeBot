@@ -90,6 +90,11 @@ module.exports = {
 
         titles: {
             systemMsgInRoom: "(System)",
+
+            // If a sticker with former delivery found, then run this func to get formatted text.
+            stickerWithLink: (url_p, flib, md5) => flib.hint?
+                `🌁(#${md5}) <i>${flib.hint}</i>`:`<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
+
             // If you want to disable any of these replacements here,
             // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
             // original text here, to suppress replacing here.
