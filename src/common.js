@@ -153,6 +153,7 @@ module.exports = (param) => {
                     });
                 },
                 httpsCurl: async function (url) {
+                    if (url.includes("YourBarkAddress")) return log4js.getLogger("ct").debug(`A notification was skipped because bark notification not configured!\n${url}`);
                     return new Promise((resolve) => {
                         https.get(url, {}, () => {
                             resolve("SUCCESS");
