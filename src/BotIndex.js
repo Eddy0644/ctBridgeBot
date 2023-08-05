@@ -6,7 +6,7 @@ const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
-const stickerLib = new DataStorage("./config/stickers.json");
+const stickerLib = new DataStorage("./sticker_v2.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg,
     CommonData, STypes,
