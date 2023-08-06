@@ -109,6 +109,19 @@ async function onTGMsg(tgMsg) {
                 }
             }
             if (tgMsg.chat.id === def.tgid) tgMsg.matched = {s: 0};
+            if ((secret.misc.deliverSticker !== false) && tgMsg.chat.id === secret.misc.deliverSticker.tgid) {
+                const repl = tgMsg.reply_to_message;
+                if (repl && (repl.animation || repl.document) && /#sticker ([0-9,a-f]{3})/.test(repl.caption)) {
+                    // Is almost same origin as sticker channel and is reply to a sticker
+                    // Ready to modify sticker's hint
+                    const matched = repl.caption.match(/#sticker ([0-9,a-f]{3})/), md5 = matched[1];
+                    const flib = await stickerLib.get(md5);
+                    flib.hint = tgMsg.text;
+                    await stickerLib.set(md5, flib);
+                    await mod.tgProcessor.replyWithTips("alreadySetStickerHint", secret.misc.deliverSticker, 10, md5);
+                    return;
+                }
+            }
             if (tgMsg.chat.id === push.tgid) {
                 tgLogger.info(`Messages sent to Push channel are ignored now.`);
                 return; // tgMsg.matched = {s: 2};

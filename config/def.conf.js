@@ -80,6 +80,8 @@ module.exports = {
         // s=true, send to Push channel
         // s=<tgTargetObj>, send to this target
         deliverPushMessage: true,
+
+        // as there are additional information, this section can NOT be set to 'true'.
         deliverSticker: {
             tgid: -100000, threadId: 777,
             urlPrefix: "https://t.me/c/000/777/",

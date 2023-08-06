@@ -79,6 +79,9 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
         case "audioProcessFail":
             message = `Audio transcript request received, But error occurred when processing.`;
             break;
+        case "alreadySetStickerHint":
+            message = `Successfully set hint for Sticker (${additional})!`;
+            break;
         case "notEnabledInConfig":
             message = `One or more action interrupted as something is not configured properly. See log for detail.`;
             break;
