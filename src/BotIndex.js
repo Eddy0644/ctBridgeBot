@@ -457,7 +457,9 @@ async function onWxMessage(msg) {
     // sometimes there are delayed messages `by wechaty` for 150s age or more, so altered this.
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
-    LogWxMsg(msg, isMessageDropped);
+    if (!secret.misc.savePostRawDataInDetailedLog && msg.type() === wxbot.Message.Type.Attachment && msg.payload.filename.endsWith(".49") && msg.payload.text.length > 8000) {
+        // This post message will be delivered, but not save to log, as only one of them would take up to 40KB in log file.
+    } else LogWxMsg(msg, isMessageDropped);
     if (isMessageDropped) return;
 
     //基本信息提取-------------

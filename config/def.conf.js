@@ -94,8 +94,8 @@ module.exports = {
             systemMsgInRoom: "(System)",
 
             // If a sticker with former delivery found, then run this func to get formatted text.
-            stickerWithLink: (url_p, flib, md5) => flib.hint?
-                `🌁(<code>${md5}</code>) <i>${flib.hint}</i>`:`<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
+            stickerWithLink: (url_p, flib, md5) => flib.hint ?
+                `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
 
             // If you want to disable any of these replacements here,
             // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
@@ -107,6 +107,10 @@ module.exports = {
         },
 
         addSelfReplyTimestampToRoomMergedMsg: false,
+
+        // If set to false, all post message will no longer save to log,
+        // as only one of posts would take up to 40KB in log file.
+        savePostRawDataInDetailedLog: false,
 
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
