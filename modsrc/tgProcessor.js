@@ -8,8 +8,9 @@ let env;
 //     const {} = env;
 // }
 
-async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
+async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", isText) {
     const {state, defLogger, tgBotDo, secret} = env;
+    if (!isText) content = `[Image]`; // Temporary override in this func
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : name);
@@ -36,7 +37,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into former.`);
-        return true;
+        return isText; // !isText?false:true
     } else {
         // Ready to modify first msg, refactoring it.
         ///* C2C msg do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
@@ -46,7 +47,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "") {
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into first.`);
-        return true;
+        return isText;
     }
 }
 

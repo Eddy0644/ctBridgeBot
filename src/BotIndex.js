@@ -812,8 +812,8 @@ async function onWxMessage(msg) {
             }
 
             try {
-                if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge) && msg.DType === DTypes.Text) {
-                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name);
+                if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge)) {
+                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
@@ -850,8 +850,8 @@ async function onWxMessage(msg) {
                 const _ = state.prePerson;
                 const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
-                if (_.name === name && nowDate - lastDate < 15 && msg.DType === DTypes.Text) {
-                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name);
+                if (_.name === name && nowDate - lastDate < 15) {
+                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else
                     msg.prePersonNeedUpdate = true;
@@ -1026,7 +1026,6 @@ async function generateInfo() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            // 'Content-Length': postData.length
         }
     };
     let url;
@@ -1039,7 +1038,6 @@ async function generateInfo() {
                 res.on('end', () => resolve(data));
             });
             req.on('error', (err) => reject(err));
-
             req.write(postData);
             req.end();
         });
