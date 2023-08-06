@@ -8,9 +8,8 @@ const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
 const stickerLib = new DataStorage("./sticker_v2.json");
 const {
-    wxLogger, tgLogger, ctLogger, LogWxMsg,
-    CommonData, STypes,
-    downloader, processor,
+    wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
+    CommonData, STypes, downloader, processor,
 } = require('./common')();
 
 let msgMappings = [];

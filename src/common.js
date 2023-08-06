@@ -48,7 +48,7 @@ log4js.configure({
     },
     categories: {
         "default": {appenders: ["dateLog"], level: "debug"},
-        "con": {appenders: ["console"], level: "debug"},
+        "con": {appenders: ["console"], level: "trace"},
         "ct": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
         "wx": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
         "wxMsg": {appenders: ["wxMsgDetail_dateLog"], level: "info"},
@@ -70,7 +70,7 @@ module.exports = (param) => {
         const part1 = {
             wxLogger: log4js.getLogger("wx"),
             tgLogger: log4js.getLogger("tg"),
-            // conLogger: log4js.getLogger("con"),
+            conLogger: log4js.getLogger("con"),
             ctLogger: log4js.getLogger("ct"),
         };
         if (param === "lite") return part1;
