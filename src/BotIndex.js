@@ -176,7 +176,7 @@ async function onTGMsg(tgMsg) {
                     const file_id = orig.photo[orig.photo.length - 1].file_id;
                     const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
                     if (res !== true) {
-                        const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Error occurred while setting spoiler for former message :\n<code>${res}</code> ', true, "HTML");
+                        const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Error occurred while setting spoiler for former message :\n<code>${res}</code> `, true, "HTML");
                         state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     }
                 }//todo else is text
@@ -562,7 +562,7 @@ async function onWxMessage(msg) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
         msgDef.isSilent = true;
-        content = `❌ [ ${recalledMessage} ] was recalled.`;
+        content = `❌ [ ${`${recalledMessage}`.replaceAll("<","&lt;").replaceAll(">","&gt;")} ] was recalled.`;
         msg.DType = DTypes.Text;
     }
 
@@ -603,10 +603,13 @@ async function onWxMessage(msg) {
             let ahead = true;
             {
                 // skip stickers that already sent and replace them into text
-                const fetched = await stickerLib.get(md5);
+                const fetched = await stickerLib.get(md5.substring(0, 3));
                 if (fetched === null) {
                     ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
                 } else {
+                    if (fetched.full_md5 !== md5) {
+                        ctLogger.warn(`Sticker Collision Detected! If you rely on sticker delivery then you should check it.\n${md5} is short for (${fetched.full_md5}).`);
+                    }
                     // change msg detail so that could be used in merging or so.
                     // content = `[${md5.substring(0, 3)} of #sticker]`;
                     msg.DType = DTypes.Text;
@@ -626,8 +629,8 @@ async function onWxMessage(msg) {
                     msg.md5 = md5.substring(0, 3);
                     const stream = fs.createReadStream(msg.downloadedPath);
                     const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
-                    await stickerLib.set(md5, {
-                        msgId: tgMsg2.message_id, path: cEPath, hint: "",
+                    await stickerLib.set(msg.md5, {
+                        msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
                     });
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
@@ -638,8 +641,8 @@ async function onWxMessage(msg) {
                 msg.md5 = md5.substring(0, 3);
                 const stream = fs.createReadStream(msg.downloadedPath);
                 const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
-                await stickerLib.set(md5, {
-                    msgId: tgMsg2.message_id, path: cEPath, hint: "",
+                await stickerLib.set(msg.md5, {
+                    msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
                 });
                 msg.DType = DTypes.Text;
                 msgDef.isSilent = true;
