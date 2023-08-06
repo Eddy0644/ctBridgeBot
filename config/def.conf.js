@@ -76,6 +76,12 @@ module.exports = {
         // s=<function>, the func. would be executed with parameter 'count'
         changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
 
+        // define how many seconds between this and last msg, to stop merging
+        mergeResetTimeout: {
+            forPerson: 20,
+            forGroup: 80,
+        },
+
         // s=false, no delivery
         // s=true, send to Push channel
         // s=<tgTargetObj>, send to this target

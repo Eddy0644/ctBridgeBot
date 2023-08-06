@@ -563,7 +563,7 @@ async function onWxMessage(msg) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
         msgDef.isSilent = true;
-        content = `❌ [ ${`${recalledMessage}`} ] was recalled.`;
+        content = `❌ [ ${recalledMessage} ] was recalled.`;
         // content = `❌ [ ${`${recalledMessage}`.replaceAll("<", "&lt;").replaceAll(">", "&gt;")} ] was recalled.`;
         msg.DType = DTypes.Text;
     }
@@ -850,7 +850,7 @@ async function onWxMessage(msg) {
                 const _ = state.prePerson;
                 const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
-                if (_.name === name && nowDate - lastDate < 15) {
+                if (_.name === name && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
                     const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else

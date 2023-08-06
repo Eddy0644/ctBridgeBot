@@ -6,6 +6,8 @@ const https = require("https");
 const http = require("http");
 const agentEr = require("https-proxy-agent");
 
+const secret = require('../config/confLoader');
+
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "%[[%d{dd/hh:mm:ss}] %1.1p/%c%] %m";
 
@@ -196,7 +198,7 @@ module.exports = (param) => {
                         // noinspection JSUnresolvedVariable
                         const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                         const nowDate = dayjs().unix();
-                        return (_.topic === targetTopic && (nowDate - lastDate < 60 || forceMerge));
+                        return (_.topic === targetTopic && (nowDate - lastDate < secret.misc.mergeResetTimeout.forGroup || forceMerge));
                     } catch (e) {
                         console.info(`Maybe bug here!`);
                         log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
