@@ -557,12 +557,13 @@ async function onWxMessage(msg) {
         if (!ahead) return;
     }
 
-    //已撤回的消息单独处理
+    // 已撤回的消息单独处理
     if (msg.type() === wxbot.Message.Type.Recalled) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
         msgDef.isSilent = true;
-        content = `❌ [ ${`${recalledMessage}`.replaceAll("<","&lt;").replaceAll(">","&gt;")} ] was recalled.`;
+        content = `❌ [ ${`${recalledMessage}`} ] was recalled.`;
+        // content = `❌ [ ${`${recalledMessage}`.replaceAll("<", "&lt;").replaceAll(">", "&gt;")} ] was recalled.`;
         msg.DType = DTypes.Text;
     }
 

@@ -158,12 +158,21 @@ function filterMsgText(inText) {
     // txt = txt.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
     // This function helps reduce the possibility of mistaken substitution
     txt = (t => {
+        // Improved regular expression to support Chinese characters.
         // noinspection RegExpUnnecessaryNonCapturingGroup
-        const tagRegex = /<\/?(\w+)(?:\s+[\w\-.:]+\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))*\s*\/?>/g;
+        const tagRegex = /<\/?([\w\u4e00-\u9fff]+)(?:\s+[\w\-.:]+\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))*\s*\/?>/g;
         // Replace all HTML entities with &__; except excluded tags.
         return t.replace(tagRegex, (match, tagName) => {
-            const isExcludedTag = ['a', 'b', 'i', 'pre', 'code', 'u', 's'].includes(tagName.toLowerCase());
-            return isExcludedTag ? match : match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            const isExcludedTag = ['a', 'b', 'i', 'u', 's'].includes(tagName.toLowerCase());
+            if (!match.includes('/')) {
+                // Incomplete tag, encode it.
+                return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            } else if (!isExcludedTag) {
+                // Complete tag with non-excluded tag name, encode it.
+                return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+            // Excluded tag, leave it unchanged.
+            return match;
         });
     })(txt);
     return txt + appender;
