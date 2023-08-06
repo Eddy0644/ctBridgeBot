@@ -166,10 +166,7 @@ function filterMsgText(inText) {
         // Replace all HTML entities with &__; except excluded tags.
         return t.replace(tagRegex, (match, tagName) => {
             const isExcludedTag = ['a', 'b', 'i', 'u', 's'].includes(tagName.toLowerCase());
-            if (!match.includes('/')) {
-                // Incomplete tag, encode it.
-                return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            } else if (!isExcludedTag) {
+            if (!isExcludedTag) {
                 // Complete tag with non-excluded tag name, encode it.
                 return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             }

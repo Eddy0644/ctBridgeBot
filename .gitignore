@@ -10,16 +10,14 @@
 /build/
 /bin/
 *node_modules
-*/log
 .env
-*.memory-card.json
 package-lock.json
 */downloaded/*
-/default.log
+*.memory-card.json
 /log/
 /proxy.js
 /config/secret.js
-/.idea/*
+
 /config/cli.pem
 /config/srv.pem
 /stickers.json
@@ -28,3 +26,6 @@ package-lock.json
 /IGNT/
 /config/user.conf.js
 /downloaded/*/*
+/config/web.pem
+/.run/*
+/1tq.sh
