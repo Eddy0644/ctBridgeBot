@@ -192,13 +192,13 @@ module.exports = (param) => {
             },
 
             processor: {
-                isPreRoomValid: function (preRoomState, targetTopic, forceMerge = false) {
+                isPreRoomValid: function (preRoomState, targetTopic, forceMerge = false,timeout) {
                     try {
                         const _ = preRoomState;
                         // noinspection JSUnresolvedVariable
                         const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                         const nowDate = dayjs().unix();
-                        return (_.topic === targetTopic && (nowDate - lastDate < secret.misc.mergeResetTimeout.forGroup || forceMerge));
+                        return (_.topic === targetTopic && (nowDate - lastDate < timeout || forceMerge));
                     } catch (e) {
                         console.info(`Maybe bug here!`);
                         log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);

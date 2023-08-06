@@ -812,7 +812,7 @@ async function onWxMessage(msg) {
             }
 
             try {
-                if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge)) {
+                if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
                     const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else msg.preRoomNeedUpdate = true;

@@ -2,6 +2,7 @@
 
 const dayjs = require("dayjs");
 const {tgBotDo} = require("../src/tgbot-pre");
+const secret = require("../config/confLoader");
 let env;
 
 // async function a() {
@@ -107,7 +108,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
 async function addSelfReplyTs(name = null) {
     const {processor, state, defLogger, secret} = env;
     if (name === null) name = state.last.name;
-    if (processor.isPreRoomValid(state.preRoom, name) && state.preRoom.firstWord === "") {
+    if (processor.isPreRoomValid(state.preRoom, name, secret.misc.mergeResetTimeout.forGroup) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n← [${dayjs().format("H:mm:ss")}] {My Reply}`;
