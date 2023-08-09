@@ -23,7 +23,7 @@ if (isPolling) {
         },
         request: {proxy: require("../proxy")}
     });
-    tgbot.setWebHook(`${secret.tgbot.webHookUrlPrefix}${process.argv[3]}/bot${secret.tgbot.botToken}`, {
+    tgbot.setWebHook(secret.bundle.getTGBotHookURL(process.argv[3]), {
         drop_pending_updates: true
         /* Please, remove this line after the bot have ability to control messages between instances!!! */
     }).then(() => {});

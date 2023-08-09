@@ -38,6 +38,7 @@ const config = loadConfig();
 
 config.bundle = {
     getTGFileURL: suffix => `https://api.telegram.org/file/bot${config.tgbot.botToken}/${suffix}`,
+    getTGBotHookURL: suffix => `${config.tgbot.webHookUrlPrefix}${suffix}/bot${config.tgbot.botToken}`,
 };
 
 module.exports = config;
