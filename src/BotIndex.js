@@ -458,7 +458,7 @@ async function onWxMessage(msg) {
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     if (!secret.misc.savePostRawDataInDetailedLog && msg.type() === wxbot.Message.Type.Attachment && msg.payload.filename.endsWith(".49") && msg.payload.text.length > 8000) {
         // This post message will be delivered, but not save to log, as only one of them would take up to 40KB in log file.
-    } else LogWxMsg(msg, isMessageDropped);
+    } else LogWxMsg(msg, isMessageDropped ? 1 : 0);
     if (isMessageDropped) return;
 
     //基本信息提取-------------
@@ -563,8 +563,9 @@ async function onWxMessage(msg) {
         const recalledMessage = await msg.toRecalled();
         wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
         msgDef.isSilent = true;
-        content = `❌ [ ${recalledMessage} ] was recalled.`;
-        // content = `❌ [ ${`${recalledMessage}`.replaceAll("<", "&lt;").replaceAll(">", "&gt;")} ] was recalled.`;
+        LogWxMsg(recalledMessage, 2);
+        // content = `❌ [ ${recalledMessage} ] was recalled.`;
+        content = `[${`${recalledMessage}`.replaceAll("Message#", "")}] was recalled.`;
         msg.DType = DTypes.Text;
     }
 

@@ -6,8 +6,6 @@ const https = require("https");
 const http = require("http");
 const agentEr = require("https-proxy-agent");
 
-const secret = require('../config/confLoader');
-
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "%[[%d{dd/hh:mm:ss}] %1.1p/%c%] %m";
 
@@ -82,13 +80,15 @@ module.exports = (param) => {
         const part2 = {
             wxMsgLogger: log4js.getLogger("wxMsg"),
 
-            LogWxMsg: (msg, isMessageDropped) => {
+            LogWxMsg: (msg, type) => {
+                const isMessageDropped = type === 1;
+                if (type === 2) part2.wxMsgLogger.info(`--------A recalled message is below: -------------`);
                 let msgToStr = `${msg}`;
                 // fixed here to avoid contamination of <img of HTML.
-                log4js.getLogger("wx").trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
+                part1.wxLogger.trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
                     `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`
                     + (isMessageDropped ? '\n' : ''));
-                log4js.getLogger("wxMsg").info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
+                part2.wxMsgLogger.info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
             [🗣talkerId=${msg.payload.talkerId}][👥roomId=${msg.payload.roomId}]
             [filename=${msg.payload.filename}]
             ${msg.payload.text}
