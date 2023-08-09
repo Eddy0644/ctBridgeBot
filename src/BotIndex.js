@@ -141,10 +141,9 @@ async function onTGMsg(tgMsg) {
 
         if (tgMsg.voice) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
-            // noinspection JSUnresolvedVariable
-            const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
             tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
-            await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
+            // noinspection JSUnresolvedVariable
+            await downloader.httpsWithProxy(secret.bundle.getTGFileURL((await tgbot.getFile(tgMsg.voice.file_id)).file_path), file_path);
             try {
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
                 if (res !== "") await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
@@ -631,7 +630,7 @@ async function onWxMessage(msg) {
                     wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
                     msg.md5 = md5.substring(0, 3);
                     const stream = fs.createReadStream(msg.downloadedPath);
-                    const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
+                    const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, false);
                     await stickerLib.set(msg.md5, {
                         msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
                     });
@@ -643,7 +642,7 @@ async function onWxMessage(msg) {
                 msg.downloadedPath = cEPath;
                 msg.md5 = md5.substring(0, 3);
                 const stream = fs.createReadStream(msg.downloadedPath);
-                const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, true);
+                const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, false);
                 await stickerLib.set(msg.md5, {
                     msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
                 });

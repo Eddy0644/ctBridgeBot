@@ -65,7 +65,7 @@ const tgBotDo = {
             logErrorDuringTGSend(e);
         });
     },
-    SendAnimation: async (msg, path, isSilent = false, hasSpoiler = true) => {
+    SendAnimation: async (msg, path, isSilent = false, hasSpoiler = false) => {
         await delay(100);
         let form = {
             caption: msg,
