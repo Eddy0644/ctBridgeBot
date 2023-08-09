@@ -155,7 +155,12 @@ module.exports = (param) => {
                     });
                 },
                 httpsCurl: async function (url) {
-                    if (url.includes("YourBarkAddress")) return log4js.getLogger("ct").debug(`A notification was skipped because bark notification not configured!\n${url}`);
+                    if (url.includes("YourBarkAddress")) {
+                        log4js.getLogger("ct").debug(`A notification was skipped because bark notification not configured!\n${url}`);
+                        return new Promise((resolve) => {
+                            resolve(0);
+                        });
+                    }
                     return new Promise((resolve) => {
                         https.get(url, {}, () => {
                             resolve("SUCCESS");
@@ -192,7 +197,7 @@ module.exports = (param) => {
             },
 
             processor: {
-                isPreRoomValid: function (preRoomState, targetTopic, forceMerge = false,timeout) {
+                isPreRoomValid: function (preRoomState, targetTopic, forceMerge = false, timeout) {
                     try {
                         const _ = preRoomState;
                         // noinspection JSUnresolvedVariable

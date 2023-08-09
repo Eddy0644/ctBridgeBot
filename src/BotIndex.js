@@ -784,7 +784,12 @@ async function onWxMessage(msg) {
         }
         if (content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")) {
             content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", titles.recvCall);
-            await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias));
+            if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
+                // here means no valid notification hook is set
+            } else {
+                msgDef.isSilent = true;
+                // give a silent delivery for this message
+            }
             wxLogger.debug(`Sending call notification from (${alias}) to User.`);
         }
 
