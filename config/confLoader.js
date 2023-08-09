@@ -34,4 +34,10 @@ function loadConfig() {
     }
 }
 
-module.exports = loadConfig();
+const config = loadConfig();
+
+config.bundle = {
+    getTGFileURL: suffix => `https://api.telegram.org/file/bot${config.tgbot.botToken}/${suffix}`,
+};
+
+module.exports = config;

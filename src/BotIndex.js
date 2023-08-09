@@ -143,8 +143,8 @@ async function onTGMsg(tgMsg) {
             let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
             // noinspection JSUnresolvedVariable
             const fileCloudPath = (await tgbot.getFile(tgMsg.voice.file_id)).file_path;
-            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty)
-            await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.tgbot.botToken}/${fileCloudPath}`, file_path);
+            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
+            await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
             try {
                 const res = await mod.audioRecognition.tg_audio_VTT(file_path);
                 if (res !== "") await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
@@ -1082,7 +1082,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
-    await downloader.httpsWithProxy(`https://api.telegram.org/file/bot${secret.tgbot.botToken}/${fileCloudPath}`, file_path);
+    await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
