@@ -72,7 +72,7 @@ async function onTGMsg(tgMsg) {
         tgLogger.info("tgDisable lock is now OFF.");
         return;
     } else if (tgDisabled) {
-        tgLogger.debug(`During TG-side lock ON, recv: ${Object.getOwnPropertyNames(tgMsg).join(', ')}`);
+        tgLogger.debug(`During TG-side lock ON, recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);
         return;
     }
     try {
@@ -265,9 +265,7 @@ async function onTGMsg(tgMsg) {
                 return;
             }
             case "/spoiler": {
-                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Invalid pointer! Are you missing target? ', true, null);
-                state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
-                return;
+                return await mod.tgProcessor.replyWithTips("replyCmdToNormal", tgMsg.matched, 6);
             }
             case "/lock": {
                 state.lockTarget = state.lockTarget ? 0 : 1;
@@ -275,7 +273,7 @@ async function onTGMsg(tgMsg) {
             }
             case "/help": {
                 //TODO return help message; save to memory; recall the former msg when command executed
-
+                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Command List\n/disable & /enable : temporary cutoff tg reaction.\n/info : Generate Program status to cloud or in text.`, true, null);
                 return;
             }
             case "/slet": {
@@ -944,7 +942,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 仅文本或未分类
             // Plain text or not classified
             if (msg.DType !== DTypes.Push) {
-                wxLogger.debug(`Received Text from (${tmplc}), "${content}"`);
+                wxLogger.debug(`Received Text from (${tmplc}).`);
                 tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
             }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
