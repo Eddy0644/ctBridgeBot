@@ -67,7 +67,7 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text === "/enable" && tgDisabled) {
+    if (tgMsg.text && tgMsg.text === "/msg_ein" && tgDisabled) {
         tgDisabled = 0;
         tgLogger.info("tgDisable lock is now OFF.");
         return;
@@ -818,7 +818,7 @@ async function tgCommandHandler(tgMsg) {
             };
             return;
         }
-        case "/disable": {
+        case "/msg_aus": {
             tgDisabled = 1;
             tgLogger.info("tgDisable lock is now ON!");
             // add feedback here to let user notice

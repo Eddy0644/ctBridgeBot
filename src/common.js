@@ -109,17 +109,19 @@ module.exports = (param) => {
                     {command: '/help', description: 'Get a detail of more bot commands.'},
                     // {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
                     // {command: '/info', description: 'Get current system variables'},
-                    // {command: '/placeholder', description: 'Display a placeholder to hide former messages'},
+                    // {command: '/placeholder', description: 'Display a placeholder to hide former messages | Output a blank message to cover your sensitive data.'},
                     // {command: '/slet', description: 'Set last explicit talker as last talker.'},
                     // {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
                     {command: '/lock', description: 'Lock the target talker to avoid being interrupted.'},
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                     // Add more commands as needed
                 ],
+    // Explanation: ein -> on, aus -> off
                 TGBotHelpCmdText: `Command List\n
-/disable & /enable : temporary cutoff tg reaction.
-/info : Generate Program status to cloud or in text.
-/placeholder : Output a blank message to cover your sensitive data.`,
+/msg_aus & /msg_ein : temporary cutoff tg reaction.
+/info : generate status report.
+/placeholder : Output a blank message.
+/sync_ein & /sync_aus : control message sync.`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],
                     ["关于公众号进行帐号迁移的说明"],
