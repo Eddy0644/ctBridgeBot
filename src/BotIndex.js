@@ -9,7 +9,7 @@ const DataStorage = require('./dataStorage.api');
 const stickerLib = new DataStorage("./sticker_v2.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
-    CommonData, STypes, downloader, processor,
+    CommonData, STypes, downloader, processor, delay
 } = require('./common')();
 
 let msgMappings = [];
@@ -234,7 +234,6 @@ async function onTGMsg(tgMsg) {
                     break;
                 }
             }
-            wxLogger.debug(`Got an attempt to find [${findToken}] in WeChat.`);
             const res = await findSbInWechat(findToken, 0, tgMsg.matched);
             if (res) await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             return;
@@ -1044,7 +1043,7 @@ async function generateInfo() {
             req.end();
         });
 
-        url = `https://${options.hostname}${secret.tgbot.statusReport[1]}?n=${res}`;
+        with (secret.tgbot.statusReport) url = `https://${host}${path || ""}?n=${res}`;
         if (res.indexOf('<html') > -1) throw new Error("Upload error");
     } catch (e) {
         ctLogger.info(`Error occurred while uploading report. ${e.toString()}`);
@@ -1122,6 +1121,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
 }
 
 async function findSbInWechat(token, alterMsgId = 0, receiver) {
+    wxLogger.debug(`Got an attempt to find [${token}] in WeChat.`);
     const s = alterMsgId === 0;
     tgBotDo.SendChatAction("typing", receiver).then(tgBotDo.empty)
     // Find below as: 1.name of Person 2.name of topic 3.alias of person
@@ -1136,7 +1136,7 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
             await addToMsgMappings(tgMsg2.message_id, wxFinded1, null, receiver);
         } else await addToMsgMappings(alterMsgId, wxFinded1, null, receiver);
     } else if (wxFinded2) {
-        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
+        wxLogger.debug(`Found room chat successfully, sending...(view log for detail)`);
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
                 true, "HTML");
@@ -1151,7 +1151,12 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
 }
 
 async function getC2CPeer(pair) {
-    //TODO check if bot is online
+    if (process.uptime() < 20) {
+        // start additional process for delivery-before-program-run
+        // Not using !wxbot.logonoff()
+        while (process.uptime() < 20) await delay(2500);
+        ctLogger.debug(`Running delayed C2C peer find operation...`);
+    }
     const p = pair.p;
     let wxTarget;
     if (!state.C2CTemp[p.tgid]) {
@@ -1198,12 +1203,10 @@ async function getFileFromWx(msg) {
                 tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
                 return "sendFailure";
             } else return "Success";
-        } else {
-            wxLogger.info(`Detected as File, But download failed. Ignoring.`);
         }
     } catch (e) {
-        wxLogger.info(`Detected as File, But download failed. Ignoring.`);
     }
+    wxLogger.info(`Detected as File, But download failed. Ignoring.`);
 }
 
 wxbot.on('login', async user => {
