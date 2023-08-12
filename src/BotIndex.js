@@ -232,80 +232,8 @@ async function onTGMsg(tgMsg) {
             // !tgMsg.reply_to_message  ------------------
         }
         // Not replacing the original tgMsg.text here
-        switch (tgMsg.text.replace(secret.tgbot.botName, "")) {
-            case "/clear": {
-                // if (tgMsg.matched.s === 1) {
-                //     return await mod.tgProcessor.replyWithTips("globalCmdToC2C", tgMsg.chat.id, 6);
-                // }
-                tgLogger.trace(`Invoking softReboot by user operation...`);
-                await softReboot("User triggered.");
-                return;
-            }
-            case "/find": {
-                let form = {
-                    // reply_markup: JSON.stringify({
-                    //     keyboard: secret.quickFindList,
-                    //     is_persistent: false,
-                    //     resize_keyboard: true,
-                    //     one_time_keyboard: true
-                    // })
-                };
-                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Entering find mode; enter token to find it.', true, null, form);
-                // state.lastOpt = ["/find", tgMsg2];
-                state.last = {
-                    s: STypes.FindMode,
-                    userPrompt1: tgMsg,
-                    botPrompt1: tgMsg2,
-                };
-                return;
-            }
-            case "/disable": {
-                tgDisabled = 1;
-                tgLogger.info("tgDisable lock is now ON!");
-                return;
-            }
-            case "/spoiler": {
-                return await mod.tgProcessor.replyWithTips("replyCmdToNormal", tgMsg.matched, 6);
-            }
-            case "/lock": {
-                state.lockTarget = state.lockTarget ? 0 : 1;
-                return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.lockTarget);
-            }
-            case "/help": {
-                //TODO return help message; save to memory; recall the former msg when command executed
-                const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Command List\n/disable & /enable : temporary cutoff tg reaction.\n/info : Generate Program status to cloud or in text.`, true, null);
-                return;
-            }
-            case "/slet": {
-                // Set last explicit talker as last talker.
-                const talker = state.lastExplicitTalker;
-                const name = await (talker.name ? talker.name() : talker.topic());
-                ctLogger.trace(`forking lastExplicitTalker...`);
-                state.last = {
-                    s: STypes.Chat,
-                    target: state.lastExplicitTalker,
-                    name: name,
-                    wxMsg: null,
-                    isFile: null
-                };
-                await tgBotDo.SendMessage(tgMsg.matched, `Set "${name}" as last Talker By user operation.`, true, null);
-                await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
-                return;
-            }
-            case "/info": {
-                tgLogger.debug(`Generating tgBot status by user operation...`);
-                // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-                tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
-                const statusReport = await generateInfo();
-                await tgBotDo.SendMessage(tgMsg.matched, statusReport, true, null);
-                const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
-                tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
-                return;
-            }
-            case "/placeholder": {
-                await tgBotDo.SendMessage(tgMsg.matched, secret.misc.tgCmdPlaceholder, true);
-                return;
-            }
+        if (tgMsg.text.startsWith("/")) {
+            const res = await tgCommandHandler(tgMsg);
         }
 
         if (tgMsg.text.indexOf("F$") === 0) {
@@ -872,6 +800,87 @@ async function onWxMessage(msg) {
 }
 
 wxbot.on('message', onWxMessage);
+
+async function tgCommandHandler(tgMsg) {
+    // return 1 means not processed by this handler, continue to next steps
+    switch (tgMsg.text.replace(secret.tgbot.botName, "")) {
+        case "/clear": {
+            //TODO soft reboot need remaster
+            tgLogger.trace(`Invoking softReboot by user operation...`);
+            await softReboot("User triggered.");
+            return;
+        }
+        case "/find": {
+            // This is not a recommended way to search target
+            let form = {
+                // reply_markup: JSON.stringify({
+                //     keyboard: secret.quickFindList,
+                //     is_persistent: false,
+                //     resize_keyboard: true,
+                //     one_time_keyboard: true
+                // })
+            };
+            const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, 'Entering find mode; enter token to find it.', true, null, form);
+            // state.lastOpt = ["/find", tgMsg2];
+            state.last = {
+                s: STypes.FindMode,
+                userPrompt1: tgMsg,
+                botPrompt1: tgMsg2,
+            };
+            return;
+        }
+        case "/disable": {
+            tgDisabled = 1;
+            tgLogger.info("tgDisable lock is now ON!");
+            // add feedback here to let user notice
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            return;
+        }
+        case "/spoiler": {
+            // There should not be this, warning
+            return await mod.tgProcessor.replyWithTips("replyCmdToNormal", tgMsg.matched, 6);
+        }
+        case "/lock": {
+            state.lockTarget = state.lockTarget ? 0 : 1;
+            return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.lockTarget);
+        }
+        case "/help": {
+            //TODO save stat to memory; recall the former msg when command executed
+            const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText, true, null);
+            return;
+        }
+        case "/slet": {
+            // Set last explicit talker as last talker.
+            const talker = state.lastExplicitTalker;
+            const name = await (talker.name ? talker.name() : talker.topic());
+            ctLogger.trace(`Forking lastExplicitTalker...`);
+            state.last = {
+                s: STypes.Chat,
+                target: state.lastExplicitTalker,
+                name: name,
+                wxMsg: null,
+                isFile: null
+            };
+            await tgBotDo.SendMessage(tgMsg.matched, `Set "${name}" as last Talker By user operation.`, true, null);
+            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
+            return;
+        }
+        case "/info": {
+            tgLogger.debug(`Generating tgBot status by user operation...`);
+            // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            const statusReport = await generateInfo();
+            await tgBotDo.SendMessage(tgMsg.matched, statusReport, true, null);
+            const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
+            tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+            return;
+        }
+        case "/placeholder": {
+            await tgBotDo.SendMessage(tgMsg.matched, secret.misc.tgCmdPlaceholder, true);
+            return;
+        }
+    }
+}
 
 async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const contact = msg.talker();
