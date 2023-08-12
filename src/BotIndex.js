@@ -127,7 +127,7 @@ async function onTGMsg(tgMsg) {
             }
 
             if (!tgMsg.matched) {
-                // Reject this message
+                // Skip this message, as no match found
                 tgLogger.debug(`Received message from unauthorized origin. Skipping...`);
                 tgLogger.trace(`Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title})`);
                 return;
@@ -138,33 +138,22 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.sticker) return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
         if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
         if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
+        if (tgMsg.voice) return await deliverTGToWx(tgMsg, tgMsg.voice, "voice!");
 
-        if (tgMsg.voice) {
-            let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
-            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
-            // noinspection JSUnresolvedVariable
-            await downloader.httpsWithProxy(secret.bundle.getTGFileURL((await tgbot.getFile(tgMsg.voice.file_id)).file_path), file_path);
-            try {
-                const res = await mod.audioRecognition.tg_audio_VTT(file_path);
-                if (res !== "") await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
-            } catch (e) {
-                await mod.tgProcessor.replyWithTips("audioProcessFail", tgMsg.matched);
-            }
-            return;
-        }
-
-        // Non-text messages must be filtered ahead of them !---------------
+        // Non-text messages must be filtered ahead of below !---------------
         if (!tgMsg.text) {
             tgLogger.info(`A TG message with empty text has passed through text Processor. Skipped.`);
             tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
             return;
         }
+
         for (const pair of secret.filtering.tgContentReplaceList) {
             if (tgMsg.text.includes(pair[0])) {
-                tgLogger.trace(`Replacing pattern '${pair[0]}' to '${pair[1]}'. (config :->secret.js)`);
-                while (tgMsg.text.includes(pair[0])) tgMsg.text = tgMsg.text.replace(pair[0], pair[1]);
+                tgLogger.trace(`Replacing pattern '${pair[0]}' to '${pair[1]}'.`);
+                tgMsg.text = tgMsg.text.replaceAll(pair[0], pair[1]);
             }
         }
+
         if (tgMsg.reply_to_message) {
             // TODO refactor this area
             if (tgMsg.text === "/spoiler") {
@@ -245,7 +234,7 @@ async function onTGMsg(tgMsg) {
                     break;
                 }
             }
-            wxLogger.trace(`Got an attempt to find [${findToken}] in WeChat.`);
+            wxLogger.debug(`Got an attempt to find [${findToken}] in WeChat.`);
             const res = await findSbInWechat(findToken, 0, tgMsg.matched);
             if (res) await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             return;
@@ -259,12 +248,14 @@ async function onTGMsg(tgMsg) {
             if (tgMsg.text.length > 5) {
                 chars = parseInt(tgMsg.text.replace("/log ", ""));
             }
+            // Output log in markdown mono-width mode
             await tgBotDo.SendMessage(tgMsg.matched, `\`\`\`${log.substring(log.length - chars, log.length)}\`\`\``, true, "MarkdownV2");
             return;
         }
 
 
         //inline find someone: (priority higher than ops below)
+        // TODO change here when classified is on
         if (tgMsg.matched.s === 0 && /(::|：：)\n/.test(tgMsg.text)) {
             const match = tgMsg.text.match(/^(.{1,12})(::|：：)\n/);
             if (match && match[1]) {
@@ -299,7 +290,6 @@ async function onTGMsg(tgMsg) {
 
         // Last process block  ------------------------
         if (tgMsg.matched.s === 1) {
-
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
             await wxTarget.say(tgMsg.text);
@@ -1065,6 +1055,19 @@ async function generateInfo() {
 }
 
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
+    if (media_type === "voice!") {
+        let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
+        tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
+        // noinspection JSUnresolvedVariable
+        await downloader.httpsWithProxy(secret.bundle.getTGFileURL((await tgbot.getFile(tgMsg.voice.file_id)).file_path), file_path);
+        try {
+            const res = await mod.audioRecognition.tg_audio_VTT(file_path);
+            if (res !== "") await tgBotDo.SendMessage(tgMsg.matched, `Transcript:\n<code>${res}</code>`, true, "HTML");
+        } catch (e) {
+            await mod.tgProcessor.replyWithTips("audioProcessFail", tgMsg.matched);
+        }
+        return;
+    }
     const s = tgMsg.matched.s;
     if (s === 0 && state.last.s !== STypes.Chat) {
         await tgBotDo.SendMessage(tgMsg.matched, "🛠 Sorry, but media sending in non-C2C chat without last chatter is not implemented.", true);
@@ -1148,6 +1151,7 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
 }
 
 async function getC2CPeer(pair) {
+    //TODO check if bot is online
     const p = pair.p;
     let wxTarget;
     if (!state.C2CTemp[p.tgid]) {
