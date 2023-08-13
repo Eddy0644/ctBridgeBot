@@ -229,6 +229,7 @@ async function onTGMsg(tgMsg) {
         // Not replacing the original tgMsg.text here
         if (tgMsg.text.startsWith("/")) {
             const res = await tgCommandHandler(tgMsg);
+            if (!res) return;
         }
 
         if (tgMsg.text.indexOf("F$") === 0) {
@@ -958,7 +959,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 仅文本或未分类
             // Plain text or not classified
             if (msg.DType !== DTypes.Push) {
-                wxLogger.debug(`Received Text from (${tmplc}).`);
+                wxLogger.debug(`Received Text from (${tmplc}), "${content}".`);
                 tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
             }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
