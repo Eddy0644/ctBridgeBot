@@ -14,7 +14,7 @@ const {
 
 let msgMappings = [];
 const state = {
-    vars: {
+    v: { // variables
         msgDropState: 0,
         syncSelfState: 0,
         timerDataCount: 6,
@@ -22,7 +22,10 @@ const state = {
         globalNetworkErrorCount: 3,
     },
     last: {},
-    lastExplicitTalker: null,
+    s: { // session
+        lastExplicitTalker: null,
+        helpCmdInstance: null,
+    },
     lockTarget: 0,
     preRoom: {
         firstWord: "",
@@ -73,11 +76,11 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text === "/msg_ein" && state.vars.msgDropState) {
-        state.vars.msgDropState = 0;
+    if (tgMsg.text && tgMsg.text === "/msg_ein" && state.v.msgDropState) {
+        state.v.msgDropState = 0;
         tgLogger.info("tg Msg drop lock is now OFF.");
         return;
-    } else if (state.vars.msgDropState) {
+    } else if (state.v.msgDropState) {
         tgLogger.debug(`During TG-side lock ON, recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);
         return;
     }
@@ -204,7 +207,7 @@ async function onTGMsg(tgMsg) {
                                 state.lockTarget = 0;
                                 ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
                             }
-                            state.lastExplicitTalker = mapPair[1];
+                            state.s.lastExplicitTalker = mapPair[1];
                             await mapPair[1].say(tgMsg.text);
                             if (mapPair[2] === state.preRoom.topic) {
                                 // the explicit talker - Room matches preRoom
@@ -401,7 +404,7 @@ async function onWxMessage(msg) {
     msg.DType = DTypes.Default;
 
     // 提前drop自己的消息, 避免deliver无用消息
-    if (state.vars.syncSelfState !== 1) if (room) {
+    if (state.v.syncSelfState !== 1) if (room) {
         if (msg.self() && topic !== "CyTest") return;
     } else {
         if (msg.self()) return;
@@ -751,8 +754,8 @@ async function onWxMessage(msg) {
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
-                state.vars.msgMergeFailCount--;
-                if (state.vars.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
+                state.v.msgMergeFailCount--;
+                if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             // 系统消息如拍一拍
             // if (name === topic) {
@@ -790,8 +793,8 @@ async function onWxMessage(msg) {
                     msg.prePersonNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.prePerson)}`);
-                state.vars.msgMergeFailCount--;
-                if (state.vars.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
+                state.v.msgMergeFailCount--;
+                if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             const deliverResult = await deliverWxToTG(false, msg, content, msgDef);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg, msg.receiver);
@@ -805,7 +808,16 @@ wxbot.on('message', onWxMessage);
 
 async function tgCommandHandler(tgMsg) {
     // return 1 means not processed by this handler, continue to next steps
+    if (state.s.helpCmdInstance) {
+        // former /help instance found, try to delete it...
+        await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.receiver);
+        state.s.helpCmdInstance = null;
+    }
     switch (tgMsg.text.replace(secret.tgbot.botName, "")) {
+        case "/help": {
+            state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText, true, null);
+            return;
+        }
         case "/clear": {
             //TODO soft reboot need remaster
             tgLogger.trace(`Invoking softReboot by user operation...`);
@@ -832,20 +844,20 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/msg_aus": {
-            state.vars.msgDropState = 1;
+            state.v.msgDropState = 1;
             tgLogger.info("tg Msg drop lock is now ON!");
             // add feedback here to let user notice
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             return;
         }
         case "/sync_ein": {
-            state.vars.syncSelfState = 1;
+            state.v.syncSelfState = 1;
             tgLogger.info("Self-message sync lock is now ON!");
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             return;
         }
         case "/sync_aus": {
-            state.vars.syncSelfState = 0;
+            state.v.syncSelfState = 0;
             tgLogger.info("Self-message sync lock is now OFF.");
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             return;
@@ -858,19 +870,14 @@ async function tgCommandHandler(tgMsg) {
             state.lockTarget = state.lockTarget ? 0 : 1;
             return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.lockTarget);
         }
-        case "/help": {
-            //TODO save stat to memory; recall the former msg when command executed
-            const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText, true, null);
-            return;
-        }
         case "/slet": {
             // Set last explicit talker as last talker.
-            const talker = state.lastExplicitTalker;
+            const talker = state.s.lastExplicitTalker;
             const name = await (talker.name ? talker.name() : talker.topic());
             ctLogger.trace(`Forking lastExplicitTalker...`);
             state.last = {
                 s: STypes.Chat,
-                target: state.lastExplicitTalker,
+                target: state.s.lastExplicitTalker,
                 name: name,
                 wxMsg: null,
                 isFile: null
@@ -891,6 +898,10 @@ async function tgCommandHandler(tgMsg) {
         }
         case "/placeholder": {
             await tgBotDo.SendMessage(tgMsg.matched, secret.misc.tgCmdPlaceholder, true);
+            return;
+        }
+        default: {
+            tgLogger.info(`Unrecognized command; skipped.`);
             return;
         }
     }
@@ -995,7 +1006,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         }
 
         if (!tgMsg) {
-            if (state.vars.globalNetworkErrorCount-- < 0) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
+            if (state.v.globalNetworkErrorCount-- < 0) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
             // todo add undelivered pool
             tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
@@ -1023,9 +1034,9 @@ async function softReboot(reason) {
         msgText: "",
         lastTalker: "",
     };
-    state.vars.timerDataCount = 6;
-    state.vars.msgMergeFailCount = 6;
-    state.vars.globalNetworkErrorCount = 3;
+    state.v.timerDataCount = 6;
+    state.v.msgMergeFailCount = 6;
+    state.v.globalNetworkErrorCount = 3;
 
     await mod.tgProcessor.replyWithTips("softReboot", null, userDo ? 6 : 25, reason);
 }
@@ -1257,9 +1268,9 @@ const timerData = setInterval(async () => {
             }
         }
     } catch (e) {
-        ctLogger.info(`An exception happened within timer function with x${state.vars.timerDataCount} reset cycles left:\n\t${e.toString()}`);
-        state.vars.timerDataCount--;
-        if (state.vars.timerDataCount < 0) clearInterval(timerData);
+        ctLogger.info(`An exception happened within timer function with x${state.v.timerDataCount} reset cycles left:\n\t${e.toString()}`);
+        state.v.timerDataCount--;
+        if (state.v.timerDataCount < 0) clearInterval(timerData);
     }
 }, 5000);
 
