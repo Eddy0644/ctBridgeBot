@@ -681,17 +681,23 @@ async function onWxMessage(msg) {
     // Pre-processor for Text
     if (msg.DType === DTypes.Text || msg.DType === DTypes.Push) {
 
-        // 筛选出公众号等通知消息，归类为Push
-        for (const testPair of CommonData.wxPushMsgFilterWord) {
-            let s = 0;
-            for (const testPairElement of testPair) {
-                if (!content.includes(testPairElement)) s = 1;
+        if (contact.type() === wxbot.Contact.Type.Official) {
+            msg.DType = DTypes.Push;
+            wxLogger.trace(`wechaty says this is from Official Account, so classified into Push channel.`);
+        } else
+            // 筛选出公众号等通知消息，归类为Push
+            for (const testPair of CommonData.wxPushMsgFilterWord) {
+                let s = 0;
+                for (const testPairElement of testPair) {
+                    if (!content.includes(testPairElement)) s = 1;
+                }
+                if (s === 0) {
+                    msg.DType = DTypes.Push;
+                    wxLogger.trace(`Matched pair in wxPushMsgFilterWord, so classified into Push channel.`);
+                    break;
+                }
+
             }
-            if (s === 0) {
-                msg.DType = DTypes.Push;
-                break;
-            }
-        }
     }
 
     // 正式处理消息--------------
