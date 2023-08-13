@@ -13,8 +13,14 @@ const {
 } = require('./common')();
 
 let msgMappings = [];
-let tgDisabled = 0;
 const state = {
+    vars: {
+        msgDropState: 0,
+        syncSelfState: 0,
+        timerDataCount: 6,
+        msgMergeFailCount: 6,
+        globalNetworkErrorCount: 3,
+    },
     last: {},
     lastExplicitTalker: null,
     lockTarget: 0,
@@ -67,11 +73,11 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text === "/msg_ein" && tgDisabled) {
-        tgDisabled = 0;
-        tgLogger.info("tgDisable lock is now OFF.");
+    if (tgMsg.text && tgMsg.text === "/msg_ein" && state.vars.msgDropState) {
+        state.vars.msgDropState = 0;
+        tgLogger.info("tg Msg drop lock is now OFF.");
         return;
-    } else if (tgDisabled) {
+    } else if (state.vars.msgDropState) {
         tgLogger.debug(`During TG-side lock ON, recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);
         return;
     }
@@ -393,8 +399,8 @@ async function onWxMessage(msg) {
 
     msg.DType = DTypes.Default;
 
-    //提前筛选出自己的消息,避免多次下载媒体
-    if (room) {
+    // 提前drop自己的消息, 避免deliver无用消息
+    if (state.vars.syncSelfState !== 1) if (room) {
         if (msg.self() && topic !== "CyTest") return;
     } else {
         if (msg.self()) return;
@@ -738,8 +744,8 @@ async function onWxMessage(msg) {
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
-                msgMergeFailCount--;
-                if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
+                state.vars.msgMergeFailCount--;
+                if (state.vars.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             // 系统消息如拍一拍
             // if (name === topic) {
@@ -777,8 +783,8 @@ async function onWxMessage(msg) {
                     msg.prePersonNeedUpdate = true;
             } catch (e) {
                 wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.prePerson)}`);
-                msgMergeFailCount--;
-                if (msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
+                state.vars.msgMergeFailCount--;
+                if (state.vars.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
             }
             const deliverResult = await deliverWxToTG(false, msg, content, msgDef);
             if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg, msg.receiver);
@@ -819,9 +825,21 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/msg_aus": {
-            tgDisabled = 1;
-            tgLogger.info("tgDisable lock is now ON!");
+            state.vars.msgDropState = 1;
+            tgLogger.info("tg Msg drop lock is now ON!");
             // add feedback here to let user notice
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            return;
+        }
+        case "/sync_ein": {
+            state.vars.syncSelfState = 1;
+            tgLogger.info("Self-message sync lock is now ON!");
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            return;
+        }
+        case "/sync_aus": {
+            state.vars.syncSelfState = 0;
+            tgLogger.info("Self-message sync lock is now OFF.");
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             return;
         }
@@ -970,7 +988,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         }
 
         if (!tgMsg) {
-            if (globalNetworkErrorCount-- < 0) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
+            if (state.vars.globalNetworkErrorCount-- < 0) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
             // todo add undelivered pool
             tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
             (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
@@ -998,9 +1016,9 @@ async function softReboot(reason) {
         msgText: "",
         lastTalker: "",
     };
-    timerDataCount = 6;
-    msgMergeFailCount = 6;
-    globalNetworkErrorCount = 3;
+    state.vars.timerDataCount = 6;
+    state.vars.msgMergeFailCount = 6;
+    state.vars.globalNetworkErrorCount = 3;
 
     await mod.tgProcessor.replyWithTips("softReboot", null, userDo ? 6 : 25, reason);
 }
@@ -1232,14 +1250,11 @@ const timerData = setInterval(async () => {
             }
         }
     } catch (e) {
-        ctLogger.info(`An exception happened within timer function with x${timerDataCount} reset cycles left:\n\t${e.toString()}`);
-        timerDataCount--;
-        if (timerDataCount < 0) clearInterval(timerData);
+        ctLogger.info(`An exception happened within timer function with x${state.vars.timerDataCount} reset cycles left:\n\t${e.toString()}`);
+        state.vars.timerDataCount--;
+        if (state.vars.timerDataCount < 0) clearInterval(timerData);
     }
 }, 5000);
-let timerDataCount = 6;
-let msgMergeFailCount = 6;
-let globalNetworkErrorCount = 3;
 
 // noinspection JSIgnoredPromiseFromCall
 onTGMsg({
