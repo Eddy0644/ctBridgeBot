@@ -79,6 +79,11 @@ async function onTGMsg(tgMsg) {
     if (tgMsg.text && tgMsg.text === "/drop_off" && state.v.msgDropState) {
         state.v.msgDropState = 0;
         tgLogger.info("tg Msg drop lock is now OFF.");
+        if (state.s.helpCmdInstance) {
+            // former /help instance found, try to delete it...
+            await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.matched);
+            state.s.helpCmdInstance = null;
+        }
         return;
     } else if (state.v.msgDropState) {
         tgLogger.debug(`During TG-side lock ON, recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);

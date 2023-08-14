@@ -116,12 +116,12 @@ module.exports = (param) => {
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                     // Add more commands as needed
                 ],
-    // Explanation: ein -> on, aus -> off
-                TGBotHelpCmdText: `Command List\n
-/drop_on & /drop_off : temporary cutoff tg recv.
+                // Explanation: ein -> on, aus -> off
+                TGBotHelpCmdText: `Command List
+/drop_on & /drop_off : .msg drop.
 /info : generate status report.
-/placeholder : Output a blank message.
-/sync_on & /sync_off : control message sync.`,
+/placeholder : Output a blank.
+/sync_on & /sync_off : .self sync.`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],
                     ["关于公众号进行帐号迁移的说明"],
