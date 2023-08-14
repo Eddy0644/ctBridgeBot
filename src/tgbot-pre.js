@@ -76,7 +76,7 @@ const tgBotDo = {
         };
         const receiver = (() => {
             const s = secret.misc.deliverSticker;
-            if (s === false) return 0; //TODO
+            if (s === false) return 0; // already filtered in main js
             if (s === true) return secret.class.push;
             if (s.tgid) return s;
         })();

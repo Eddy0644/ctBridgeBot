@@ -105,7 +105,7 @@ async function onTGMsg(tgMsg) {
                 const thread_verify = (() => {
                     if (pair.threadId) {
                         if (tgMsg.reply_to_message) {
-                            return pair.threadId === tgMsg.reply_to_message.message_id;
+                            return pair.threadId === tgMsg.message_thread_id;
                         } else return false;
                     } else return true;
                 })();
@@ -177,8 +177,8 @@ async function onTGMsg(tgMsg) {
                     if (!res) return;
                 }
             }
-            // TODO refactor this area
-            if (tgMsg.text === "/spoiler") {
+            // TODO refactor this area | if (tgMsg.reply_to_message)
+            if (tgMsg.text.replace(secret.tgbot.botName, "") === "/spoiler") {
                 // TG-wide command so not put inside the for loop
                 const orig = repl_to;
                 if (orig.photo) {
@@ -188,13 +188,17 @@ async function onTGMsg(tgMsg) {
                         const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Error occurred while setting spoiler for former message :\n<code>${res}</code> `, true, "HTML");
                         state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     }
-                }//todo else is text
+                } else {
+                    // try to run /spoiler on a text (Experimental)
+                    tgLogger.debug(`Changing a message into spoiler format...`);
+                    await tgBotDo.EditMessageText(`<span class="tg-spoiler">${orig.text}</span>`, orig, tgMsg.matched);
+                }
                 return;
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             let success = 0;
             for (const mapPair of msgMappings) {
-                if (mapPair[0] === repl_to.message_id/*fixme also verify chat_id here*/ && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
+                if (mapPair[0] === repl_to.message_id && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair[3] && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
