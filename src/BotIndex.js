@@ -17,6 +17,7 @@ const state = {
     v: { // variables
         msgDropState: 0,
         syncSelfState: 0,
+        targetLock: 0,
         timerDataCount: 6,
         msgMergeFailCount: 6,
         globalNetworkErrorCount: 3,
@@ -26,7 +27,6 @@ const state = {
         lastExplicitTalker: null,
         helpCmdInstance: null,
     },
-    lockTarget: 0,
     preRoom: {
         firstWord: "",
         tgMsg: null,
@@ -202,7 +202,7 @@ async function onTGMsg(tgMsg) {
                     }
                     if (tgMsg.text === "@") {
                         // Trigger special operation: Lock and set as explicit
-                        state.lockTarget = 2;
+                        state.v.targetLock = 2;
                         const name = mapPair[2], talker = mapPair[1];
                         state.last = {
                             s: STypes.Chat,
@@ -216,8 +216,8 @@ async function onTGMsg(tgMsg) {
                         state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
                     } else {
                         if (tgMsg.matched.s === 0) {
-                            if (state.lockTarget === 2) {
-                                state.lockTarget = 0;
+                            if (state.v.targetLock === 2) {
+                                state.v.targetLock = 0;
                                 ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
                             }
                             state.s.lastExplicitTalker = mapPair[1];
@@ -882,8 +882,8 @@ async function tgCommandHandler(tgMsg) {
             return await mod.tgProcessor.replyWithTips("replyCmdToNormal", tgMsg.matched, 6);
         }
         case "/lock": {
-            state.lockTarget = state.lockTarget ? 0 : 1;
-            return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.lockTarget);
+            state.v.targetLock = state.v.targetLock ? 0 : 1;
+            return await mod.tgProcessor.replyWithTips("lockStateChange", tgMsg.matched, 6, state.v.targetLock);
         }
         case "/slet": {
             // Set last explicit talker as last talker.
@@ -1227,7 +1227,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
     const name = (talker.name ? (await talker.alias() || await talker.name()) : await talker.topic());
     msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
-    if (state.lockTarget === 0 && !receiver.wx) state.last = {
+    if (state.v.targetLock === 0 && !receiver.wx) state.last = {
         s: STypes.Chat,
         target: talker,
         name,
