@@ -164,10 +164,18 @@ async function onTGMsg(tgMsg) {
         }
 
         if (tgMsg.reply_to_message) {
+            const repl_to = tgMsg.reply_to_message;
+            if (state.s.helpCmdInstance && repl_to.message_id === state.s.helpCmdInstance.message_id) {
+                // Consider this msg as reply to former help instance
+                if (tgMsg.text.startsWith("/")) {
+                    const res = await tgCommandHandler(tgMsg);
+                    if (!res) return;
+                }
+            }
             // TODO refactor this area
             if (tgMsg.text === "/spoiler") {
                 // TG-wide command so not put inside the for loop
-                const orig = tgMsg.reply_to_message;
+                const orig = repl_to;
                 if (orig.photo) {
                     const file_id = orig.photo[orig.photo.length - 1].file_id;
                     const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
@@ -181,7 +189,7 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             let success = 0;
             for (const mapPair of msgMappings) {
-                if (mapPair[0] === tgMsg.reply_to_message.message_id/*fixme also verify chat_id here*/ && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
+                if (mapPair[0] === repl_to.message_id/*fixme also verify chat_id here*/ && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair[3] && mapPair[3].filesize) {
                         // 对wx文件消息做出了确认
                         if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
@@ -807,16 +815,16 @@ async function onWxMessage(msg) {
 wxbot.on('message', onWxMessage);
 
 async function tgCommandHandler(tgMsg) {
-    const text=tgMsg.text.replace(secret.tgbot.botName, "");
+    const text = tgMsg.text.replace(secret.tgbot.botName, "");
     // return 1 means not processed by this handler, continue to next steps
-    if (state.s.helpCmdInstance && !['/sync_on','/drop_on'].includes(text)) {
+    if (state.s.helpCmdInstance && !['/sync_on', '/drop_on'].includes(text)) {
         // former /help instance found, try to delete it...
-        await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.receiver);
+        await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.matched);
         state.s.helpCmdInstance = null;
     }
     switch (text) {
         case "/help": {
-            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.receiver);
+            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText, true, null);
             return;
         }
