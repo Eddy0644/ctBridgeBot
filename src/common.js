@@ -118,10 +118,10 @@ module.exports = (param) => {
                 ],
     // Explanation: ein -> on, aus -> off
                 TGBotHelpCmdText: `Command List\n
-/msg_aus & /msg_ein : temporary cutoff tg reaction.
+/drop_on & /drop_off : temporary cutoff tg recv.
 /info : generate status report.
 /placeholder : Output a blank message.
-/sync_ein & /sync_aus : control message sync.`,
+/sync_on & /sync_off : control message sync.`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],
                     ["关于公众号进行帐号迁移的说明"],

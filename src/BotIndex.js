@@ -76,7 +76,7 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text === "/msg_ein" && state.v.msgDropState) {
+    if (tgMsg.text && tgMsg.text === "/drop_off" && state.v.msgDropState) {
         state.v.msgDropState = 0;
         tgLogger.info("tg Msg drop lock is now OFF.");
         return;
@@ -807,14 +807,16 @@ async function onWxMessage(msg) {
 wxbot.on('message', onWxMessage);
 
 async function tgCommandHandler(tgMsg) {
+    const text=tgMsg.text.replace(secret.tgbot.botName, "");
     // return 1 means not processed by this handler, continue to next steps
-    if (state.s.helpCmdInstance) {
+    if (state.s.helpCmdInstance && !['/sync_on','/drop_on'].includes(text)) {
         // former /help instance found, try to delete it...
         await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.receiver);
         state.s.helpCmdInstance = null;
     }
-    switch (tgMsg.text.replace(secret.tgbot.botName, "")) {
+    switch (text) {
         case "/help": {
+            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.receiver);
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText, true, null);
             return;
         }
@@ -843,20 +845,20 @@ async function tgCommandHandler(tgMsg) {
             };
             return;
         }
-        case "/msg_aus": {
+        case "/drop_on": {
             state.v.msgDropState = 1;
             tgLogger.info("tg Msg drop lock is now ON!");
             // add feedback here to let user notice
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             return;
         }
-        case "/sync_ein": {
+        case "/sync_on": {
             state.v.syncSelfState = 1;
             tgLogger.info("Self-message sync lock is now ON!");
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             return;
         }
-        case "/sync_aus": {
+        case "/sync_off": {
             state.v.syncSelfState = 0;
             tgLogger.info("Self-message sync lock is now OFF.");
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
