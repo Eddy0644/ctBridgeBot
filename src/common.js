@@ -117,11 +117,12 @@ module.exports = (param) => {
                     // Add more commands as needed
                 ],
                 // Explanation: ein -> on, aus -> off
-                TGBotHelpCmdText: `Command List
+                TGBotHelpCmdText: (state) => `Command List
 /drop_on & /drop_off : .msg drop.
 /info : generate status report.
 /placeholder : Output a blank.
-/sync_on & /sync_off : .self sync.`,
+/sync_on & /sync_off : .self sync.
+Lock:(${state.v.targetLock}) Last:${(state.last && state.last.s && state.last.name) ? state.last.name : "-"}`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],
                     ["关于公众号进行帐号迁移的说明"],

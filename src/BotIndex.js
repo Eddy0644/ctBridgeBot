@@ -830,7 +830,7 @@ async function tgCommandHandler(tgMsg) {
     switch (text) {
         case "/help": {
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
-            state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText, true, null);
+            state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
             return;
         }
         case "/clear": {
