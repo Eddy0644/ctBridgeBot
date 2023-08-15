@@ -185,8 +185,7 @@ async function onTGMsg(tgMsg) {
                     const file_id = orig.photo[orig.photo.length - 1].file_id;
                     const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
                     if (res !== true) {
-                        const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Error occurred while setting spoiler for former message :\n<code>${res}</code> `, true, "HTML");
-                        state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
+                        await mod.tgProcessor.replyWithTips("setMediaSpoilerFail", tgMsg.matched, 6, res);
                     }
                 } else {
                     // try to run /spoiler on a text (Experimental)

@@ -90,6 +90,13 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
         case "notEnabledInConfig":
             message = `One or more action interrupted as something is not configured properly. See log for detail.`;
             break;
+        case "setMediaSpoilerFail":
+            message = `Error occurred while setting spoiler for former message :\n<code>${additional}</code> `;
+            break;
+        case "setAsLastAndLocked":
+            message = `Already set '${additional}' as last talker and locked.`;
+            break;
+
         default:
             tgLogger.error(`Wrong call of tg replyWithTips() with invalid 'tipMode'. Please check arguments.\n${tipMode}\t${target}`);
             return;
