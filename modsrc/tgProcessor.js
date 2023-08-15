@@ -132,7 +132,7 @@ async function addSelfReplyTs(name = null) {
             topic: "",
         };
     } else {
-        defLogger.debug(`PreRoom not valid, skip delivering myself reply stamp into former message.`);
+        if (secret.misc.addSelfReplyTimestampToRoomMergedMsg) defLogger.debug(`PreRoom not valid, skip delivering myself reply stamp into former message.`);
     }
 }
 

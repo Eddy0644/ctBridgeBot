@@ -2,7 +2,6 @@
 // noinspection DuplicatedCode
 
 const secret = require('../config/confLoader');
-const FileBox = require("file-box").FileBox;
 const fs = require("fs");
 const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
@@ -12,7 +11,7 @@ const {
     CommonData, STypes, downloader, processor, delay
 } = require('./common')();
 
-let msgMappings = [];
+const msgMappings = [];
 const state = {
     v: { // variables
         msgDropState: 0,
@@ -215,8 +214,7 @@ async function onTGMsg(tgMsg) {
                             isFile: null
                         };
                         ctLogger.debug(`Upon '@' msg, set '${name}' as last talker and lock-target to 2.`);
-                        const tgMsg2 = await tgBotDo.SendMessage(tgMsg.matched, `Already set '${name}' as last talker and locked.`, true);
-                        state.poolToDelete.add(tgMsg2, 6, tgMsg.matched);
+                        await mod.tgProcessor.replyWithTips("setAsLastAndLocked", tgMsg.matched, 6, name);
                     } else {
                         if (tgMsg.matched.s === 0) {
                             if (state.v.targetLock === 2) {
@@ -1109,6 +1107,7 @@ async function generateInfo() {
 }
 
 async function deliverTGToWx(tgMsg, tg_media, media_type) {
+    const FileBox = require("file-box").FileBox;
     if (media_type === "voice!") {
         let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
         tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
@@ -1184,14 +1183,14 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
     wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
-        wxLogger.debug(`Found person successfully, sending...(view log for detail)`);
+        wxLogger.debug(`Found person successfully.`);
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
                 true, "HTML");
             await addToMsgMappings(tgMsg2.message_id, wxFinded1, null, receiver);
         } else await addToMsgMappings(alterMsgId, wxFinded1, null, receiver);
     } else if (wxFinded2) {
-        wxLogger.debug(`Found room chat successfully, sending...(view log for detail)`);
+        wxLogger.debug(`Found room chat successfully.`);
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
                 true, "HTML");
@@ -1214,8 +1213,9 @@ async function getC2CPeer(pair) {
     }
     const p = pair.p;
     let wxTarget;
-    // FIXME : will send to wrong target when 2 C2C with same tgid appeared
-    if (!state.C2CTemp[p.tgid]) {
+    // FIXed : will send to wrong target when 2 C2C with same tgid appeared
+    // now use wx name as key
+    if (!state.C2CTemp[p.wx[0]]) {
         if (p.wx[1] === true) {
             wxTarget = await wxbot.Room.find({topic: p.wx[0]});
         } else {
@@ -1223,8 +1223,8 @@ async function getC2CPeer(pair) {
             wxTarget = wxTarget || await wxbot.Contact.find({alias: p.wx[0]});
         }
         if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
-        else state.C2CTemp[p.tgid] = wxTarget;
-    } else wxTarget = state.C2CTemp[p.tgid];
+        else state.C2CTemp[p.wx[0]] = wxTarget;
+    } else wxTarget = state.C2CTemp[p.wx[0]];
     return wxTarget;
 }
 
@@ -1232,7 +1232,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
     const name = (talker.name ? (await talker.alias() || await talker.name()) : await talker.topic());
     const new_mapObj = {
-        tgMsgId, talker, name, wxMsg: wxMsg, receiver
+        tgMsgId, talker, name, wxMsg: wxMsg || null, receiver
     }
     msgMappings.push(new_mapObj);
     // msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
