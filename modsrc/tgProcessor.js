@@ -197,8 +197,12 @@ function isSameTGTarget(in1, in2) {
         }
     };
     const p1 = parser(in1), p2 = parser(in2);
-    // TODO no thread verify now
-    if (p1.tgid === p2.tgid) return true;
+    // thread verify maybe fixed here
+    if (p1.tgid === p2.tgid) {
+        if (!p1.threadId && !p2.threadId) return true;
+        return p1.threadId === p2.threadId;
+
+    }
 }
 
 module.exports = (incomingEnv) => {

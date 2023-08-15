@@ -198,16 +198,16 @@ async function onTGMsg(tgMsg) {
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             let success = 0;
             for (const mapPair of msgMappings) {
-                if (mapPair[0] === repl_to.message_id && mod.tgProcessor.isSameTGTarget(mapPair[4], tgMsg.matched)) {
-                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair[3] && mapPair[3].filesize) {
+                if (mapPair.tgMsgId === repl_to.message_id && mod.tgProcessor.isSameTGTarget(mapPair.receiver, tgMsg.matched)) {
+                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.wxMsg && mapPair.wxMsg.filesize) {
                         // 对wx文件消息做出了确认
-                        if (await getFileFromWx(mapPair[3])) wxLogger.debug(`Download request of wx File completed.`);
+                        if (await getFileFromWx(mapPair.wxMsg)) wxLogger.debug(`Download request of wx File completed.`);
                         return tgBotDo.SendChatAction("upload_document");
                     }
                     if (tgMsg.text === "@") {
                         // Trigger special operation: Lock and set as explicit
                         state.v.targetLock = 2;
-                        const name = mapPair[2], talker = mapPair[1];
+                        const {name, talker} = mapPair;
                         state.last = {
                             s: STypes.Chat,
                             target: talker,
@@ -224,14 +224,14 @@ async function onTGMsg(tgMsg) {
                                 state.v.targetLock = 0;
                                 ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
                             }
-                            state.s.lastExplicitTalker = mapPair[1];
-                            await mapPair[1].say(tgMsg.text);
-                            if (mapPair[2] === state.preRoom.topic) {
+                            state.s.lastExplicitTalker = mapPair.talker;
+                            await mapPair.talker.say(tgMsg.text);
+                            if (mapPair.name === state.preRoom.topic) {
                                 // the explicit talker - Room matches preRoom
                                 await mod.tgProcessor.addSelfReplyTs();
                             }
                             tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
-                            ctLogger.debug(`Handled a message send-back to ${mapPair[2]}.`);
+                            ctLogger.debug(`Handled a message send-back to ${mapPair.name}.`);
                             return;
                         } else {
                             ctLogger.info(`In C2C chat found a message with reply flag which is not OK or @. Sending...`);
@@ -246,6 +246,7 @@ async function onTGMsg(tgMsg) {
             }
             // !tgMsg.reply_to_message  ------------------
         }
+
         // Not replacing the original tgMsg.text here
         if (tgMsg.text.startsWith("/")) {
             const res = await tgCommandHandler(tgMsg);
@@ -1214,6 +1215,7 @@ async function getC2CPeer(pair) {
     }
     const p = pair.p;
     let wxTarget;
+    // FIXME : will send to wrong target when 2 C2C with same tgid appeared
     if (!state.C2CTemp[p.tgid]) {
         if (p.wx[1] === true) {
             wxTarget = await wxbot.Room.find({topic: p.wx[0]});
@@ -1230,7 +1232,11 @@ async function getC2CPeer(pair) {
 async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     // if(talker instanceof wxbot.Message)
     const name = (talker.name ? (await talker.alias() || await talker.name()) : await talker.topic());
-    msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
+    const new_mapObj = {
+        tgMsgId, talker, name, wxMsg: wxMsg, receiver
+    }
+    msgMappings.push(new_mapObj);
+    // msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
     if (state.v.targetLock === 0 && !receiver.wx) state.last = {
         s: STypes.Chat,
         target: talker,
