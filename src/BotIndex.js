@@ -169,18 +169,11 @@ async function onTGMsg(tgMsg) {
 
         if (tgMsg.reply_to_message) {
             const repl_to = tgMsg.reply_to_message;
-            if (state.s.helpCmdInstance && repl_to.message_id === state.s.helpCmdInstance.message_id) {
-                // Consider this msg as reply to former help instance
-                if (tgMsg.text.startsWith("/")) {
-                    const res = await tgCommandHandler(tgMsg);
-                    if (!res) return;
-                }
-            }
             // TODO refactor this area | if (tgMsg.reply_to_message)
             {
                 const rp1 = tgMsg.text.replace(secret.tgbot.botName, "");
-                if (rp1 === "/try_edit") {
-                    await tgBotDo.EditMessageText(rp1.replace("/try_edit", ""), repl_to, tgMsg.matched);
+                if (rp1.includes("/try_edit")) {
+                    return await tgBotDo.EditMessageText(rp1.replace("/try_edit ", ""), repl_to, tgMsg.matched);
                 }
                 if (rp1 === "/spoiler") {
                     // TG-wide command so not put inside the for loop
@@ -199,6 +192,13 @@ async function onTGMsg(tgMsg) {
                     return;
                 }
 
+            }
+            if (state.s.helpCmdInstance && repl_to.message_id === state.s.helpCmdInstance.message_id) {
+                // Consider this msg as reply to former help instance
+                if (tgMsg.text.startsWith("/")) {
+                    const res = await tgCommandHandler(tgMsg);
+                    if (!res) return;
+                }
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             let success = 0;
@@ -238,7 +238,7 @@ async function onTGMsg(tgMsg) {
                             ctLogger.debug(`Handled a message send-back to ${mapPair.name}.`);
                             return;
                         } else {
-                            ctLogger.info(`In C2C chat found a message with reply flag which is not OK or @. Sending...`);
+                            ctLogger.info(`In C2C chat found a message with reply flag which is not 'OK' or '@'. Sending...`);
                             success = 1;
                         }
                     }
