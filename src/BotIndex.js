@@ -177,21 +177,28 @@ async function onTGMsg(tgMsg) {
                 }
             }
             // TODO refactor this area | if (tgMsg.reply_to_message)
-            if (tgMsg.text.replace(secret.tgbot.botName, "") === "/spoiler") {
-                // TG-wide command so not put inside the for loop
-                const orig = repl_to;
-                if (orig.photo) {
-                    const file_id = orig.photo[orig.photo.length - 1].file_id;
-                    const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
-                    if (res !== true) {
-                        await mod.tgProcessor.replyWithTips("setMediaSpoilerFail", tgMsg.matched, 6, res);
-                    }
-                } else {
-                    // try to run /spoiler on a text (Experimental)
-                    tgLogger.debug(`Changing a message into spoiler format...`);
-                    await tgBotDo.EditMessageText(`<span class="tg-spoiler">${orig.text}</span>`, orig, tgMsg.matched);
+            {
+                const rp1 = tgMsg.text.replace(secret.tgbot.botName, "");
+                if (rp1 === "/try_edit") {
+                    await tgBotDo.EditMessageText(rp1.replace("/try_edit", ""), repl_to, tgMsg.matched);
                 }
-                return;
+                if (rp1 === "/spoiler") {
+                    // TG-wide command so not put inside the for loop
+                    const orig = repl_to;
+                    if (orig.photo) {
+                        const file_id = orig.photo[orig.photo.length - 1].file_id;
+                        const res = await tgBotDo.EditMessageMedia(file_id, orig, true);
+                        if (res !== true) {
+                            await mod.tgProcessor.replyWithTips("setMediaSpoilerFail", tgMsg.matched, 6, res);
+                        }
+                    } else {
+                        // try to run /spoiler on a text (Experimental)
+                        tgLogger.debug(`Changing a message into spoiler format...`);
+                        await tgBotDo.EditMessageText(`<span class="tg-spoiler">${orig.text}</span>`, orig, tgMsg.matched);
+                    }
+                    return;
+                }
+
             }
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             let success = 0;
