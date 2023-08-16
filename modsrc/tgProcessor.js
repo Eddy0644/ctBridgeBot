@@ -9,12 +9,13 @@ let env;
 //     const {} = env;
 // }
 
-async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", isText) {
+async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", isText) {
     const {state, defLogger, tgBotDo, secret} = env;
     if (!isText) content = `[Image]`; // Temporary override in this func
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
-    const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : name);
+    // the 'newFirstTitle' is 0 when inside C2C
+    const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : alias);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
         const s = secret.misc.changeTitleForSameTalkerInMerged;

@@ -155,8 +155,9 @@ async function onTGMsg(tgMsg) {
 
         // Non-text messages must be filtered ahead of below !---------------
         if (!tgMsg.text) {
-            tgLogger.info(`A TG message with empty text has passed through text Processor. Skipped.`);
-            tgLogger.trace(`The detail of tgMsg which caused error: `, JSON.stringify(tgMsg));
+            tgLogger.info(`A TG message without 'text' passed through text processor, skipped. ` +
+                `recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);
+            tgLogger.trace(`The tgMsg detail of which: `, JSON.stringify(tgMsg));
             return;
         }
 
@@ -771,7 +772,7 @@ async function onWxMessage(msg) {
 
             try {
                 if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
-                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, msg.DType === DTypes.Text);
+                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else msg.preRoomNeedUpdate = true;
             } catch (e) {
@@ -809,7 +810,7 @@ async function onWxMessage(msg) {
                 const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
                 if (_.name === name && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
-                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, msg.DType === DTypes.Text);
+                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, alias, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else
                     msg.prePersonNeedUpdate = true;
