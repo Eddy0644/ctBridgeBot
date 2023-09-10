@@ -75,7 +75,7 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text === "/drop_off" && state.v.msgDropState) {
+    if (tgMsg.text && tgMsg.text.replace(secret.tgbot.botName, "") === "/drop_off" && state.v.msgDropState) {
         state.v.msgDropState = 0;
         tgLogger.info("tg Msg drop lock is now OFF.");
         if (state.s.helpCmdInstance) {
@@ -840,7 +840,9 @@ async function tgCommandHandler(tgMsg) {
     }
     switch (text) {
         case "/help": {
+            tgLogger.debug("Received /help request, revoking user command...");
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
+            conLogger.trace("Revoke complete. sending new /help instance...");
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
             return;
         }
