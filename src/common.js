@@ -219,7 +219,16 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                 isTimeValid: function (targetTS, maxDelay) {
                     const nowDate = dayjs().unix();
                     return (nowDate - targetTS < maxDelay);
-                }
+                },
+                parseUnknown_tgMsg: function (tgMsg,logger) {
+                    const propList=Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ');
+                    const info1=`Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title}) `;
+                    for (let prop of ['message_id', 'from', 'chat', 'date']) {
+                        if (tgMsg.hasOwnProperty(prop)) {
+                            delete tgMsg[prop];
+                        }
+                    }
+                },
             },
         };
 

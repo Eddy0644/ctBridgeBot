@@ -729,14 +729,14 @@ async function onWxMessage(msg) {
     // 正式处理消息--------------
     if (msg.DType > 0) {
         const titles = secret.misc.titles;
-        if (content.includes("[收到了一个表情，请在手机上查看]") || content.includes("[Send an emoji, view it on mobile]")) {
+        if (/\[收到了一个表情，请在手机上查看\]|\[Send an emoji, view it on mobile\]/.test(content)) {
             msgDef.isSilent = true;
             // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
-            content = content.replace("[收到了一个表情，请在手机上查看]", titles.unsupportedSticker).replace("[Send an emoji, view it on mobile]", titles.unsupportedSticker);
+            content = content.replace(/\[收到了一个表情，请在手机上查看\]|\[Send an emoji, view it on mobile\]/, titles.unsupportedSticker);
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
-        if (content.includes("[收到一条视频/语音聊天消息，请在手机上查看]")) {
-            content = content.replace("[收到一条视频/语音聊天消息，请在手机上查看]", titles.recvCall);
+        if (/\[收到一条视频\/语音聊天消息，请在手机上查看\]|\[Receive a video \/ voice chat message, view it on your phone\]/.test(content)) {
+            content = content.replace(/\[收到一条视频\/语音聊天消息，请在手机上查看\]|\[Receive a video \/ voice chat message, view it on your phone\]/, titles.recvCall);
             if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
                 // here means no valid notification hook is set
             } else {
@@ -746,8 +746,9 @@ async function onWxMessage(msg) {
             wxLogger.debug(`Sending call notification from (${alias}) to User.`);
         }
 
-        content = content.replace("[收到一条微信转账消息，请在手机上查看]", titles.recvTransfer);
-        content = content.replace("[收到一条暂不支持的消息类型，请在手机上查看]", titles.msgTypeNotSupported);
+        // Weixin, Wechat, MicroMsg: how incredible name! micro-message!!!
+        content = content.replace(/\[收到一条微信转账消息，请在手机上查看\]|\[Received a micro-message transfer message, please view on the phone\]/, titles.recvTransfer);
+        content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看\]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看\]/, titles.msgTypeNotSupported);
 
         content = mod.tgProcessor.filterMsgText(content);
 
