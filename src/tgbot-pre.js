@@ -163,14 +163,14 @@ const tgBotDo = {
 };
 let errorStat = -1;
 tgbot.on('polling_error', async (e) => {
-    const msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "[ERR]\t";
+    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "", msg3 = "[Err]\t";
     if (errorStat === 0) {
         errorStat = 1;
         setTimeout(async () => {
             if (errorStat > secret.tgbot.polling.pollFailNoticeThres) {
                 // Following error count exceed the threshold after the timer set up by first error
+                tgLogger.warn(`Frequent network issue detected! (${errorStat} errors in past 30 seconds) Please check network!\n${msg}`);
                 with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_problematic + default_arg);
-                tgLogger.warn(`Frequent network issue detected! Please check network!\n${msg}`);
             } else {
                 // no other error during this period, discarding notify initiation
                 errorStat = 0;
@@ -178,9 +178,11 @@ tgbot.on('polling_error', async (e) => {
 
             }
         }, 30000);
-        console.warn(msg2 + msg);
+        console.warn(msg3 + msg);
     } else if (errorStat > 0) {
         errorStat++;
+        msg = msg.replace("Client network socket disconnected before secure TLS connection was established", "E_Socket_Disconnected");
+
         console.warn(msg2 + msg);
     } else {
         console.warn(msg2 + msg);
