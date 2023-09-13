@@ -152,6 +152,14 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
         if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
         if (tgMsg.voice) return await deliverTGToWx(tgMsg, tgMsg.voice, "voice!");
+        // with (tgMsg) {
+        //     const media = photo || (sticker && sticker.thumbnail) || document || video || voice;
+        //     const type = photo ? "photo" : (sticker ? "photo" : (document ? "document" : (video ? "video" : "voice!")));
+        //     if (media) {
+        //         await deliverTGToWx(tgMsg, media, type);
+        //     }
+        // }
+
 
         // Non-text messages must be filtered ahead of below !---------------
         if (!tgMsg.text) {
@@ -329,6 +337,7 @@ async function onTGMsg(tgMsg) {
             const wx1 = tgMsg.matched.p.wx;
             if (wx1[1] === true && wx1[0] === state.preRoom.topic) {
                 // the C2C Room matches preRoom
+                // This function also contains /clear ! do not remove
                 await mod.tgProcessor.addSelfReplyTs(wx1[0]);
             } else if (wx1[1] === false && wx1[0] === state.prePerson.name) {
                 // the C2C Room matches prePerson, clear latter
