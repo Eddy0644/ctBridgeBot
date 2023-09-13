@@ -163,7 +163,7 @@ const tgBotDo = {
 };
 let errorStat = -1;
 tgbot.on('polling_error', async (e) => {
-    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "", msg3 = "[Err]\t";
+    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = `[${process.uptime()}]\t`, msg3 = "[Err]\t";
     if (errorStat === 0) {
         errorStat = 1;
         setTimeout(async () => {
@@ -181,7 +181,7 @@ tgbot.on('polling_error', async (e) => {
         console.warn(msg3 + msg);
     } else if (errorStat > 0) {
         errorStat++;
-        msg = msg.replace("Client network socket disconnected before secure TLS connection was established", "E_Socket_Disconnected");
+        msg = msg.replace("Client network socket disconnected before secure TLS connection was established", "E_Socket_Disconnected").replace("EFATAL: ", "");
 
         console.warn(msg2 + msg);
     } else {
