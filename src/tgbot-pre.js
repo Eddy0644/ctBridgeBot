@@ -10,8 +10,9 @@ const {downloader} = require("./common")();
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secret.tgbot.botToken,
-        {polling: {interval: 2000}, request: {proxy: require("../proxy")},});
-    tgbot.deleteWebHook().then(() => {});
+        {polling: {interval: secret.tgbot.polling.interval}, request: {proxy: require("../proxy")},});
+    tgbot.deleteWebHook().then(() => {
+    });
 } else {
     tgbot = new TelegramBot(secret.tgbot.botToken, {
         webHook: {
@@ -26,8 +27,10 @@ if (isPolling) {
     tgbot.setWebHook(secret.bundle.getTGBotHookURL(process.argv[3]), {
         drop_pending_updates: true
         /* Please, remove this line after the bot have ability to control messages between instances!!! */
-    }).then(() => {});
-    tgbot.openWebHook().then(() => {});
+    }).then(() => {
+    });
+    tgbot.openWebHook().then(() => {
+    });
 }
 
 function parseRecv(receiver, form) {
@@ -158,15 +161,15 @@ const tgBotDo = {
     empty: () => {
     }
 };
-let errorStat = 0;
+let errorStat = -1;
 tgbot.on('polling_error', async (e) => {
     const msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = "[ERR]\t";
     if (errorStat === 0) {
         errorStat = 1;
         setTimeout(async () => {
-            if (errorStat === 2) {
-                // still have errors after the timer been set up triggered by first error
-                with(secret.notification)await downloader.httpsCurl(baseUrl + prompt_network_problematic + default_arg);
+            if (errorStat > secret.tgbot.polling.pollFailNoticeThres) {
+                // Following error count exceed the threshold after the timer set up by first error
+                with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_problematic + default_arg);
                 tgLogger.warn(`Frequent network issue detected! Please check network!\n${msg}`);
             } else {
                 // no other error during this period, discarding notify initiation
@@ -174,10 +177,10 @@ tgbot.on('polling_error', async (e) => {
                 tgLogger.info(`There may be a temporary network issue but now disappeared. If possible, please check your network config.`);
 
             }
-        }, 10000);
+        }, 30000);
         console.warn(msg2 + msg);
-    } else if (errorStat === 1) {
-        errorStat = 2;
+    } else if (errorStat > 0) {
+        errorStat++;
         console.warn(msg2 + msg);
     } else {
         console.warn(msg2 + msg);

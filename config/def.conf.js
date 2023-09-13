@@ -13,6 +13,10 @@ module.exports = {
             host: "your.domain",
             path: "/ctBot/rp.php"
         },
+        polling: {
+            pollFailNoticeThres: 5,
+            interval: 2000,
+        },
     },
     class: {
         "def": {
@@ -120,6 +124,7 @@ module.exports = {
 
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
+
     },
     txyun: {
         switch: "off",
