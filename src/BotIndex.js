@@ -738,7 +738,7 @@ async function onWxMessage(msg) {
     // 正式处理消息--------------
     if (msg.DType > 0) {
         const titles = secret.misc.titles;
-        if (/\[收到了一个表情，请在手机上查看\]|\[Send an emoji, view it on mobile\]/.test(content)) {
+        if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
             msgDef.isSilent = true;
             // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
             content = content.replace(/\[收到了一个表情，请在手机上查看\]|\[Send an emoji, view it on mobile\]/, titles.unsupportedSticker);
@@ -1278,7 +1278,7 @@ async function getFileFromWx(msg) {
             wxLogger.debug(`Downloaded previous file as: ${filePath}`);
             tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty)
             const stream = fs.createReadStream(filePath);
-            let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", stream, true, false);
+            let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", stream, true);
             if (!tgMsg) {
                 tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
                 return "sendFailure";
