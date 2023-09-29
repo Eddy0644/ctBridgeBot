@@ -151,7 +151,7 @@ async function onTGMsg(tgMsg) {
 
         { // **Sub:** replaceWXCustomEmojis
             let newText = tgMsg.text;
-            for (const entity of tgMsg.entities) {
+            if (typeof tgMsg.entities === 'object') for (const entity of tgMsg.entities) {
                 if (entity.type === "custom_emoji" && wx_emoji_conversions.hasOwnProperty(entity.custom_emoji_id)) {
                     // Get the []-wrapped text for this custom emoji
                     const wrappedText = wx_emoji_conversions[entity.custom_emoji_id];
