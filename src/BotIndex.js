@@ -105,7 +105,7 @@ async function onTGMsg(tgMsg) {
                 // thread_id verification without reply-to support
                 const thread_verify = (() => {
                     if (pair.threadId) {
-                        if (tgMsg.reply_to_message) {
+                        if (tgMsg.message_thread_id) {
                             return pair.threadId === tgMsg.message_thread_id;
                         } else return false;
                     } else return true;
@@ -226,50 +226,54 @@ async function onTGMsg(tgMsg) {
                     if (!res) return;
                 }
             }
+
             tgLogger.trace(`This message has reply flag, searching for mapping...`);
             let success = 0;
-            for (const mapPair of msgMappings) {
-                if (mapPair.tgMsgId === repl_to.message_id && mod.tgProcessor.isSameTGTarget(mapPair.receiver, tgMsg.matched)) {
-                    if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.wxMsg && mapPair.wxMsg.filesize) {
-                        // 对wx文件消息做出了确认
-                        if (await getFileFromWx(mapPair.wxMsg)) wxLogger.debug(`Download request of wx File completed.`);
-                        return tgBotDo.SendChatAction("upload_document");
-                    }
-                    if (tgMsg.text === "@") {
-                        // Trigger special operation: Lock and set as explicit
-                        state.v.targetLock = 2;
-                        const {name, talker} = mapPair;
-                        state.last = {
-                            s: STypes.Chat,
-                            target: talker,
-                            name: name,
-                            wxMsg: null,
-                            isFile: null
-                        };
-                        ctLogger.debug(`Upon '@' msg, set '${name}' as last talker and lock-target to 2.`);
-                        await mod.tgProcessor.replyWithTips("setAsLastAndLocked", tgMsg.matched, 6, name);
-                    } else {
-                        if (tgMsg.matched.s === 0) {
-                            if (state.v.targetLock === 2) {
-                                state.v.targetLock = 0;
-                                ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
-                            }
-                            state.s.lastExplicitTalker = mapPair.talker;
-                            await mapPair.talker.say(tgMsg.text);
-                            if (mapPair.name === state.preRoom.topic) {
-                                // the explicit talker - Room matches preRoom
-                                await mod.tgProcessor.addSelfReplyTs();
-                            }
-                            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
-                            ctLogger.debug(`Handled a message send-back to ${mapPair.name}.`);
-                            return;
+            // Filter forum_topic_created repl_to as msg maybe sent flat in topic
+            if (tgMsg.reply_to_message.forum_topic_created) {
+                success = 1;
+            } else for (const mapPair of msgMappings) {
+                    if (mapPair.tgMsgId === repl_to.message_id && mod.tgProcessor.isSameTGTarget(mapPair.receiver, tgMsg.matched)) {
+                        if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.wxMsg && mapPair.wxMsg.filesize) {
+                            // 对wx文件消息做出了确认
+                            if (await getFileFromWx(mapPair.wxMsg)) wxLogger.debug(`Download request of wx File completed.`);
+                            return tgBotDo.SendChatAction("upload_document");
+                        }
+                        if (tgMsg.text === "@") {
+                            // Trigger special operation: Lock and set as explicit
+                            state.v.targetLock = 2;
+                            const {name, talker} = mapPair;
+                            state.last = {
+                                s: STypes.Chat,
+                                target: talker,
+                                name: name,
+                                wxMsg: null,
+                                isFile: null
+                            };
+                            ctLogger.debug(`Upon '@' msg, set '${name}' as last talker and lock-target to 2.`);
+                            await mod.tgProcessor.replyWithTips("setAsLastAndLocked", tgMsg.matched, 6, name);
                         } else {
-                            ctLogger.info(`In C2C chat found a message with reply flag which is not 'OK' or '@'. Sending...`);
-                            success = 1;
+                            if (tgMsg.matched.s === 0) {
+                                if (state.v.targetLock === 2) {
+                                    state.v.targetLock = 0;
+                                    ctLogger.debug(`After lock=2, a quoted message reset lock=0.`);
+                                }
+                                state.s.lastExplicitTalker = mapPair.talker;
+                                await mapPair.talker.say(tgMsg.text);
+                                if (mapPair.name === state.preRoom.topic) {
+                                    // the explicit talker - Room matches preRoom
+                                    await mod.tgProcessor.addSelfReplyTs();
+                                }
+                                tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
+                                ctLogger.debug(`Handled a message send-back to ${mapPair.name}.`);
+                                return;
+                            } else {
+                                ctLogger.info(`In C2C chat found a message with reply flag which is not 'OK' or '@'. Sending...`);
+                                success = 1;
+                            }
                         }
                     }
                 }
-            }
             if (!success) {
                 ctLogger.debug(`Unable to send-back due to no match in msgMappings.`);
                 return;
