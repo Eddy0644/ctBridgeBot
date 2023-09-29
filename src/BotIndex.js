@@ -1332,7 +1332,7 @@ const timerData = setInterval(async () => {
         if (state.v.msgDropState > 0) {
             if (--state.v.msgDropState === 0) {
                 // the dropState just turn from 1 to 0, now notice user
-                await tgBotDo.SendMessage(null, `The 'drop' lock has been on for ${secret.adv.keep_drop_on_x5s * 5}s, thus been switched off automatically.`, true);
+                await mod.tgProcessor.replyWithTips("dropCmdAutoOff", null, 0);
             }
         }
 
