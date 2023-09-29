@@ -77,6 +77,7 @@ env.mod = mod;
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
     if (tgMsg.text && tgMsg.text.replace(secret.tgbot.botName, "") === "/drop_off" && state.v.msgDropState) {
+        // Verified as /drop_off command
         state.v.msgDropState = 0;
         tgLogger.info("tg Msg drop lock is now OFF.");
         if (state.s.helpCmdInstance) {
@@ -149,7 +150,6 @@ async function onTGMsg(tgMsg) {
         }
 
         { // **Sub:** replaceWXCustomEmojis
-
             let newText = tgMsg.text;
             for (const entity of tgMsg.entities) {
                 if (entity.type === "custom_emoji" && wx_emoji_conversions.hasOwnProperty(entity.custom_emoji_id)) {
@@ -161,7 +161,7 @@ async function onTGMsg(tgMsg) {
                     newText = newText.replace(emoji, wrappedText);
                 }
             }
-            tgMsg.text=newText;
+            tgMsg.text = newText;
         } // End Sub: replaceWXCustomEmojis
 
         if (tgMsg.photo) return await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
@@ -761,7 +761,7 @@ async function onWxMessage(msg) {
             content = content.replace(/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/, titles.unsupportedSticker);
             wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
         }
-        if (/\[收到一条视频\/语音聊天消息，请在手机上查看\]|\[Receive a video \/ voice chat message, view it on your phone\]/.test(content)) {
+        if (/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/.test(content)) {
             content = content.replace(/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/, titles.recvCall);
             if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
                 // here means no valid notification hook is set
