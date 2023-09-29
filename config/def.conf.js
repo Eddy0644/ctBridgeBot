@@ -125,6 +125,15 @@ module.exports = {
         // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
         addHashCtLinkToMsg: 1,
 
+        wxMsgBufferPool:{
+            //
+            switch:"on",
+            // switchPoolWhenItemsExceeds __ num
+            itemTrig:10,
+
+            timeTrig:30,
+        },
+
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
