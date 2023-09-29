@@ -5,6 +5,7 @@ const secret = require('../config/confLoader');
 const fs = require("fs");
 const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
+const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./sticker_v2.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
@@ -146,6 +147,22 @@ async function onTGMsg(tgMsg) {
                 return;
             }
         }
+
+        { // **Sub:** replaceWXCustomEmojis
+
+            let newText = tgMsg.text;
+            for (const entity of tgMsg.entities) {
+                if (entity.type === "custom_emoji" && wx_emoji_conversions.hasOwnProperty(entity.custom_emoji_id)) {
+                    // Get the []-wrapped text for this custom emoji
+                    const wrappedText = wx_emoji_conversions[entity.custom_emoji_id];
+                    // Get the ordinary emoji from the text
+                    const emoji = tgMsg.text.substring(entity.offset, entity.offset + entity.length);
+                    // Replace the ordinary emoji with the []-wrapped text
+                    newText = newText.replace(emoji, wrappedText);
+                }
+            }
+            tgMsg.text=newText;
+        } // End Sub: replaceWXCustomEmojis
 
         if (tgMsg.photo) return await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
         if (tgMsg.sticker) return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
