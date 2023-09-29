@@ -1324,7 +1324,7 @@ wxbot.start()
 
 require('./common')("startup");
 
-const timerData = setInterval(async () => {
+async function timerFunc() {
     try {
         // Handle state.poolToDelete
         for (const itemId in state.poolToDelete) {
@@ -1338,6 +1338,7 @@ const timerData = setInterval(async () => {
                 await tgBotDo.RevokeMessage(item.tgMsg.message_id, item.receiver);
             }
         }
+        // Auto Switch off /drop command
         if (state.v.msgDropState > 0) {
             if (--state.v.msgDropState === 0) {
                 // the dropState just turn from 1 to 0, now notice user
@@ -1350,7 +1351,9 @@ const timerData = setInterval(async () => {
         state.v.timerDataCount--;
         if (state.v.timerDataCount < 0) clearInterval(timerData);
     }
-}, 5000);
+}
+
+const timerData = setInterval(timerFunc, 5000);
 
 // noinspection JSIgnoredPromiseFromCall
 onTGMsg({
