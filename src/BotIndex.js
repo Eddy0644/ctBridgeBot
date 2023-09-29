@@ -756,35 +756,39 @@ async function onWxMessage(msg) {
     // 正式处理消息--------------
     if (msg.DType > 0) {
         const titles = secret.misc.titles;
-        if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
-            msgDef.isSilent = true;
-            // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
-            content = content.replace(/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/, titles.unsupportedSticker);
-            wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
-        }
-        if (/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/.test(content)) {
-            content = content.replace(/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/, titles.recvCall);
-            if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
-                // here means no valid notification hook is set
-            } else {
+        { // **Sub:** Bulk Text Replacement
+            if (secret.misc.addHashCtLinkToMsg === 1) content = content.replaceAll("https://", "(#ctLink)https://").replaceAll("http://", "(#ctLink)http://");
+
+            if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
                 msgDef.isSilent = true;
-                // give a silent delivery for this message
+                // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
+                content = content.replace(/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/, titles.unsupportedSticker);
+                wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
             }
-            wxLogger.debug(`Sending call notification from (${alias}) to User.`);
-        }
-
-        // Weixin, Wechat, MicroMsg: how incredible name! micro-message!!!
-        content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]/, titles.recvTransfer);
-        content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
-
-        content = mod.tgProcessor.filterMsgText(content);
-
-        for (const pair of secret.filtering.wxContentReplaceList) {
-            if (content.includes(pair[0])) {
-                wxLogger.trace(`Replaced wx (${pair[0]}) to (${pair[1]})`);
-                while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
+            if (/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/.test(content)) {
+                content = content.replace(/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/, titles.recvCall);
+                if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
+                    // here means no valid notification hook is set
+                } else {
+                    msgDef.isSilent = true;
+                    // give a silent delivery for this message
+                }
+                wxLogger.debug(`Sending call notification from (${alias}) to User.`);
             }
-        }
+
+            // Weixin, Wechat, MicroMsg: how incredible multiple name! micro-message!!!
+            content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]/, titles.recvTransfer);
+            content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
+
+            content = mod.tgProcessor.filterMsgText(content);
+
+            for (const pair of secret.filtering.wxContentReplaceList) {
+                if (content.includes(pair[0])) {
+                    wxLogger.trace(`Replaced wx (${pair[0]}) to (${pair[1]})`);
+                    while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
+                }
+            }
+        } // End Sub: Bulk Text Replacement
 
         if (room) {
             // 是群消息 - - - - - - - -
