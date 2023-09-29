@@ -898,7 +898,7 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/drop_on": {
-            state.v.msgDropState = 1;
+            state.v.msgDropState = secret.adv.keep_drop_on_x5s;
             tgLogger.info("tg Msg drop lock is now ON!");
             // add feedback here to let user notice
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
@@ -1317,6 +1317,7 @@ require('./common')("startup");
 
 const timerData = setInterval(async () => {
     try {
+        // Handle state.poolToDelete
         for (const itemId in state.poolToDelete) {
             if (Number.isNaN(parseInt(itemId))) continue;
             const item = state.poolToDelete[parseInt(itemId)];
@@ -1328,6 +1329,13 @@ const timerData = setInterval(async () => {
                 await tgBotDo.RevokeMessage(item.tgMsg.message_id, item.receiver);
             }
         }
+        if (state.v.msgDropState > 0) {
+            if (--state.v.msgDropState === 0) {
+                // the dropState just turn from 1 to 0, now notice user
+                await tgBotDo.SendMessage(null, `The 'drop' lock has been on for ${secret.adv.keep_drop_on_x5s * 5}s, thus been switched off automatically.`, true);
+            }
+        }
+
     } catch (e) {
         ctLogger.info(`An exception happened within timer function with x${state.v.timerDataCount} reset cycles left:\n\t${e.toString()}`);
         state.v.timerDataCount--;

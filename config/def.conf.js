@@ -126,6 +126,9 @@ module.exports = {
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
     },
+    adv: {
+        keep_drop_on_x5s: 100,
+    },
     txyun: {
         switch: "off",
         secretId: "---",
