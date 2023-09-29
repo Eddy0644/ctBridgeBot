@@ -122,6 +122,9 @@ module.exports = {
         // as only one of posts would take up to 40KB in log file.
         savePostRawDataInDetailedLog: false,
 
+        // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
+        addHashCtLinkToMsg: 1,
+
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
