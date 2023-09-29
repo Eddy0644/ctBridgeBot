@@ -1014,7 +1014,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 // const result = await (msg.videoPresent?getFileFromWx)(msg);
                 let result;
                 if (msg.videoPresent) {
-                    result = await mod.wxMddw.handleVideoMessage(msg, alias);
+                    result = await mod.wxMddw.handleVideoMessage(msg, tmplc);
                 } else result = await getFileFromWx(msg);
                 if (result === "Success") {
                     tgLogger.debug(`Media Delivery Success.`);
