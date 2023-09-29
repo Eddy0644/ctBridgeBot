@@ -161,9 +161,9 @@ const tgBotDo = {
     empty: () => {
     }
 };
-let errorStat = -1;
+let errorStat = 0;
 tgbot.on('polling_error', async (e) => {
-    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = `[${process.uptime()}]\t`, msg3 = "[Err]\t";
+    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = `[${process.uptime().toFixed(2)}]\t`, msg3 = "[Err]\t";
     if (errorStat === 0) {
         errorStat = 1;
         setTimeout(async () => {
@@ -191,7 +191,7 @@ tgbot.on('polling_error', async (e) => {
 tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
-const retryWithLogging = async (func, maxRetries, retryDelay = 5000) => {
+const retryWithLogging = async (func, maxRetries, retryDelay = 10000) => {
     let retries = 0;
     while (retries <= maxRetries) {
         try {
