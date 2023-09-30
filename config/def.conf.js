@@ -75,11 +75,6 @@ module.exports = {
     misc: {
         enableInlineSearchForUnreplaced: true,
 
-        // s=false, no title-changing;
-        // s=<string>, use customized new-title as [1] specified;
-        // s=<function>, the func. would be executed with parameter 'count'
-        changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
-
         // define how many seconds between this and last msg, to stop merging
         mergeResetTimeout: {
             forPerson: 20,
@@ -106,17 +101,14 @@ module.exports = {
             // If a sticker with former delivery found, then run this func to get formatted text.
             stickerWithLink: (url_p, flib, md5) => flib.hint ?
                 `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
-
             // If you want to disable any of these replacements here,
             // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
-            // original text here, to suppress replacing here.
+            // original text here (wrapped with []), to suppress replacing here.
             unsupportedSticker: "{--🧩--}",
             recvCall: "{📞📲}",
             recvTransfer: "{💰📥}",
             msgTypeNotSupported: "{📩❎, 👉📱}",
         },
-
-        addSelfReplyTimestampToRoomMergedMsg: false,
 
         // If set to false, all post message will no longer save to log,
         // as only one of posts would take up to 40KB in log file.
@@ -136,12 +128,21 @@ module.exports = {
         // 1: pass unrecognized cmd; 0: return
         passUnrecognizedCmdNext: 1,
 
+        /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
+
+        // Define what prefix should be added to each merged msg item.
+        // s=false, no title-changing;
+        // s=<string>, use customized new-title as [1] specified;
+        // s=<function>, the func. would be executed with parameter 'count'
+        changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
+        // How many 5-seconds should system wait before auto cancel /drop_on command.
+        keep_drop_on_x5s: 100,
+        // This variable is deprecated, therefore not recommended to change.
+        addSelfReplyTimestampToRoomMergedMsg: false,
+
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
-    },
-    adv: {
-        keep_drop_on_x5s: 100,
     },
     txyun: {
         switch: "off",

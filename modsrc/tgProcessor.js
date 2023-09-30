@@ -83,7 +83,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
             message = `Nothing to do upon your message, ${target}`;
             break;
         case "dropCmdAutoOff":
-            message = `The 'drop' lock has been on for ${secret.adv.keep_drop_on_x5s * 5}s, thus been switched off automatically.`;
+            message = `The 'drop' lock has been on for ${secret.misc.keep_drop_on_x5s * 5}s, thus been switched off automatically.`;
             break;
         case "audioProcessFail":
             message = `Audio transcript request received, But error occurred when processing.`;

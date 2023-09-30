@@ -907,7 +907,7 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/drop_on": {
-            state.v.msgDropState = secret.adv.keep_drop_on_x5s;
+            state.v.msgDropState = secret.misc.keep_drop_on_x5s;
             tgLogger.info("tg Msg drop lock is now ON!");
             // add feedback here to let user notice
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
