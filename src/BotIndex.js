@@ -964,8 +964,9 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         default: {
-            tgLogger.info(`Unrecognized command; skipped.`);
-            return;
+            const skip = secret.misc.passUnrecognizedCmdNext;
+            tgLogger.info(`Unrecognized command; ${skip ? 'Passed next.' : 'Skipped.'}`);
+            return skip;
         }
     }
 }
