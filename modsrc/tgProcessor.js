@@ -18,14 +18,13 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : alias);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
-        const s = secret.misc.changeTitleForSameTalkerInMerged;
+        const s = secret.c11n.changeTitleForSameTalkerInMerged;
         if (s === false || _.lastTalker !== name) {
             _.talkerCount = 0;
             _.lastTalker = name;
             return `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]`;
         }
         _.talkerCount++;
-        if (typeof s === "string") return s || `|→ `;
         if (typeof s === "function") return s(_.talkerCount);
         defLogger.warn(`Invalid configuration found for {settings.changeTitleForSameTalkerInMerged}!`);
         return `|→ `;

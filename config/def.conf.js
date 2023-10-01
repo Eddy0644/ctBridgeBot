@@ -130,11 +130,6 @@ module.exports = {
 
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
-        // Define what prefix should be added to each merged msg item.
-        // s=false, no title-changing;
-        // s=<string>, use customized new-title as [1] specified;
-        // s=<function>, the func. would be executed with parameter 'count'
-        changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
         // How many 5-seconds should system wait before auto cancel /drop_on command.
         keep_drop_on_x5s: 100,
         // This variable is deprecated, therefore not recommended to change.
@@ -147,6 +142,10 @@ module.exports = {
     c11n: {  // customization
         // 🖇🧷💬 (Quoted "${content}" of ${from})
         wxQuotedMsgSuffixLine: (from, content) => `<i>(${from}💬${content})</i>\``,
+        // Define what prefix should be added to each merged msg item.
+        // s=false, no title-changing;
+        // s=<function>, would be executed with parameter 'count' and taken return value
+        changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
     },
     txyun: {
         switch: "off",
