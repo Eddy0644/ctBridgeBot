@@ -95,21 +95,6 @@ module.exports = {
         // 0, no advance (default); 1, only not filtered; 2, apply on all room chats
         deliverRoomRedPacketInAdvance: 2,
 
-        titles: {
-            systemMsgInRoom: "(System)",
-
-            // If a sticker with former delivery found, then run this func to get formatted text.
-            stickerWithLink: (url_p, flib, md5) => flib.hint ?
-                `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
-            // If you want to disable any of these replacements here,
-            // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
-            // original text here (wrapped with []), to suppress replacing here.
-            unsupportedSticker: "{--🧩--}",
-            recvCall: "{📞📲}",
-            recvTransfer: "{💰📥}",
-            msgTypeNotSupported: "{📩❎, 👉📱}",
-        },
-
         // If set to false, all post message will no longer save to log,
         // as only one of posts would take up to 40KB in log file.
         savePostRawDataInDetailedLog: false,
@@ -118,11 +103,11 @@ module.exports = {
         addHashCtLinkToMsg: 1,
 
         wxMsgBufferPool: {
-            //
+            // !Not implemented
             switch: "on",
-            // switchPoolWhenItemsExceeds __ num
+            // switch pool when items exceeds __ num
             itemTrig: 10,
-
+            // switch pool when time expired __s
             timeTrig: 30,
         },
         // 1: pass unrecognized cmd; 0: return
@@ -145,7 +130,19 @@ module.exports = {
         // Define what prefix should be added to each merged msg item.
         // s=false, no title-changing;
         // s=<function>, would be executed with parameter 'count' and taken return value
-        changeTitleForSameTalkerInMerged: c => `<code>${c}|→</code> `,
+        titleForSameTalkerInMergedMsg: c => `<code>${c}|→</code> `,
+        //
+        systemMsgTitleInRoom: "(System)",
+        // If a sticker with former delivery found, then run this func to get formatted text.
+        stickerWithLink: (url_p, flib, md5) => flib.hint ?
+            `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
+        // If you want to disable any of these replacements here,
+        // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
+        // original text here (wrapped with []), to suppress replacing here.
+        unsupportedSticker: "{--🧩--}",
+        recvCall: "{📞📲}",
+        recvTransfer: "{💰📥}",
+        msgTypeNotSupported: "{📩❎, 👉📱}",
     },
     txyun: {
         switch: "off",

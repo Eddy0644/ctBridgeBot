@@ -18,7 +18,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : alias);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
-        const s = secret.c11n.changeTitleForSameTalkerInMerged;
+        const s = secret.c11n.titleForSameTalkerInMergedMsg;
         if (s === false || _.lastTalker !== name) {
             _.talkerCount = 0;
             _.lastTalker = name;

@@ -596,7 +596,7 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     ahead = false;
                     msg.md5 = md5.substring(0, 3);
-                    if (typeof fetched.msgId === "number") content = secret.misc.titles.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
+                    if (typeof fetched.msgId === "number") content = secret.c11n.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
                     else content = `[${md5.substring(0, 3)} of #sticker]`;
                     ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
                 }
@@ -759,7 +759,7 @@ async function onWxMessage(msg) {
 
     // 正式处理消息--------------
     if (msg.DType > 0) {
-        const titles = secret.misc.titles;
+        const titles = secret.misc.c11n;
         { // **Sub:** Bulk Text Replacement
             if (secret.misc.addHashCtLinkToMsg === 1) content = content.replace(/(?!href=")(https?:\/\/)/g, '(#ctLink)$1');
 
@@ -803,7 +803,7 @@ async function onWxMessage(msg) {
                 msgDef.isSilent = true;
                 msgDef.forceMerge = true;
                 // Force override {name} to let system message seems better
-                name = titles.systemMsgInRoom;
+                name = titles.systemMsgTitleInRoom;
             }
 
             try {
