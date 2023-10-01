@@ -115,7 +115,7 @@ module.exports = {
         savePostRawDataInDetailedLog: false,
 
         // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
-        addHashCtLinkToMsg: 1,
+        addHashCtLinkToMsg: 0,
 
         wxMsgBufferPool: {
             //
@@ -143,6 +143,10 @@ module.exports = {
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
+    },
+    c11n: {  // customization
+        // 🖇🧷💬 (Quoted "${content}" of ${from})
+        wxQuotedMsgSuffixLine: (from, content) => `<i>(${from}💬${content})</i>\``,
     },
     txyun: {
         switch: "off",

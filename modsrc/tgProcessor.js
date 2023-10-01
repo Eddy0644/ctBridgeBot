@@ -162,7 +162,7 @@ function filterMsgText(inText) {
         const origMsgClip2 = origMsgClip.replaceAll("\n", " ");
         txt = txt.replace(match[0], ``);
         // to let this <i> not escaped by "Filter <> for recaller"
-        appender += `\n<i>(Quoted "${origMsgClip2}" of ${match[1]})</i>`;
+        appender += `\n` + secret.c11n.wxQuotedMsgSuffixLine(match[1], origMsgClip2);
     }
     // if (txt.includes("<br/>")) {
     //     // Telegram would not accept this tag in all mode! Must remind.
