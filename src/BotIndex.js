@@ -761,7 +761,7 @@ async function onWxMessage(msg) {
     if (msg.DType > 0) {
         const titles = secret.misc.titles;
         { // **Sub:** Bulk Text Replacement
-            if (secret.misc.addHashCtLinkToMsg === 1) content = content.replaceAll("https://", "(#ctLink)https://").replaceAll("http://", "(#ctLink)http://");
+            if (secret.misc.addHashCtLinkToMsg === 1) content = content.replace(/(?!href=")(https?:\/\/)/g, '(#ctLink)$1');
 
             if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
                 msgDef.isSilent = true;
