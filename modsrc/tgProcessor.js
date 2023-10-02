@@ -11,7 +11,14 @@ let env;
 
 async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", isText) {
     const {state, defLogger, tgBotDo, secret} = env;
-    if (!isText) content = `[Image]`; // Temporary override in this func
+    if (!isText) {
+        const DTypeName = ((value) => {
+            const DTypes = {Image: 2, Audio: 3, File: 5, Push: 6};
+            for (const name in DTypes) if (DTypes[name] === value) return name;
+            return "Media";
+        })(msg.DType);
+        content = `[${DTypeName}]`; // Temporary override in this func
+    }
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
     // the 'newFirstTitle' is 0 when inside C2C
