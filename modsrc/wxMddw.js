@@ -54,7 +54,7 @@ async function handlePushMessage(rawContent, msg, name) {
 
 async function handleVideoMessage(msg, name) {
     const {wxLogger, tgBotDo, tgLogger} = env;
-    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name}).mp4`;
+    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name.replaceAll(/\/|\\/g,",")}).mp4`;
     wxLogger.debug(`Detected as Video, Downloading...`);
     tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty)
     const fBox = await msg.toFileBox();
