@@ -71,6 +71,8 @@ module.exports = {
         prompt_relogin_required: "Your previous login credential have already expired. Please re-login soon!",
         prompt_network_issue_happened: "ctBridgeBot is facing network issue, that causing message delay!",
         incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBot_Call/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge&icon=https://ccdn.ryancc.top/call.jpg`,
+        send_relogin_via_tg: 1,
+
     },
     misc: {
         enableInlineSearchForUnreplaced: true,

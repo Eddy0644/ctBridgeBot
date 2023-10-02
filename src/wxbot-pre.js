@@ -22,7 +22,7 @@ const DTypes = {
 };
 
 
-module.exports = (tgbot, wxLogger) => {
+module.exports = (tgBotDo, wxLogger) => {
     // running instance of wxbot-pre
     let needLoginStat = 0;
     // 二维码生成
@@ -39,12 +39,12 @@ module.exports = (tgbot, wxLogger) => {
                 needLoginStat = 1;
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
+                        if (secret.notification.send_relogin_via_tg) await tgBotDo.SendMessage(null,
+                            `Your WX credential expired, please refer to log or go with this [QRServer] link:\t\n${qrcodeImageUrl}`, false, "HTML");
                         with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
                         wxLogger.info(`Already send re-login reminder to user.`);
-                    } else {
-
                     }
-                }, 30000);
+                }, 40000);
             }
 
         } else if (status === 3) {

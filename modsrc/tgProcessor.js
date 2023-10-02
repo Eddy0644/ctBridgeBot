@@ -63,6 +63,11 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
     const {tgLogger, state, defLogger, tgBotDo} = env;
     let message = "", form = {};
     switch (tipMode) {
+        // cannot use this now!
+        // case "needRelogin":
+        //     message = `Your WX credential expired, please refer to log or go with this [QRServer] link:\n${additional}`;
+        //     timeout = 180;
+        //     break;
         case "globalCmdToC2C":
             message = `You sent a global command to a C2C chat. The operation has been blocked and please check.`;
             break;

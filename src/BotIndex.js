@@ -59,7 +59,7 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
     }
 };
 const {tgbot, tgBotDo} = require('./tgbot-pre');
-const {wxbot, DTypes} = require('./wxbot-pre')(tgbot, wxLogger);
+const {wxbot, DTypes} = require('./wxbot-pre')(tgBotDo, wxLogger);
 
 // Loading instance modules...
 const env = {
