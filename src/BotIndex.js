@@ -632,7 +632,7 @@ async function onWxMessage(msg) {
             wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.(${e.toString()})`);
             //尝试解析为图片
             const fBox = await msg.toFileBox();
-            const photoPath = `./downloaded/photo/${alias}-${msg.payload.filename}`;
+            const photoPath = `./downloaded/photo/${processor.filterFilename(`${alias}-${msg.payload.filename}`)}`;
             await fBox.toFile(photoPath);
             if (fs.existsSync(photoPath)) {
                 wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
@@ -648,7 +648,7 @@ async function onWxMessage(msg) {
     if (msg.type() === wxbot.Message.Type.Audio) try {
         const fBox = await msg.toFileBox();
         // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
-        let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${alias}).mp3`;
+        let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${processor.filterFilename(alias)}).mp3`;
         await fBox.toFile(audioPath);
         if (!fs.existsSync(audioPath)) throw new Error("save file error");
         // await recogniseAudio(msg, audioPath);
