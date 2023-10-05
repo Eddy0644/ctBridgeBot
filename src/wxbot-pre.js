@@ -56,7 +56,7 @@ module.exports = (tgBotDo, wxLogger) => {
 
 
     wxbot.on('logout', async (user) => {
-        wxLogger.info(`${user} 已经主动登出.`);
+        wxLogger.info(`${user} 已被登出.`);
         // with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
     });
 
@@ -69,10 +69,16 @@ module.exports = (tgBotDo, wxLogger) => {
             errorStat = 1;
             // No need to output any console log now, full of errors!
             with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
-            wxLogger.warn(msg + `\tFirst Time;`);
+            wxLogger.error(msg + `\nFirst Time;`);
+            setTimeout(() => {
+                if (errorStat > 12) {
+                    wxLogger.error(`Due to wx error, initiated self restart procedure!!!\n\n`);
+                    setTimeout(() => process.exit(1), 1000);
+                }
+            }, 10000);
         } else if (errorStat > 0 && checked) {
             errorStat++;
-            // following watchdog error
+            // following watchdog error, skipped
         } else {
             wxLogger.warn(msg);
         }

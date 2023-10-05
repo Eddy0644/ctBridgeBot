@@ -14,7 +14,7 @@ module.exports = {
             path: "/ctBot/rp.php"
         },
         polling: {
-            pollFailNoticeThres: 3,
+            pollFailNoticeThres: 2,
             interval: 2000,
         },
     },
