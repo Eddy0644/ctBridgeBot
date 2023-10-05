@@ -21,7 +21,6 @@ const DTypes = {
     Push: 6,
 };
 
-
 module.exports = (tgBotDo, wxLogger) => {
     // running instance of wxbot-pre
     let needLoginStat = 0;
@@ -58,10 +57,25 @@ module.exports = (tgBotDo, wxLogger) => {
 
     wxbot.on('logout', async (user) => {
         wxLogger.info(`${user} 已经主动登出.`);
+        // with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
     });
 
     wxbot.on('error', async (e) => {
-        wxLogger.warn(e.toString());
+        // This error handling function should be remastered!
+        let msg = e.toString();
+        let errorStat = 0;
+        const checked = e.toString().includes("WatchdogAgent reset: lastFood:");
+        if (errorStat === 0 && checked) {
+            errorStat = 1;
+            // No need to output any console log now, full of errors!
+            with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
+            wxLogger.warn(msg + `\tFirst Time;`);
+        } else if (errorStat > 0 && checked) {
+            errorStat++;
+            // following watchdog error
+        } else {
+            wxLogger.warn(msg);
+        }
     });
 
     return {
