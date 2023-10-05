@@ -1069,8 +1069,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
                 state.prePerson = {
-                    name, tgMsg,
-                    firstWord: `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`,
+                    name: (msg.receiver.wx ? msg.receiver.wx[0] : name)/* Help handle C2C not reset problem */,
+                    tgMsg, firstWord: `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`,
                     msgText: `${tmpl} ${content}`,
                     receiver: msg.receiver,
                 };
