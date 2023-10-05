@@ -542,7 +542,16 @@ async function onWxMessage(msg) {
         msgDef.isSilent = true;
         LogWxMsg(recalledMessage, 2);
         // content = `❌ [ ${recalledMessage} ] was recalled.`;
-        content = `[${`${recalledMessage}`.replaceAll("Message#", "")}] was recalled.`;
+        // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
+        const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s+(.?)/;
+        const match = `${recalledMessage}`.replace("Message#", "").match(regex);
+        if (match) {
+            const type = match[1], contactName = match[2], groupName = match[3] || '',
+                msgContent = match[4];
+            content = `[Recalled ${type}]`
+                + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
+                + `: ${msgContent}`;
+        } else content = `[${recalledMessage}] was recalled.`;
         msg.DType = DTypes.Text;
     }
 
