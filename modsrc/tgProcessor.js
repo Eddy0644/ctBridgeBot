@@ -25,11 +25,12 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : alias);
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
-        const s = secret.c11n.titleForSameTalkerInMergedMsg;
+        const s = secret.c11n.titleForSameTalkerInMergedRoomMsg;
         if (s === false || _.lastTalker !== name) {
             _.talkerCount = 0;
             _.lastTalker = name;
-            return `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]`;
+            const notDropTitle = secret.misc.PutStampBeforeFirstMergedMsg || isGroup;
+            return notDropTitle ? `[<u>${isGroup ? name : dayjs().format("H:mm:ss")}</u>]` : '';
         }
         _.talkerCount++;
         if (typeof s === "function") return s(_.talkerCount);

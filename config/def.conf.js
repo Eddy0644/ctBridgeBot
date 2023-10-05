@@ -101,6 +101,9 @@ module.exports = {
         // as only one of posts would take up to 40KB in log file.
         savePostRawDataInDetailedLog: false,
 
+        // Determine whether first item in a merged person msg should have a title of timestamp,
+        // like [11:00:00] a \n[11:00:02] b
+        PutStampBeforeFirstMergedMsg: false,
         // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
         addHashCtLinkToMsg: 1,
 
@@ -127,12 +130,13 @@ module.exports = {
 
     },
     c11n: {  // customization
+
         // 🖇🧷💬 (Quoted "${content}" of ${from})
         wxQuotedMsgSuffixLine: (from, content) => `<i>(${from}💬${content})</i>\``,
         // Define what prefix should be added to each merged msg item.
         // s=false, no title-changing;
         // s=<function>, would be executed with parameter 'count' and taken return value
-        titleForSameTalkerInMergedMsg: c => `<code>${c}|→</code> `,
+        titleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
         //
         systemMsgTitleInRoom: "(System)",
         // If a sticker with former delivery found, then run this func to get formatted text.
