@@ -693,8 +693,7 @@ async function onWxMessage(msg) {
                 const url = regResult[1].replace(/&amp;amp;/g, "&");
                 const caption = msg.payload.filename.replace(".url", "");
                 msg.DType = DTypes.Text;
-                content = (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '')
-                    + `🔗 [<a href="${url}">${caption}</a>]`;
+                content = `🔗 [<a href="${url}">${caption}</a>]` + (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '');
                 msgDef.isSilent = false;
             } catch (e) {
                 wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
