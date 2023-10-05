@@ -69,6 +69,7 @@ module.exports = {
         default_arg: "?group=ctBridge&icon=https://ccdn.ryancc.top/bot.jpg",
         prompt_network_problematic: "Several network connectivity problems appeared. Please settle that immediately.",
         prompt_relogin_required: "Your previous login credential have already expired. Please re-login soon!",
+        prompt_wx_stuck: "The WX puppet seems stuck, please check console or start program soon!",
         prompt_network_issue_happened: "ctBridgeBot is facing network issue, that causing message delay!",
         incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBot_Call/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge&icon=https://ccdn.ryancc.top/call.jpg`,
         send_relogin_via_tg: 1,
@@ -104,6 +105,7 @@ module.exports = {
         // Determine whether first item in a merged person msg should have a title of timestamp,
         // like [11:00:00] a \n[11:00:02] b
         PutStampBeforeFirstMergedMsg: false,
+
         // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
         addHashCtLinkToMsg: 1,
 
