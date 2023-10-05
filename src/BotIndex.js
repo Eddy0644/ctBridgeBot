@@ -767,7 +767,7 @@ async function onWxMessage(msg) {
 
     // 正式处理消息--------------
     if (msg.DType > 0) {
-        const titles = secret.misc.c11n;
+        const titles = secret.c11n;
         { // **Sub:** Bulk Text Replacement
             if (secret.misc.addHashCtLinkToMsg === 1) content = content.replace(/(?!href=")(https?:\/\/)/g, '(#ctLink)$1');
 
