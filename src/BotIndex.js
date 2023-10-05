@@ -1326,6 +1326,7 @@ async function getFileFromWx(msg) {
 
 wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录.`);
+    wxLogger.trace(`Logged User info: id=(${user.id}) ${user.payload.name} ${user.payload.avatar}`);
 });
 wxbot.start()
     .then(() => wxLogger.info('开始登陆微信...'))
