@@ -168,11 +168,12 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                         });
                     }
                     return new Promise((resolve) => {
-                        https.get(url, {}, () => {
-                            resolve("SUCCESS");
+                        https.get(url, {}, (res) => {
+                            if(res.statusCode===200)resolve("SUCCESS");
+                            else resolve(res.statusMessage);
                         }).on('error', () => {
                             console.error(`[Error] Failed on httpsCurl request. Probably network has been disconnected, so notifications have no need to launch now. Wait for Exit...`);
-                            setTimeout(() => resolve("NETWORK_DISCONNECTED"), 10000);
+                            setTimeout(() => resolve("NETWORK_DISCONNECTED"), 5000);
                         });
                     });
                 },

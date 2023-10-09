@@ -1335,12 +1335,14 @@ wxbot.start()
 require('./common')("startup");
 
 ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
-downloader.httpsCurl("https://ccdn.ryancc.top/trial_v2.txt").then(rs=>{
+downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
     // 此部分代码仅供临时使用，待完善。
-    if(rs!=="SUCCESS"){
-        ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.")
+    if (rs !== "SUCCESS") {
+        console.log("\n\n\n");
+        ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n\n")
     }
 })
+
 async function timerFunc() {
     try {
         // Handle state.poolToDelete
