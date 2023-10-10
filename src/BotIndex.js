@@ -543,7 +543,7 @@ async function onWxMessage(msg) {
         LogWxMsg(recalledMessage, 2);
         // content = `❌ [ ${recalledMessage} ] was recalled.`;
         // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
-        const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s+(.?)/;
+        const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s+(.*?)/;
         const match = `${recalledMessage}`.replace("Message#", "").match(regex);
         if (match) {
             const type = match[1], contactName = match[2], groupName = match[3] || '',

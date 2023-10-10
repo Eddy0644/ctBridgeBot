@@ -107,7 +107,7 @@ module.exports = {
         PutStampBeforeFirstMergedMsg: false,
 
         // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
-        addHashCtLinkToMsg: 1,
+        addHashCtLinkToMsg: 0,
 
         wxMsgBufferPool: {
             // !Not implemented
