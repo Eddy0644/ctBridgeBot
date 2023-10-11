@@ -139,6 +139,9 @@ module.exports = {
         // s=false, no title-changing;
         // s=<function>, would be executed with parameter 'count' and taken return value
         titleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
+
+        quotedMsgSuffixLineInPersonChat: ["YOU", "ta"],
+        officialAccountParser: a => `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`,
         //
         systemMsgTitleInRoom: "(System)",
         // If a sticker with former delivery found, then run this func to get formatted text.

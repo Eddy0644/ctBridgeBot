@@ -57,8 +57,7 @@ async function parseOfficialAccountMsg(rawContent) {
     if (ps === false) return rawContent;
     // noinspection JSUnresolvedVariable
     try {
-        const a = ps.msg;
-        return `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`;
+        return secret.c11n.officialAccountParser(ps.msg);
     } catch (e) {
         wxLogger.debug(`Error occurred when reading xml detail of OfficialAccountMsg. Skipping...`);
         return rawContent;
