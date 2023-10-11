@@ -51,10 +51,24 @@ async function handlePushMessage(rawContent, msg, name) {
     }
 }
 
+async function parseOfficialAccountMsg(rawContent) {
+    const {wxLogger, secret} = env;
+    const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
+    if (ps === false) return rawContent;
+    // noinspection JSUnresolvedVariable
+    try {
+        const a = ps.msg;
+        return `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`;
+    } catch (e) {
+        wxLogger.debug(`Error occurred when reading xml detail of OfficialAccountMsg. Skipping...`);
+        return rawContent;
+    }
+}
+
 
 async function handleVideoMessage(msg, name) {
     const {wxLogger, tgBotDo, tgLogger} = env;
-    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name.replaceAll(/\/|\\/g,",")}).mp4`;
+    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name.replaceAll(/\/|\\/g, ",")}).mp4`;
     wxLogger.debug(`Detected as Video, Downloading...`);
     tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty)
     const fBox = await msg.toFileBox();
@@ -134,5 +148,5 @@ function parseXML(xml) {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {handlePushMessage, handleVideoMessage};
+    return {handlePushMessage, handleVideoMessage, parseOfficialAccountMsg};
 };

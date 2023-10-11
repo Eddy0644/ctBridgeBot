@@ -764,6 +764,9 @@ async function onWxMessage(msg) {
                 }
 
             }
+        if (content.includes("bigheadimgurl") && content.includes("brandIconUrl")) {
+            content = await mod.wxMddw.parseOfficialAccountMsg(content);
+        }
     }
 
     // 正式处理消息--------------
