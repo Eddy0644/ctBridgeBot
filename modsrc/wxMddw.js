@@ -76,7 +76,7 @@ async function handleVideoMessage(msg, name) {
     if (videoInfo[1] > 49) return "sizeLimit";
     tgBotDo.SendChatAction("upload_video", msg.receiver).then(tgBotDo.empty)
     const stream = fs.createReadStream(videoPath);
-    let tgMsg = await tgBotDo.SendVideo(msg.receiver, name, stream, true);
+    let tgMsg = await tgBotDo.SendVideo(msg.receiver, `from [${name}]`, stream, true);
     tgBotDo.SendChatAction("choose_sticker", msg.receiver).then(tgBotDo.empty)
     if (!tgMsg) {
         tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
