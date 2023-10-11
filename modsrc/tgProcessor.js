@@ -38,7 +38,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         return `|→ `;
     })();
     msg[`pre${word}NeedUpdate`] = false;
-    content = filterMsgText(content);
+    content = filterMsgText(content, {isGroup, peerName: name});
     // from same talker check complete, ready to merge
     if (_.firstWord === "") {
         // Already merged, so just append newer to last
@@ -152,8 +152,8 @@ async function addSelfReplyTs(name = null) {
     }
 }
 
-function filterMsgText(inText) {
-    // const {tgLogger} = env;
+function filterMsgText(inText, args = {}) {
+    const {state} = env;
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
@@ -174,6 +174,13 @@ function filterMsgText(inText) {
         const origMsgClip2 = origMsgClip.replaceAll("\n", " ");
         txt = txt.replace(match[0], ``);
         // to let this <i> not escaped by "Filter <> for recaller"
+
+        if (args.peerName && !args.isGroup) {
+            // P2P chat, not group, applying quote replacement
+            if (match[1] === state.s.selfName) match[1] = "YOU";
+            if (match[1] === args.peerName) match[1] = "ta";
+        }
+
         appender += `\n` + secret.c11n.wxQuotedMsgSuffixLine(match[1], origMsgClip2);
     }
     // if (txt.includes("<br/>")) {

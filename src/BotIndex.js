@@ -26,6 +26,7 @@ const state = {
     s: { // session
         lastExplicitTalker: null,
         helpCmdInstance: null,
+        selfName: "",
     },
     preRoom: {
         firstWord: "",
@@ -1325,8 +1326,9 @@ async function getFileFromWx(msg) {
 }
 
 wxbot.on('login', async user => {
-    wxLogger.info(`${user}已登录.`);
+    wxLogger.info(`${user}已登录. 可在Trace Log中取得详细信息.`);
     wxLogger.trace(`Logged User info: id=(${user.id}) ${user.payload.name} ${user.payload.avatar}`);
+    state.s.selfName = user.payload.name;
 });
 wxbot.start()
     .then(() => wxLogger.info('开始登陆微信...'))
