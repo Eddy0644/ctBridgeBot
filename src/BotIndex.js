@@ -796,7 +796,7 @@ async function onWxMessage(msg) {
             content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]/, titles.recvTransfer);
             content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
 
-            content = mod.tgProcessor.filterMsgText(content);
+            content = mod.tgProcessor.filterMsgText(content,{isGroup, peerName: name});
 
             for (const pair of secret.filtering.wxContentReplaceList) {
                 if (content.includes(pair[0])) {
