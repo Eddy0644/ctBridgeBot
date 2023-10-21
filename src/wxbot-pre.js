@@ -60,24 +60,26 @@ module.exports = (tgBotDo, wxLogger) => {
         // with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
     });
 
+    let wxBotErrorStat = 0;
     wxbot.on('error', async (e) => {
         // This error handling function should be remastered!
         let msg = e.toString();
-        let errorStat = 0;
-        const checked = e.toString().includes("WatchdogAgent reset: lastFood:");
-        if (errorStat === 0 && checked) {
-            errorStat = 1;
+        const isWDogErr = e.toString().includes("WatchdogAgent reset: lastFood:");
+        if (wxBotErrorStat === 0 && isWDogErr) {
+            wxBotErrorStat = 1;
             // No need to output any console log now, full of errors!
             with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             wxLogger.error(msg + `\nFirst Time;`);
             setTimeout(() => {
-                if (errorStat > 12) {
+                if (wxBotErrorStat > 12) {
                     wxLogger.error(`Due to wx error, initiated self restart procedure!!!\n\n`);
-                    setTimeout(() => process.exit(1), 1000);
+                    setTimeout(() => process.exit(1), 5000);
+                } else {
+                    wxLogger.info("wxBotErrorStat not reaching threshold, not exiting." + wxBotErrorStat);
                 }
             }, 10000);
-        } else if (errorStat > 0 && checked) {
-            errorStat++;
+        } else if (wxBotErrorStat > 0 && isWDogErr) {
+            wxBotErrorStat++;
             // following watchdog error, skipped
         } else {
             wxLogger.warn(msg);
