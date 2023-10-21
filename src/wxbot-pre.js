@@ -54,11 +54,7 @@ module.exports = (tgBotDo, wxLogger) => {
         }
     });
 
-
-    wxbot.on('logout', async (user) => {
-        wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxMsgTotal}).`);
-        // with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
-    });
+    // wxbot.on('logout', ...) defined in BotIndex.js.
 
     let wxBotErrorStat = 0;
     wxbot.on('error', async (e) => {

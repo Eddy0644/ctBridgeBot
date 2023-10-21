@@ -1341,13 +1341,17 @@ wxbot.on('login', async user => {
         wxLogger.info(`Timer report: ${state.v.wxMsgTotal} messages have passed 10s after wx login.`);
     },10000);
 });
+
+wxbot.on('logout', async (user) => {
+    wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxMsgTotal}).`);
+});
 wxbot.start()
     .then(() => wxLogger.info('开始登陆微信...'))
     .catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 
-ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
+// ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
 downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
     // 此部分代码仅供临时使用，待完善。
     if (rs !== "SUCCESS") {
