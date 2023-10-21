@@ -43,7 +43,7 @@ module.exports = (tgBotDo, wxLogger) => {
                         with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
                         wxLogger.info(`Already send re-login reminder to user.`);
                     }
-                }, 40000);
+                }, 10000);
             }
 
         } else if (status === 3) {

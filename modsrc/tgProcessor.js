@@ -113,7 +113,8 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
             message = `Already set '${additional}' as last talker and locked.`;
             break;
         case "aboutToReLoginWX":
-            message = `You are about to trigger relogin of WeChat. The program will try to exit after you send /reloginWX_2 , and if the program is run by docker or other, it would be started again and 30s later you will receive new qrcode to scan. If you don't respond, then nothing will happen.`;
+            message = `You are about to trigger relogin of WeChat. The program will try to exit after you send /reloginWX_2 , and if the program is run under docker or other monitor tool, it would be started again and soon later you will receive new qrcode to scan. If you don't respond, then nothing will happen.`;
+            timeout = 180;
             break;
 
         default:

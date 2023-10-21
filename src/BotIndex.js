@@ -980,12 +980,12 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/reloginWX": {
-            return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched);
+            return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
         }
         case "/reloginWX_2": {
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             await fs.promises.unlink("ctbridgebot.memory-card.json");
-            ctLogger.warn("relogin request invoked by user, memory-card deletion successful, attempting reboot!")
+            ctLogger.warn("Relogin request invoked by user, memory-card deletion successful, attempting reboot!")
             process.exit(123);
         }
         default: {
