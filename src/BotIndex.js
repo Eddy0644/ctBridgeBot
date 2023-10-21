@@ -979,6 +979,15 @@ async function tgCommandHandler(tgMsg) {
             await tgBotDo.SendMessage(tgMsg.matched, secret.misc.tgCmdPlaceholder, true);
             return;
         }
+        case "/reloginWX": {
+            return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched);
+        }
+        case "/reloginWX_2": {
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            await fs.promises.unlink("ctbridgebot.memory-card.json");
+            ctLogger.warn("relogin request invoked by user, memory-card deletion successful, attempting reboot!")
+            process.exit(123);
+        }
         default: {
             const skip = secret.misc.passUnrecognizedCmdNext;
             tgLogger.info(`Unrecognized command; ${skip ? 'Passed next.' : 'Skipped.'}`);
@@ -1339,9 +1348,9 @@ wxbot.on('login', async user => {
     wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}  |  ${user.payload.avatar}`);
     state.s.selfName = user.payload.name;
     // start timer for count skipped msg
-    setTimeout(()=>{
+    setTimeout(() => {
         wxLogger.info(`Timer report: ${state.v.wxMsgTotal} messages have passed 10s after wx login.`);
-    },10000);
+    }, 10000);
 });
 
 wxbot.on('logout', async (user) => {

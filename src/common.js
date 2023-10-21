@@ -121,6 +121,7 @@ module.exports = (param) => {
 /drop_on & /drop_off : [msg drop]
 /sync_on & /sync_off : [self sync]
 /info ; /placeholder ; /try_edit 
+/reloginWX ;
 Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.last.name : "-"}]`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],

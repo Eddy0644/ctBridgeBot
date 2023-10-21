@@ -112,6 +112,9 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
         case "setAsLastAndLocked":
             message = `Already set '${additional}' as last talker and locked.`;
             break;
+        case "aboutToReLoginWX":
+            message = `You are about to trigger relogin of WeChat. The program will try to exit after you send /reloginWX_2 , and if the program is run by docker or other, it would be started again and 30s later you will receive new qrcode to scan. If you don't respond, then nothing will happen.`;
+            break;
 
         default:
             tgLogger.error(`Wrong call of tg replyWithTips() with invalid 'tipMode'. Please check arguments.\n${tipMode}\t${target}`);
