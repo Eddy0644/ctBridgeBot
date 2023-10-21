@@ -21,6 +21,9 @@ const state = {
         timerDataCount: 6,
         msgMergeFailCount: 6,
         globalNetworkErrorCount: 3,
+        wxMsgTotal: 0,
+        // Add counter on wx Message Total number, and reflect when encounter wx error;
+        // because every boot will load history messages, so no need for persistence
     },
     last: {},
     s: { // session
@@ -430,6 +433,7 @@ tgbot.on('message', onTGMsg);
 
 
 async function onWxMessage(msg) {
+    state.v.wxMsgTotal++;
     // 按照距今时间来排除wechaty重启时的重复消息
     // sometimes there are delayed messages `by wechaty` for 150s age or more, so altered this.
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
@@ -796,7 +800,7 @@ async function onWxMessage(msg) {
             content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]/, titles.recvTransfer);
             content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
 
-            content = mod.tgProcessor.filterMsgText(content,{isGroup, peerName: name});
+            content = mod.tgProcessor.filterMsgText(content, {isGroup, peerName: name});
 
             for (const pair of secret.filtering.wxContentReplaceList) {
                 if (content.includes(pair[0])) {
@@ -1329,9 +1333,13 @@ async function getFileFromWx(msg) {
 }
 
 wxbot.on('login', async user => {
-    wxLogger.info(`${user}已登录. 可在Trace Log中取得详细信息.`);
-    wxLogger.trace(`Logged User info: id=(${user.id}) ${user.payload.name} ${user.payload.avatar}`);
+    wxLogger.info(`${user}已登录. 可在Trace Log中取得本次会话的详细信息.`);
+    wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}  |  ${user.payload.avatar}`);
     state.s.selfName = user.payload.name;
+    // start timer for count skipped msg
+    setTimeout(()=>{
+        wxLogger.info(`Timer report: ${state.v.wxMsgTotal} messages have passed 10s after wx login.`);
+    },10000);
 });
 wxbot.start()
     .then(() => wxLogger.info('开始登陆微信...'))
