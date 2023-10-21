@@ -1000,6 +1000,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         if (msg.DType === DTypes.Push) {
             msgDef.isSilent = true;
             msgDef.suppressTitle = true;
+            // TODO Found a issue here, forgot to change target channel to Push; still under observance.
+            msg.receiver = secret.class.push;
         }
     }
     const {tmpl, tmplc} = (() => {
