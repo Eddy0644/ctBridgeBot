@@ -3,7 +3,7 @@ const qrcodeTerminal = require("qrcode-terminal");
 // const config = require("../config/secret");
 const secret = require("../config/confLoader");
 const {downloader} = require("./common")();
-
+const fs = require("fs");
 
 const wxbot = WechatyBuilder.build({
     name: 'ctbridgebot',
@@ -36,6 +36,7 @@ module.exports = (tgBotDo, wxLogger) => {
             // Need User Login
             if (needLoginStat === 0) {
                 needLoginStat = 1;
+                const isUserTriggeredRelogin = fs.existsSync("userTriggerRelogin.flag");
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
                         if (secret.notification.send_relogin_via_tg) await tgBotDo.SendMessage(null,
@@ -43,7 +44,7 @@ module.exports = (tgBotDo, wxLogger) => {
                         with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
                         wxLogger.info(`Already send re-login reminder to user.`);
                     }
-                }, 10000);
+                }, isUserTriggeredRelogin ? 500 : 27000);
             }
 
         } else if (status === 3) {

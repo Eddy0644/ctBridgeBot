@@ -985,7 +985,9 @@ async function tgCommandHandler(tgMsg) {
         case "/reloginWX_2": {
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             await fs.promises.unlink("ctbridgebot.memory-card.json");
-            ctLogger.warn("Relogin request invoked by user, memory-card deletion successful, attempting reboot!")
+            ctLogger.warn("Relogin request invoked by user, memory-card deletion successful, attempting reboot!");
+            // write a flag to disk, in order to skip graceful timeout before sending QRCode to TG
+            await fs.promises.writeFile("userTriggerRelogin.flag", "114514");
             process.exit(123);
         }
         default: {
@@ -1009,7 +1011,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         if (msg.DType === DTypes.Push) {
             msgDef.isSilent = true;
             msgDef.suppressTitle = true;
-            // TODO Found a issue here, forgot to change target channel to Push; still under observance.
+            // TODO Found a issue here, forgot to change target channel to Push;
+            //  now corrected but still under observance.
             msg.receiver = secret.class.push;
         }
     }
