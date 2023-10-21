@@ -497,7 +497,7 @@ async function onWxMessage(msg) {
             ahead = true;
             for (const keyword of strategy.blackList) {
                 if (originName.includes(keyword)) {
-                    wxLogger.debug(`来自[${originName}]的消息因名称符合黑名单“${keyword}”，未递送： ${contentSub}`);
+                    wxLogger.debug(`[${originName}]消息因黑名单未递送： ${contentSub}`);
                     ahead = false;
                 }
             }
@@ -509,7 +509,7 @@ async function onWxMessage(msg) {
                     break;
                 }
             }
-            if (!ahead) wxLogger.debug(`来自[${topic}]的消息因名称不符合任何白名单关键词，未递送： ${contentSub}`);
+            if (!ahead) wxLogger.debug(`[${originName}]消息因不符合白名单未递送： ${contentSub}`);
         }
 
         // Some code must be executed before filtering; so put it here. --------------
