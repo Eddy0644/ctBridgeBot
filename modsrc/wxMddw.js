@@ -1,6 +1,9 @@
 const xml2js = require("xml2js");
 const dayjs = require("dayjs");
 const fs = require("fs");
+const {path: ffprobePath} = require("ffprobe-static");
+const util = require("util");
+const ffprobe = require("ffprobe");
 let env;
 
 async function a() {
@@ -78,10 +81,11 @@ async function handleVideoMessage(msg, name) {
     }
     const videoInfo = await getVideoFileInfo(videoPath);
     if (videoInfo[0] === -1) {
-        wxLogger.info("Parse Video Info failed.");
+        wxLogger.info("Parse Video Info failed.\n" + videoInfo[2]);
     } else if (videoInfo[0] === 0) {
+        if (videoInfo[2] === "NOMODULE") wxLogger.warn("Error occurred when loading ffprobe-related modules. We'll try to send the video directly.");
         wxLogger.info("Parse Video Info (Play Length) failed.");
-        wxLogger.info(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length( PARSE FAILURE )`);
+        wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length( PARSE FAILURE )`);
     } else if (videoInfo[0] === 1) {
         wxLogger.debug(`Video Info: size(${videoInfo[1].toFixed(2)})MB, length(${videoInfo[2]}).\n${videoInfo[3]}`);
         wxLogger.trace(`video local path for above:(${videoInfo}), more info: ${JSON.stringify(videoInfo[4])}`);
@@ -98,16 +102,20 @@ async function handleVideoMessage(msg, name) {
 }
 
 async function getVideoFileInfo(videoPath) {
-    const util = require('util');
-    const ffprobePath = require('ffprobe-static').path;
-    const ffprobe = require('ffprobe');
-    const ffprobeOptions = {path: ffprobePath};
-    const statAsync = util.promisify(fs.stat);
-    const ffprobeAsync = util.promisify(ffprobe);
+    let included = 0, fileSizeMB = -1;
     try {
+        const util = require('util');
+        const statAsync = util.promisify(fs.stat);
         const stats = await statAsync(videoPath);
         const fileSizeBytes = stats.size;
-        const fileSizeMB = fileSizeBytes / (1024 * 1024);
+        fileSizeMB = fileSizeBytes / (1024 * 1024);
+
+        const ffprobePath = require('ffprobe-static').path;
+        const ffprobe = require('ffprobe');
+        const ffprobeOptions = {path: ffprobePath};
+        const ffprobeAsync = util.promisify(ffprobe);
+
+        included = 1;
 
         const info = await ffprobeAsync(videoPath, ffprobeOptions);
         if (info.streams && info.streams.length > 0 && info.streams[0].duration) {
@@ -123,7 +131,7 @@ async function getVideoFileInfo(videoPath) {
             return [0, fileSizeMB];
         }
     } catch (err) {
-        return [-1, err];
+        return [!included ? 0 : -1, fileSizeMB, !included ? "NOMODULE" : err];
     }
 }
 
