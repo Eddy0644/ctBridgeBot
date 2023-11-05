@@ -152,7 +152,9 @@ module.exports = {
         // original text here (wrapped with []), to suppress replacing here.
         unsupportedSticker: "{--🧩--}",
         recvCall: "{📞📲}",
+        recvSplitBill: "{💰✂️📥, 👋}",
         recvTransfer: "{💰📥}",
+        acceptTransfer: "{💰📥, ✅}",
         msgTypeNotSupported: "{📩❎, 👉📱}",
     },
     txyun: {
