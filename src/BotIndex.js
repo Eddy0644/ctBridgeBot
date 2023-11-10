@@ -21,9 +21,12 @@ const state = {
         timerDataCount: 6,
         msgMergeFailCount: 6,
         globalNetworkErrorCount: 3,
-        wxMsgTotal: 0,
-        // Add counter on wx Message Total number, and reflect when encounter wx error;
-        // because every boot will load history messages, so no need for persistence
+        wxStat: {
+            MsgTotal: 0,
+            // Add counter on wx Message Total number, and reflect when encounter wx error;
+            // because every time boot will load history messages, so no need for persistence
+            puppetDoneInitTime: 0
+        },
     },
     last: {},
     s: { // session
@@ -433,7 +436,7 @@ tgbot.on('message', onTGMsg);
 
 
 async function onWxMessage(msg) {
-    state.v.wxMsgTotal++;
+    state.v.wxStat.msgTotal++;
     // 按照距今时间来排除wechaty重启时的重复消息
     // sometimes there are delayed messages `by wechaty` for 150s age or more, so altered this.
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
@@ -895,7 +898,7 @@ async function tgCommandHandler(tgMsg) {
     switch (text) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
-                + `Temporary Status Output:(TotalMsgCount:${state.v.wxMsgTotal})`);
+                + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.msgTotal})`);
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             conLogger.trace("Revoke complete. sending new /help instance...");
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
@@ -1354,18 +1357,24 @@ wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录. 可在Trace Log中取得本次会话的详细信息.`);
     wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}  |  ${user.payload.avatar}`);
     state.s.selfName = user.payload.name;
+    if (process.uptime() - state.v.wxStat.puppetDoneInitTime < 4) {
+        // Now we know that during this boot we used cached credentials, not scanned.
+        // TODO check when user last manual login
+    }
     // start timer for count skipped msg
     setTimeout(() => {
-        wxLogger.info(`Timer report: ${state.v.wxMsgTotal} messages have passed 10s after wx login.`);
+        wxLogger.info(`Timer report: ${state.v.wxStat.msgTotal} messages have passed 10s after wx login.`);
     }, 10000);
 });
 
 wxbot.on('logout', async (user) => {
-    wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxMsgTotal}).`);
+    wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxStat.msgTotal}).`);
 });
 wxbot.start()
-    .then(() => wxLogger.info('开始登陆微信...'))
-    .catch((e) => wxLogger.error(e));
+    .then(() => {
+        wxLogger.info('开始登陆微信...');
+        state.v.wxStat.puppetDoneInitTime = process.uptime();
+    }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 
@@ -1373,8 +1382,8 @@ require('./common')("startup");
 downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
     // 此部分代码仅供临时使用，待完善。
     if (rs !== "SUCCESS") {
-        console.log("\n\n\n");
-        ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n\n")
+        console.log("\n\n");
+        ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n")
     }
 })
 
