@@ -894,7 +894,8 @@ async function tgCommandHandler(tgMsg) {
     }
     switch (text) {
         case "/help": {
-            tgLogger.debug("Received /help request, revoking user command...");
+            tgLogger.debug("Received /help request, now revoking user command...\n"
+                + `Temporary Status Output:(TotalMsgCount:${state.v.wxMsgTotal})`);
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             conLogger.trace("Revoke complete. sending new /help instance...");
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
