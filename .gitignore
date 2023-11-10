@@ -29,3 +29,5 @@ package-lock.json
 /config/web.pem
 /.run/*
 /1tq.sh
+ct_temppacked.tar.gz
+sticker_v2.json
