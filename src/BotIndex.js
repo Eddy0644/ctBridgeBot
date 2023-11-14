@@ -83,7 +83,7 @@ env.mod = mod;
 
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
-    if (tgMsg.text && tgMsg.text.replace(secret.tgbot.botName, "") === "/drop_off" && state.v.msgDropState) {
+    if (tgMsg.text &&  ["/drop_off", "/drop_toggle"].includes(tgMsg.text.replace(secret.tgbot.botName, "")) && state.v.msgDropState) {
         // Verified as /drop_off command
         state.v.msgDropState = 0;
         tgLogger.info("tg Msg drop lock is now OFF.");
@@ -890,7 +890,7 @@ wxbot.on('message', onWxMessage);
 async function tgCommandHandler(tgMsg) {
     const text = tgMsg.text.replace(secret.tgbot.botName, "");
     // return 1 means not processed by this handler, continue to next steps
-    if (state.s.helpCmdInstance && !['/sync_on', '/drop_on'].includes(text)) {
+    if (state.s.helpCmdInstance && !['/sync_on', '/drop_on', '/drop_toggle'].includes(text)) {
         // former /help instance found, try to delete it...
         await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.matched);
         state.s.helpCmdInstance = null;

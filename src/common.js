@@ -105,7 +105,7 @@ module.exports = (param) => {
             CommonData: {
                 TGBotCommands: [
                     // {command: '/find', description: 'Find Person or Group Chat'},
-                    {command: '/clear', description: 'Clear Selection'},
+                    {command: '/clear', description: 'Clear Current Selection'},
                     {command: '/help', description: 'Get a detail of more bot commands.'},
                     // {command: '/keyboard', description: 'Get a persistent versatile quick keyboard.'},
                     // {command: '/info', description: 'Get current system variables'},
@@ -114,6 +114,9 @@ module.exports = (param) => {
                     // {command: '/log', description: 'Get a copy of program verbose log of 1000 chars by default.'},
                     {command: '/lock', description: 'Lock the target talker to avoid being interrupted.'},
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
+                    // TODO fix /drop_toggle
+                    {command: '/drop_toggle', description: 'Toggle /drop status. (Incomplete)'},
+                    
                     // Add more commands as needed
                 ],
                 // Explanation: ein -> on, aus -> off
