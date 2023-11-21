@@ -606,7 +606,7 @@ async function onWxMessage(msg) {
                     ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
                 } else {
                     if (fetched.full_md5 !== md5) {
-                        ctLogger.warn(`Sticker Collision Detected! If you rely on sticker delivery then you should check it.\n${md5} is short for (${fetched.full_md5}).`);
+                        ctLogger.warn(`Sticker Collision Detected! If you rely on sticker delivery then you should check it.\t${md5} is short for (${fetched.full_md5}).`);
                     }
                     // change msg detail so that could be used in merging or so.
                     // content = `[${md5.substring(0, 3)} of #sticker]`;
