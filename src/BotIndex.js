@@ -436,7 +436,7 @@ tgbot.on('message', onTGMsg);
 
 
 async function onWxMessage(msg) {
-    state.v.wxStat.msgTotal++;
+    state.v.wxStat.MsgTotal++;
     // 按照距今时间来排除wechaty重启时的重复消息
     // sometimes there are delayed messages `by wechaty` for 150s age or more, so altered this.
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
@@ -898,7 +898,7 @@ async function tgCommandHandler(tgMsg) {
     switch (text) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
-                + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.msgTotal})`);
+                + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             conLogger.trace("Revoke complete. sending new /help instance...");
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
@@ -1368,7 +1368,7 @@ wxbot.on('login', async user => {
 });
 
 wxbot.on('logout', async (user) => {
-    wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxStat.msgTotal}).`);
+    wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxStat.MsgTotal}).`);
 });
 wxbot.start()
     .then(() => {
