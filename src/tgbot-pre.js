@@ -177,7 +177,7 @@ tgbot.on('polling_error', async (e) => {
                 tgLogger.info(`There may be a temporary network issue but now disappeared. If possible, please check your network config.`);
 
             }
-        }, 30000);
+        }, 42000);
         console.warn(msg3 + msg);
     } else if (errorStat > 0) {
         errorStat++;
