@@ -6,7 +6,7 @@ const fs = require("fs");
 const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
 const wx_emoji_conversions = require("../config/wx-emoji-map");
-const stickerLib = new DataStorage("./sticker_v2.json");
+const stickerLib = new DataStorage("./sticker_l4.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
     CommonData, STypes, downloader, processor, delay
@@ -601,7 +601,7 @@ async function onWxMessage(msg) {
             let ahead = true;
             {
                 // skip stickers that already sent and replace them into text
-                const fetched = await stickerLib.get(md5.substring(0, 3));
+                const fetched = await stickerLib.get(md5.substring(0, 4));
                 if (fetched === null) {
                     ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
                 } else {
@@ -613,9 +613,9 @@ async function onWxMessage(msg) {
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
                     ahead = false;
-                    msg.md5 = md5.substring(0, 3);
+                    msg.md5 = md5.substring(0, 4);
                     if (typeof fetched.msgId === "number") content = secret.c11n.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
-                    else content = `[${md5.substring(0, 3)} of #sticker]`;
+                    else content = `[${md5.substring(0, 4)} of #sticker]`;
                     ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
                 }
             }
@@ -624,7 +624,7 @@ async function onWxMessage(msg) {
                     // downloadFile_old(emotionHref, path + ".backup.gif");
                     msg.downloadedPath = cEPath;
                     wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
-                    msg.md5 = md5.substring(0, 3);
+                    msg.md5 = md5.substring(0, 4);
                     const stream = fs.createReadStream(msg.downloadedPath);
                     const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, false);
                     await stickerLib.set(msg.md5, {
@@ -636,7 +636,7 @@ async function onWxMessage(msg) {
                 } else msg.downloadedPath = null;
             } else if (ahead) {
                 msg.downloadedPath = cEPath;
-                msg.md5 = md5.substring(0, 3);
+                msg.md5 = md5.substring(0, 4);
                 const stream = fs.createReadStream(msg.downloadedPath);
                 const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, false);
                 await stickerLib.set(msg.md5, {
