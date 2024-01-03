@@ -867,7 +867,7 @@ async function onWxMessage(msg) {
                 const _ = state.prePerson;
                 const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                 const nowDate = dayjs().unix();
-                if (_.name === name && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
+                if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
                     const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, alias, msg.DType === DTypes.Text);
                     if (result === true) return;
                 } else
