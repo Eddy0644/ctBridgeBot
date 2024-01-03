@@ -1363,8 +1363,8 @@ wxbot.on('login', async user => {
     }
     // start timer for count skipped msg
     setTimeout(() => {
-        wxLogger.info(`Timer report: ${state.v.wxStat.MsgTotal} messages have passed 10s after wx login.`);
-    }, 10000);
+        wxLogger.info(`Timer report: ${state.v.wxStat.MsgTotal} messages have passed 30s after wx login.`);
+    }, 30000);  // sometimes the program is too slow that 10s is far from enough to fetch all messages.
 });
 
 wxbot.on('logout', async (user) => {
