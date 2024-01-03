@@ -45,6 +45,8 @@ module.exports = (tgBotDo, wxLogger) => {
                         wxLogger.info(`Already send re-login reminder to user.`);
                     }
                 }, isUserTriggeredRelogin ? 500 : 27000);
+                // delete the flag file after sent notification.
+                if(isUserTriggeredRelogin) fs.unlinkSync("userTriggerRelogin.flag");
             }
 
         } else if (status === 3) {

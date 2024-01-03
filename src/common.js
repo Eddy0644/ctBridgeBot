@@ -116,6 +116,7 @@ module.exports = (param) => {
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                     // TODO fix /drop_toggle
                     {command: '/drop_toggle', description: 'Toggle /drop status. (Incomplete)'},
+                    {command: '/reloginWX_2', description: 'Immediately invalidate current WX login credential and reboot.'},
                     
                     // Add more commands as needed
                 ],
