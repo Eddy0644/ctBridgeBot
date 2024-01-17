@@ -994,7 +994,7 @@ async function tgCommandHandler(tgMsg) {
             await fs.promises.unlink("ctbridgebot.memory-card.json");
             ctLogger.warn("Relogin request invoked by user, memory-card deletion successful, attempting reboot!");
             // write a flag to disk, in order to skip graceful timeout before sending QRCode to TG
-            await fs.promises.writeFile("userTriggerRelogin.flag", "114514");
+            await fs.promises.writeFile("data/userTriggerRelogin.flag", "114514");
             process.exit(123);
         }
         default: {

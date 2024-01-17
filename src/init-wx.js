@@ -7,7 +7,7 @@ const fs = require("fs");
 
 const wxbot = WechatyBuilder.build({
     name: 'data/ctbridgebot',
-    puppet: 'wechaty-puppet-wechat', // 如果有token，记得更换对应的puppet
+    puppet: 'wechaty-puppet-wechat',
     puppetOptions: {uos: true}
 });
 const DTypes = {
@@ -24,19 +24,18 @@ const DTypes = {
 module.exports = (tgBotDo, wxLogger) => {
     // running instance of wxbot-pre
     let needLoginStat = 0;
-    // 二维码生成
     wxbot.on('scan', async (qrcode, status) => {
         const qrcodeImageUrl = [
             'https://api.qrserver.com/v1/create-qr-code/?data=',
             encodeURIComponent(qrcode),
         ].join('');
         if (status === 2) {
-            qrcodeTerminal.generate(qrcode, {small: true}); // 在console端显示二维码
+            qrcodeTerminal.generate(qrcode, {small: true}); // show QRcode in terminal
             console.log(qrcodeImageUrl);
-            // Need User Login
+            // if need User Login
             if (needLoginStat === 0) {
                 needLoginStat = 1;
-                const isUserTriggeredRelogin = fs.existsSync("userTriggerRelogin.flag");
+                const isUserTriggeredRelogin = fs.existsSync("data/userTriggerRelogin.flag");
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
                         if (secret.notification.send_relogin_via_tg) await tgBotDo.SendMessage(null,
@@ -46,18 +45,18 @@ module.exports = (tgBotDo, wxLogger) => {
                     }
                 }, isUserTriggeredRelogin ? 500 : 27000);
                 // delete the flag file after sent notification.
-                if(isUserTriggeredRelogin) fs.unlinkSync("userTriggerRelogin.flag");
+                if(isUserTriggeredRelogin) fs.unlinkSync("data/userTriggerRelogin.flag");
             }
 
         } else if (status === 3) {
-            console.log(`-----The code is already scanned.\n${qrcodeImageUrl}`);
+            console.log(`------[The code is already scanned.\n ${qrcodeImageUrl} ]------`);
             needLoginStat = 0;
         } else {
             console.log(`User may accepted login. Proceeding...`);
         }
     });
 
-    // wxbot.on('logout', ...) defined in BotIndex.js.
+    // wxbot.on('logout', ...) is defined in BotIndex.js.
 
     let wxBotErrorStat = 0;
     wxbot.on('error', async (e) => {

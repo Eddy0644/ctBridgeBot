@@ -220,5 +220,4 @@ function logErrorDuringTGSend(err) {
 module.exports = {
     tgbot,
     tgBotDo
-
 }
