@@ -1,7 +1,7 @@
 // noinspection JSUnreachableSwitchBranches
 
 const dayjs = require("dayjs");
-const { tgBotDo } = require("../src/tgbot-pre");
+const { tgBotDo } = require("./init-tg");
 const secret = require("../config/confLoader");
 let env;
 

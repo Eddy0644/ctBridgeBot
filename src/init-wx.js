@@ -6,7 +6,7 @@ const {downloader} = require("./common")();
 const fs = require("fs");
 
 const wxbot = WechatyBuilder.build({
-    name: 'ctbridgebot',
+    name: 'data/ctbridgebot',
     puppet: 'wechaty-puppet-wechat', // 如果有token，记得更换对应的puppet
     puppetOptions: {uos: true}
 });
