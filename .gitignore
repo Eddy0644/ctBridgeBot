@@ -1,3 +1,4 @@
+# generated general ignore
 */.settings
 */target
 *target
@@ -12,21 +13,20 @@
 *node_modules
 .env
 package-lock.json
+
 */downloaded/*
 *.memory-card.json
 /log/
 /proxy.js
-/config/secret.js
 
+# in config/
 /config/cli.pem
 /config/srv.pem
-/stickers.json
-/test.json
-/config/temp.txt
-/IGNT/
-/config/user.conf.js
-/downloaded/*/*
 /config/web.pem
+/config/user.conf.js
+/stickers.json
+/IGNT/
+/downloaded/*/*
 /.run/*
 /1tq.sh
 ct_temppacked.tar.gz

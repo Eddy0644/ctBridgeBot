@@ -6,7 +6,7 @@ const fs = require("fs");
 const dayjs = require('dayjs');
 const DataStorage = require('./dataStorage.api');
 const wx_emoji_conversions = require("../config/wx-emoji-map");
-const stickerLib = new DataStorage("./sticker_l4.json");
+const stickerLib = new DataStorage("./data/sticker_l4.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
     CommonData, STypes, downloader, processor, delay
@@ -65,8 +65,8 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
         tgLogger.debug(`Attempting to add message to poolToDelete with timer (${delay})sec, but got null Object.`);
     }
 };
-const { tgbot, tgBotDo } = require('./tgbot-pre');
-const { wxbot, DTypes } = require('./wxbot-pre')(tgBotDo, wxLogger);
+const { tgbot, tgBotDo } = require('./init-tg');
+const { wxbot, DTypes } = require('./init-wx')(tgBotDo, wxLogger);
 
 // Loading instance modules...
 const env = {
@@ -74,10 +74,10 @@ const env = {
 };
 const mod = {
     // autoRespond: require('./autoResponder')(env),
-    upyunMiddleware: require('../modsrc/upyunMiddleware')(env),
-    audioRecognition: require('../modsrc/audioRecognition')(env),
-    wxMddw: require('../modsrc/wxMddw')(env),
-    tgProcessor: require('../modsrc/tgProcessor')(env),
+    upyunMiddleware: require('./upyunMiddleware')(env),
+    audioRecognition: require('./audioRecognition')(env),
+    wxMddw: require('./wxMddw')(env),
+    tgProcessor: require('./tgProcessor')(env),
 }
 env.mod = mod;
 
