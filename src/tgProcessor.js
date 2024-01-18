@@ -26,7 +26,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
     const who = isGroup ? `${_.topic}/${name}` : name;
     const newItemTitle = (() => {
         const s = secret.c11n.titleForSameTalkerInMergedRoomMsg;
-        if (s === false || _.lastTalker !== name) {
+        if (s === false || (isGroup && _.lastTalker !== name)) {
             _.talkerCount = 0;
             _.lastTalker = name;
             const notDropTitle = secret.misc.PutStampBeforeFirstMergedMsg || isGroup;
@@ -49,7 +49,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         return isText; // !isText?false:true
     } else {
         // Ready to modify first msg, refactoring it.
-        ///* C2C msg do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
+        ///* newFirstTitle = 0 --> C2C msg, do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
         const newString = (newFirstTitle === 0 ? `` : `📨⛓️ [#<b>${newFirstTitle}</b>] - - - -\n`) +
             `${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
