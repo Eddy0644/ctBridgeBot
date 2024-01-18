@@ -1102,6 +1102,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                     tgMsg, firstWord: `[<u>${dayjs().format("H:mm:ss")}</u>] ${content}`,
                     msgText: `${tmpl} ${content}`,
                     receiver: msg.receiver,
+                    talkerCount: 0,
                 };
             }
         }
