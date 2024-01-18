@@ -442,8 +442,9 @@ async function onWxMessage(msg) {
     let isMessageDropped = (msg.age() > 40 && process.uptime() < 50) || (msg.age() > 200);
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     if (!secret.misc.savePostRawDataInDetailedLog && msg.type() === wxbot.Message.Type.Attachment && msg.payload.filename.endsWith(".49") && msg.payload.text.length > 8000) {
-        // This post message will be delivered, but not save to log, as only one of them would take up to 40KB in log file.
-    } else LogWxMsg(msg, isMessageDropped ? 1 : 0);
+        // These post message will be delivered, but not save to log, as only one of them would take up to 40KB in log file.
+    } else if(isMessageDropped)
+        LogWxMsg(msg, 1);   // Only dropped messages will be logged at this point.
     if (isMessageDropped) return;
 
     //基本信息提取-------------
@@ -463,6 +464,13 @@ async function onWxMessage(msg) {
     }
 
     msg.DType = DTypes.Default;
+    {   // Sub: prepare data for LogWxMsg
+        msg.log_payload = `Type(${isGroup ? ('G,"'+topic+'"'):'P)'} from talker [${alias}].`;
+        LogWxMsg(msg, 0);
+        delete isMessageDropped;
+    }
+    
+
 
     // 提前drop自己的消息, 避免deliver无用消息
     if (state.v.syncSelfState !== 1) if (room) {
