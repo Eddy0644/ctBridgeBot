@@ -117,7 +117,7 @@ module.exports = {
             // switch pool when time expired __s
             timeTrig: 30,
         },
-        // 1: pass unrecognized cmd; 0: return
+        // 1: pass unrecognized cmd to chat process logic; 0: directly return
         passUnrecognizedCmdNext: 1,
 
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
@@ -131,6 +131,16 @@ module.exports = {
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
     },
+    chatOption:{    // this section declares default behaviors of chats when not specified in C2C flag.
+        
+        // whether accept *-prefix in TG message as indicator of not forwarding to WX
+        "mixed": 1,
+        // whether merge WX-side messages by default
+        "merge": 1,   
+        // whether skip all sticker delivery by default
+        "skipSticker": 0,
+
+    },
     c11n: {  // customization
 
         // 🖇🧷💬 (Quoted "${content}" of ${from})
@@ -140,9 +150,11 @@ module.exports = {
         // s=<function>, would be executed with parameter 'count' and taken return value
         titleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
 
+        // For person chat, if wx-side msg have quoted msg, then use these two nickname to replace raw contact name.
         quotedMsgSuffixLineInPersonChat: ["YOU", "ta"],
+
         officialAccountParser: a => `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`,
-        //
+        // what nickname will system message use in group show up, like tickle message.
         systemMsgTitleInRoom: "(System)",
         // If a sticker with former delivery found, then run this func to get formatted text.
         stickerWithLink: (url_p, flib, md5) => flib.hint ?
@@ -150,7 +162,7 @@ module.exports = {
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
         // original text here (wrapped with []), to suppress replacing here.
-        unsupportedSticker: "{--🧩--}",
+        unsupportedSticker: "{-🧩-}",
         recvCall: "{📞📲}",
         recvSplitBill: "{💰✂️📥, 👋}",
         recvTransfer: "{💰📥}",
