@@ -562,7 +562,7 @@ async function onWxMessage(msg) {
         const match = `${recalledMessage}`.replace("Message#", "").match(regex);
         if (match) {
             const type = match[1], contactName = match[2], groupName = match[3] || '',
-                msgContent = match.input.replace(match[0]);
+                msgContent = match.input.replace(match[0], '');
             // Use match-and-replace strategy to get original msg content
             content = `[Recalled ${type}]`
                 + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
