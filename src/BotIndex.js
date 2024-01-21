@@ -60,13 +60,13 @@ const state = {
 state.poolToDelete.add = function (tgMsg, delay, receiver) {
     if (tgMsg !== null) {
         tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${delay})sec.`);
-        state.poolToDelete.push({ tgMsg: tgMsg, toDelTs: (dayjs().unix()) + delay, receiver });
+        state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + delay, receiver});
     } else {
         tgLogger.debug(`Attempting to add message to poolToDelete with timer (${delay})sec, but got null Object.`);
     }
 };
-const { tgbot, tgBotDo } = require('./init-tg');
-const { wxbot, DTypes } = require('./init-wx')(tgBotDo, wxLogger);
+const {tgbot, tgBotDo} = require('./init-tg');
+const {wxbot, DTypes} = require('./init-wx')(tgBotDo, wxLogger);
 
 // Loading instance modules...
 const env = {
@@ -118,7 +118,7 @@ async function onTGMsg(tgMsg) {
                     } else return true;
                 })();
                 if (tgMsg.chat.id === pair.tgid && thread_verify) {
-                    tgMsg.matched = { s: 1, p: pair };
+                    tgMsg.matched = {s: 1, p: pair};
                     tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
                     if (pair.flag.includes("mixed") &&
                         ((tgMsg.text && tgMsg.text.startsWith("*")) || (tgMsg.caption && tgMsg.caption.startsWith("*")))
@@ -129,7 +129,7 @@ async function onTGMsg(tgMsg) {
                     break;
                 }
             }
-            if (tgMsg.chat.id === def.tgid) tgMsg.matched = { s: 0 };
+            if (tgMsg.chat.id === def.tgid) tgMsg.matched = {s: 0};
             if ((secret.misc.deliverSticker !== false) && tgMsg.chat.id === secret.misc.deliverSticker.tgid) {
                 const repl = tgMsg.reply_to_message;
                 if (repl && (repl.animation || repl.document) && /#sticker ([0-9,a-f]{3})/.test(repl.caption)) {
@@ -249,7 +249,7 @@ async function onTGMsg(tgMsg) {
                     if (tgMsg.text === "@") {
                         // Trigger special operation: Lock and set as explicit
                         state.v.targetLock = 2;
-                        const { name, talker } = mapPair;
+                        const {name, talker} = mapPair;
                         state.last = {
                             s: STypes.Chat,
                             target: talker,
@@ -443,7 +443,7 @@ async function onWxMessage(msg) {
     //将收到的所有消息之摘要保存到wxLogger->trace,消息详情保存至wxMsg文件夹
     if (!secret.misc.savePostRawDataInDetailedLog && msg.type() === wxbot.Message.Type.Attachment && msg.payload.filename.endsWith(".49") && msg.payload.text.length > 8000) {
         // These post message will be delivered, but not save to log, as only one of them would take up to 40KB in log file.
-    } else if(isMessageDropped)
+    } else if (isMessageDropped)
         LogWxMsg(msg, 1);   // Only dropped messages will be logged at this point.
     if (isMessageDropped) return;
 
@@ -465,11 +465,10 @@ async function onWxMessage(msg) {
 
     msg.DType = DTypes.Default;
     {   // Sub: prepare data for LogWxMsg
-        msg.log_payload = `Type(${isGroup ? ('G,"'+topic+'"'):'P)'} from talker [${alias}].`;
+        msg.log_payload = `Type(${isGroup ? ('G,"' + topic + '"') : 'P)'} from talker [${alias}].`;
         LogWxMsg(msg, 0);
         delete isMessageDropped;
     }
-    
 
 
     // 提前drop自己的消息, 避免deliver无用消息
@@ -814,7 +813,7 @@ async function onWxMessage(msg) {
             content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
             content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
 
-            content = mod.tgProcessor.filterMsgText(content, { isGroup, peerName: name });
+            content = mod.tgProcessor.filterMsgText(content, {isGroup, peerName: name});
 
             for (const pair of secret.filtering.wxContentReplaceList) {
                 if (content.includes(pair[0])) {
@@ -1031,7 +1030,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             msg.receiver = secret.class.push;
         }
     }
-    const { tmpl, tmplc } = (() => {
+    const {tmpl, tmplc} = (() => {
         let tmpl, tmplc;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
@@ -1041,7 +1040,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tmpl = isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
         }
         tmplc = isRoom ? `${name}/${topic}` : `${alias}`;
-        return { tmpl, tmplc };
+        return {tmpl, tmplc};
     })();
 
     let tgMsg, retrySend = 2;
@@ -1119,7 +1118,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             if (state.v.globalNetworkErrorCount-- < 0) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_network_issue_happened + default_arg);
             // todo add undelivered pool
             tgLogger.warn("Got invalid TG receipt, bind Mapping failed. " +
-                (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
+            (retrySend > 0) ? `[Trying resend #${retrySend} to solve potential network error]` : `[No retries left]`);
             if (retrySend-- > 0) continue;
             return "sendFailure";
         } else {
@@ -1272,9 +1271,9 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
     const s = alterMsgId === 0;
     tgBotDo.SendChatAction("typing", receiver).then(tgBotDo.empty)
     // Find below as: 1.name of Person 2.name of topic 3.alias of person
-    let wxFinded1 = await wxbot.Contact.find({ name: token });
-    const wxFinded2 = wxFinded1 || await wxbot.Room.find({ topic: token });
-    wxFinded1 = wxFinded1 || await wxbot.Contact.find({ alias: token });
+    let wxFinded1 = await wxbot.Contact.find({name: token});
+    const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
+    wxFinded1 = wxFinded1 || await wxbot.Contact.find({alias: token});
     if (wxFinded1) {
         wxLogger.debug(`Found person successfully.`);
         if (s) {
@@ -1310,10 +1309,10 @@ async function getC2CPeer(pair) {
     // now use wx name as key
     if (!state.C2CTemp[p.wx[0]]) {
         if (p.wx[1] === true) {
-            wxTarget = await wxbot.Room.find({ topic: p.wx[0] });
+            wxTarget = await wxbot.Room.find({topic: p.wx[0]});
         } else {
-            wxTarget = await wxbot.Contact.find({ name: p.wx[0] });
-            wxTarget = wxTarget || await wxbot.Contact.find({ alias: p.wx[0] });
+            wxTarget = await wxbot.Contact.find({name: p.wx[0]});
+            wxTarget = wxTarget || await wxbot.Contact.find({alias: p.wx[0]});
         }
         if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
         else state.C2CTemp[p.wx[0]] = wxTarget;
