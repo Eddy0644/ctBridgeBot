@@ -11,7 +11,7 @@ const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
     CommonData, STypes, downloader, processor, delay
 } = require('./common')();
-
+//
 const msgMappings = [];
 const state = {
     v: { // variables
