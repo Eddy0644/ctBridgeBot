@@ -467,7 +467,7 @@ async function onWxMessage(msg) {
     {   // Sub: prepare data for LogWxMsg
         msg.log_payload = `Type(${isGroup ? ('G,"' + topic + '"') : 'P)'} from talker [${alias}].`;
         LogWxMsg(msg, 0);
-        delete isMessageDropped;
+        // delete isMessageDropped;
     }
 
 
