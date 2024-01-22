@@ -121,7 +121,7 @@ async function onTGMsg(tgMsg) {
                     tgMsg.matched = {s: 1, p: pair};
                     tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
                     if (pair.flag.includes("mixed") &&
-                        ((tgMsg.text && tgMsg.text.startsWith("*")) || (tgMsg.caption && tgMsg.caption.startsWith("*")))
+                      ((tgMsg.text && tgMsg.text.startsWith("*")) || (tgMsg.caption && tgMsg.caption.startsWith("*")))
                     ) {
                         tgLogger.debug(`Message started with * and is in mixed C2C chat, skipping...`);
                         return;
@@ -188,7 +188,7 @@ async function onTGMsg(tgMsg) {
         // Non-text messages must be filtered ahead of below !---------------
         if (!tgMsg.text) {
             tgLogger.info(`A TG message without 'text' passed through text processor, skipped. ` +
-                `recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);
+              `recv: ${Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ')}`);
             tgLogger.trace(`The tgMsg detail of which: `, JSON.stringify(tgMsg));
             return;
         }
@@ -506,7 +506,7 @@ async function onWxMessage(msg) {
         const strategy = secret.filtering.wxNameFilterStrategy;
         let ahead;
         const originName = room ? topic : alias,
-            contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
+          contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
         if (strategy.useBlackList) {
             ahead = true;
             for (const keyword of strategy.blackList) {
@@ -562,18 +562,92 @@ async function onWxMessage(msg) {
         const match = `${recalledMessage}`.replace("Message#", "").match(regex);
         if (match) {
             const type = match[1], contactName = match[2], groupName = match[3] || '',
-                msgContent = match.input.replace(match[0], '');
+              msgContent = match.input.replace(match[0], '');
             // Use match-and-replace strategy to get original msg content
             content = `[Recalled ${type}]`
-                + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
-                + `: ${msgContent}`;
+              + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
+              + `: ${msgContent}`;
         } else content = `[${recalledMessage}] was recalled.`;
         msg.DType = DTypes.Text;
     }
 
     // 处理自定义表情,若失败再处理图片
-    const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
     if (msg.type() === wxbot.Message.Type.Image) {
+        const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
+        // const isSticker = content.match(CustomEmotionRegex);
+        // if (isSticker) {
+        //     const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
+        //     let emotionHref = isSticker[5].replace(/&amp;amp;/g, "&");
+        //     const md5 = isSticker[2];
+        //     const fileExt = ".gif";
+        //     const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+        //     if (secret.misc.deliverSticker === false) {
+        //         wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
+        //         return;
+        //     }
+        //     {
+        //         // filter duplicate-in-period sticker
+        //         let filtered = false;
+        //         if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
+        //             // Got duplicate and continuous Sticker, skipping and CONDEMN that!
+        //             wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
+        //             filtered = true;
+        //         }
+        //         // Regardless match or not, update state.lastEmotion
+        //         state.lastEmotion = {
+        //             md5: md5,
+        //             ts: dayjs().unix()
+        //         }
+        //         if (filtered) return;
+        //     }
+        //     let ahead = true;   // Will the sticker be delivered
+        //     {
+        //         // skip stickers that already sent and replace them into text
+        //         const fetched = await stickerLib.get(md5.substring(0, 4));
+        //         if (fetched === null) {
+        //             ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
+        //         } else {
+        //             if (fetched.full_md5 !== md5) {
+        //                 ctLogger.warn(`Sticker Collision Detected! If you rely on sticker delivery then you should check it.\t${md5} is short for (${fetched.full_md5}).`);
+        //             }
+        //             // change msg detail so that could be used in merging or so.
+        //             // content = `[${md5.substring(0, 3)} of #sticker]`;
+        //             msg.DType = DTypes.Text;
+        //             msgDef.isSilent = true;
+        //             ahead = false;
+        //             msg.md5 = md5.substring(0, 4);
+        //             if (typeof fetched.msgId === "number") content = secret.c11n.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
+        //             else content = `[${md5.substring(0, 4)} of #sticker]`;
+        //             ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
+        //         }
+        //     }
+        //     if (ahead) {
+        //         await (await msg.toFileBox()).toFile(cEPath);
+        //         msg.downloadedPath = cEPath;
+        //         wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
+        //         msg.md5 = md5.substring(0, 4);
+        //         const stream = fs.createReadStream(msg.downloadedPath);
+        //         const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, false);
+        //         await stickerLib.set(msg.md5, {
+        //             msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
+        //         });
+        //         msg.DType = DTypes.Text;
+        //         msgDef.isSilent = true;
+        //         content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
+        //     }
+        // }else{ // Ended Sticker process
+        //     wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
+        //     // 解析为图片
+        //     const fBox = await msg.toFileBox();
+        //     const photoPath = `./downloaded/photo/${processor.filterFilename(`${alias}-${msg.payload.filename}`)}`;
+        //     await fBox.toFile(photoPath);
+        //     if (fs.existsSync(photoPath)) {
+        //         wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
+        //         msg.DType = DTypes.Image;
+        //         msg.downloadedPath = photoPath;
+        //         msgDef.isSilent = true;
+        //     } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
+        // }
         try {
             let result = CustomEmotionRegex.exec(content);
             let emotionHref = result[5].replace(/&amp;amp;/g, "&");
@@ -766,7 +840,7 @@ async function onWxMessage(msg) {
             msg.DType = DTypes.Push;
             wxLogger.trace(`wechaty says this is from Official Account, so classified into Push channel.`);
         } else
-            // 筛选出公众号等通知消息，归类为Push
+          // 筛选出公众号等通知消息，归类为Push
             for (const testPair of CommonData.wxPushMsgFilterWord) {
                 let s = 0;
                 for (const testPairElement of testPair) {
@@ -905,7 +979,7 @@ async function tgCommandHandler(tgMsg) {
     switch (text) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
-                + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
+              + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             conLogger.trace("Revoke complete. sending new /help instance...");
             state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
@@ -1227,10 +1301,10 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const rand1 = Math.random();
     // noinspection JSUnresolvedVariable
     let file_path = './downloaded/' + (
-        (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
-            (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-                (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
-                    (`videoTG/${rand1}.mp4`))));
+      (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
+        (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
+          (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
+            (`videoTG/${rand1}.mp4`))));
     // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
     // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
     const action = `upload_${media_type}`;
@@ -1278,14 +1352,14 @@ async function findSbInWechat(token, alterMsgId = 0, receiver) {
         wxLogger.debug(`Found person successfully.`);
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Person: name=<code>${await wxFinded1.name()}</code> alias=<tg-spoiler>${await wxFinded1.alias()}</tg-spoiler>`,
-                true, "HTML");
+              true, "HTML");
             await addToMsgMappings(tgMsg2.message_id, wxFinded1, null, receiver);
         } else await addToMsgMappings(alterMsgId, wxFinded1, null, receiver);
     } else if (wxFinded2) {
         wxLogger.debug(`Found room chat successfully.`);
         if (s) {
             const tgMsg2 = await tgBotDo.SendMessage(receiver, `🔍Found Group: topic=<code>${await wxFinded2.topic()}</code>`,
-                true, "HTML");
+              true, "HTML");
             await addToMsgMappings(tgMsg2.message_id, wxFinded2, null, receiver);
         } else await addToMsgMappings(alterMsgId, wxFinded2, null, receiver);
     } else {
@@ -1379,10 +1453,10 @@ wxbot.on('logout', async (user) => {
     wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxStat.MsgTotal}).`);
 });
 wxbot.start()
-    .then(() => {
-        wxLogger.info('开始登陆微信...');
-        state.v.wxStat.puppetDoneInitTime = process.uptime();
-    }).catch((e) => wxLogger.error(e));
+  .then(() => {
+      wxLogger.info('开始登陆微信...');
+      state.v.wxStat.puppetDoneInitTime = process.uptime();
+  }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 
