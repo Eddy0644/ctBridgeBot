@@ -447,425 +447,430 @@ async function onWxMessage(msg) {
         LogWxMsg(msg, 1);   // Only dropped messages will be logged at this point.
     if (isMessageDropped) return;
 
-    //基本信息提取-------------
-    const contact = msg.talker(); // 发消息人
-    let content = msg.text().trim(); // 消息内容
-    const room = msg.room(); // 是否是群消息
-    const isGroup = room !== undefined;
-    let topic = "";
-    if (room) topic = await room.topic();
-    let name = await contact.name();
-    let alias = await contact.alias() || await contact.name(); // 发消息人备注
-    let msgDef = {
-        isSilent: false,
-        forceMerge: false,
-        replyTo: null,
-        suppressTitle: false,
-    }
-
-    msg.DType = DTypes.Default;
-    {   // Sub: prepare data for LogWxMsg
-        msg.log_payload = `Type(${isGroup ? ('G,"' + topic + '"') : 'P)'} from talker [${alias}].`;
-        LogWxMsg(msg, 0);
-        // delete isMessageDropped;
-    }
-
-
-    // 提前drop自己的消息, 避免deliver无用消息
-    if (state.v.syncSelfState !== 1) if (room) {
-        if (msg.self() && topic !== "CyTest") return;
-    } else {
-        if (msg.self()) return;
-    }
-
-    // Start deliver process, start fetching from config
-    msg.receiver = null;
-    with (secret.class) {
-        for (const pair of C2C) {
-            let matched = 0;
-            if (pair.wx[1] === isGroup && isGroup === true) {
-                matched = (pair.wx[0] === topic);
-            } else {
-                matched = ((pair.wx[0] === alias) || (pair.wx[0] === name)) && isGroup === false && pair.wx[1] === false;
-            }
-            if (matched) {
-                // Matched pair
-                msg.receiver = pair;
-                break;
-            }
+    try {
+        //基本信息提取-------------
+        const contact = msg.talker(); // 发消息人
+        let content = msg.text().trim(); // 消息内容
+        const room = msg.room(); // 是否是群消息
+        const isGroup = room !== undefined;
+        let topic = "";
+        if (room) topic = await room.topic();
+        let name = await contact.name();
+        let alias = await contact.alias() || await contact.name(); // 发消息人备注
+        let msgDef = {
+            isSilent: false,
+            forceMerge: false,
+            replyTo: null,
+            suppressTitle: false,
         }
-        if (!msg.receiver) {
-            msg.receiver = def;
+
+        msg.DType = DTypes.Default;
+        {   // Sub: prepare data for LogWxMsg
+            msg.log_payload = `Type(${isGroup ? ('G,"' + topic + '"') : 'P)'} from talker [${alias}].`;
+            LogWxMsg(msg, 0);
+            // delete isMessageDropped;
         }
-    }
-
-    // lock is hard to make; used another strategy.
 
 
-    {   // do exclude or include according to Config
-        const strategy = secret.filtering.wxNameFilterStrategy;
-        let ahead;
-        const originName = room ? topic : alias,
-          contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
-        if (strategy.useBlackList) {
-            ahead = true;
-            for (const keyword of strategy.blackList) {
-                if (originName.includes(keyword)) {
-                    wxLogger.debug(`[${originName}]消息因黑名单未递送： ${contentSub}`);
-                    ahead = false;
+        // 提前drop自己的消息, 避免deliver无用消息
+        if (state.v.syncSelfState !== 1) if (room) {
+            if (msg.self() && topic !== "CyTest") return;
+        } else {
+            if (msg.self()) return;
+        }
+
+        // Start deliver process, start fetching from config
+        msg.receiver = null;
+        with (secret.class) {
+            for (const pair of C2C) {
+                let matched = 0;
+                if (pair.wx[1] === isGroup && isGroup === true) {
+                    matched = (pair.wx[0] === topic);
+                } else {
+                    matched = ((pair.wx[0] === alias) || (pair.wx[0] === name)) && isGroup === false && pair.wx[1] === false;
                 }
-            }
-        } else {  // Use whitelist
-            ahead = false;
-            for (const keyword of strategy.whiteList) {
-                if (originName.includes(keyword)) {
-                    ahead = true;
+                if (matched) {
+                    // Matched pair
+                    msg.receiver = pair;
                     break;
                 }
             }
-            if (!ahead) wxLogger.debug(`[${originName}]消息因不符合白名单未递送： ${contentSub}`);
+            if (!msg.receiver) {
+                msg.receiver = def;
+            }
         }
 
-        // Some code must be executed before filtering; so put it here. --------------
-        if (room) {
-            if (name === topic) if (content.includes("Red packet") || content.includes("红包")) {
-                const strategy = secret.misc.deliverRoomRedPacketInAdvance;
-                if (strategy === 0) {
-                    content = `[🧧]`;
-                } else {
-                    if (strategy === 2 || (strategy === 1 && ahead)) {
-                        // satisfy the condition for deliver in advance
-                        await tgBotDo.SendMessage(msg.receiver, `[🧧 in ${topic}]`, 0);
-                        tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
+        // lock is hard to make; used another strategy.
+
+
+        {   // do exclude or include according to Config
+            const strategy = secret.filtering.wxNameFilterStrategy;
+            let ahead;
+            const originName = room ? topic : alias,
+              contentSub = content.substring(0, (content.length > 50 ? 50 : content.length));
+            if (strategy.useBlackList) {
+                ahead = true;
+                for (const keyword of strategy.blackList) {
+                    if (originName.includes(keyword)) {
+                        wxLogger.debug(`[${originName}]消息因黑名单未递送： ${contentSub}`);
+                        ahead = false;
+                    }
+                }
+            } else {  // Use whitelist
+                ahead = false;
+                for (const keyword of strategy.whiteList) {
+                    if (originName.includes(keyword)) {
+                        ahead = true;
+                        break;
+                    }
+                }
+                if (!ahead) wxLogger.debug(`[${originName}]消息因不符合白名单未递送： ${contentSub}`);
+            }
+
+            // Some code must be executed before filtering; so put it here. --------------
+            if (room) {
+                if (name === topic) if (content.includes("Red packet") || content.includes("红包")) {
+                    const strategy = secret.misc.deliverRoomRedPacketInAdvance;
+                    if (strategy === 0) {
+                        content = `[🧧]`;
+                    } else {
+                        if (strategy === 2 || (strategy === 1 && ahead)) {
+                            // satisfy the condition for deliver in advance
+                            await tgBotDo.SendMessage(msg.receiver, `[🧧 in ${topic}]`, 0);
+                            tgLogger.debug(`Delivered a room msg in advance as it includes Red Packet.`);
+                            return;
+                        }
+                        tgLogger.info(`A Red Packet Message not handled! topic=(${topic}), strategy=(${strategy}), ahead=(${ahead})`);
                         return;
                     }
-                    tgLogger.info(`A Red Packet Message not handled! topic=(${topic}), strategy=(${strategy}), ahead=(${ahead})`);
+                }
+            } else {
+
+            }
+            // End up the filtering block. -----------------
+            if (!ahead) return;
+        }
+
+        // 已撤回的消息单独处理
+        if (msg.type() === wxbot.Message.Type.Recalled) {
+            const recalledMessage = await msg.toRecalled();
+            wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
+            msgDef.isSilent = true;
+            LogWxMsg(recalledMessage, 2);
+            // content = `❌ [ ${recalledMessage} ] was recalled.`;
+            // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
+            const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s/;
+            const match = `${recalledMessage}`.replace("Message#", "").match(regex);
+            if (match) {
+                const type = match[1], contactName = match[2], groupName = match[3] || '',
+                  msgContent = match.input.replace(match[0], '');
+                // Use match-and-replace strategy to get original msg content
+                content = `[Recalled ${type}]`
+                  + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
+                  + `: ${msgContent}`;
+            } else content = `[${recalledMessage}] was recalled.`;
+            msg.DType = DTypes.Text;
+        }
+
+        // Process Image as identical photo or Sticker
+        if (msg.type() === wxbot.Message.Type.Image) {
+            const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
+            if (/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/.test(content)) {
+                const isSticker = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/);
+                const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
+                const md5 = isSticker[2];
+                const cEPath = `./downloaded/customEmotion/${md5}.gif`;
+                if (secret.misc.deliverSticker === false) {
+                    wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
                     return;
                 }
-            }
-        } else {
-
-        }
-        // End up the filtering block. -----------------
-        if (!ahead) return;
-    }
-
-    // 已撤回的消息单独处理
-    if (msg.type() === wxbot.Message.Type.Recalled) {
-        const recalledMessage = await msg.toRecalled();
-        wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
-        msgDef.isSilent = true;
-        LogWxMsg(recalledMessage, 2);
-        // content = `❌ [ ${recalledMessage} ] was recalled.`;
-        // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
-        const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s/;
-        const match = `${recalledMessage}`.replace("Message#", "").match(regex);
-        if (match) {
-            const type = match[1], contactName = match[2], groupName = match[3] || '',
-              msgContent = match.input.replace(match[0], '');
-            // Use match-and-replace strategy to get original msg content
-            content = `[Recalled ${type}]`
-              + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
-              + `: ${msgContent}`;
-        } else content = `[${recalledMessage}] was recalled.`;
-        msg.DType = DTypes.Text;
-    }
-
-    // Process Image as identical photo or Sticker
-    if (msg.type() === wxbot.Message.Type.Image) {
-        const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
-        if (/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/.test(content)) {
-            const isSticker = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/);
-            const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
-            const md5 = isSticker[2];
-            const cEPath = `./downloaded/customEmotion/${md5}.gif`;
-            if (secret.misc.deliverSticker === false) {
-                wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
-                return;
-            }
-            {   // filter duplicate-in-period sticker
-                let filtered = false;
-                if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
-                    // Got duplicate and continuous Sticker, skipping and CONDEMN that!
-                    wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
-                    filtered = true;
-                }
-                // Regardless match or not, update state.lastEmotion
-                state.lastEmotion = {
-                    md5: md5,
-                    ts: dayjs().unix()
-                }
-                if (filtered) return;
-            }
-            let ahead = true;   // Will the sticker be delivered
-            {
-                // skip stickers that already sent and replace them into text
-                const fetched = await stickerLib.get(md5.substring(0, 4));
-                if (fetched === null) {
-                    ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
-                } else {
-                    if (fetched.full_md5 !== md5) {
-                        ctLogger.warn(`Sticker Collision Detected! If you rely on sticker delivery then you should check it.\t${md5} is short for (${fetched.full_md5}).`);
+                {   // filter duplicate-in-period sticker
+                    let filtered = false;
+                    if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
+                        // Got duplicate and continuous Sticker, skipping and CONDEMN that!
+                        wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
+                        filtered = true;
                     }
-                    // change msg detail so that could be used in merging or so.
-                    // content = `[${md5.substring(0, 3)} of #sticker]`;
+                    // Regardless match or not, update state.lastEmotion
+                    state.lastEmotion = {
+                        md5: md5,
+                        ts: dayjs().unix()
+                    }
+                    if (filtered) return;
+                }
+                let ahead = true;   // Will the sticker be delivered
+                {
+                    // skip stickers that already sent and replace them into text
+                    const fetched = await stickerLib.get(md5.substring(0, 4));
+                    if (fetched === null) {
+                        ctLogger.trace(`former instance for CuEmo '${md5}' not found, entering normal deliver way.`);
+                    } else {
+                        if (fetched.full_md5 !== md5) {
+                            ctLogger.warn(`Sticker Collision Detected! If you rely on sticker delivery then you should check it.\t${md5} is short for (${fetched.full_md5}).`);
+                        }
+                        // change msg detail so that could be used in merging or so.
+                        // content = `[${md5.substring(0, 3)} of #sticker]`;
+                        msg.DType = DTypes.Text;
+                        msgDef.isSilent = true;
+                        ahead = false;
+                        msg.md5 = md5.substring(0, 4);
+                        if (typeof fetched.msgId === "number") content = secret.c11n.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
+                        else content = `[${md5.substring(0, 4)} of #sticker]`;
+                        ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
+                    }
+                }
+                if (ahead) {
+                    if (fs.existsSync(cEPath)) ctLogger.warn(`Overwriting a sticker file with same name: ${cEPath}`);
+                    await (await msg.toFileBox()).toFile(cEPath, true);
+                    msg.downloadedPath = cEPath;
+                    wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
+                    msg.md5 = md5.substring(0, 4);
+                    const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, fs.createReadStream(msg.downloadedPath), true, false);
+                    await stickerLib.set(msg.md5, {
+                        msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
+                    });
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
-                    ahead = false;
-                    msg.md5 = md5.substring(0, 4);
-                    if (typeof fetched.msgId === "number") content = secret.c11n.stickerWithLink(stickerUrlPrefix, fetched, msg.md5);
-                    else content = `[${md5.substring(0, 4)} of #sticker]`;
-                    ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
+                    content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
                 }
+            } else { // Ended Sticker process, parse as Image
+                wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
+                const fBox = await msg.toFileBox();
+                const photoPath = `./downloaded/photo/${processor.filterFilename(`${alias}-${msg.payload.filename}`)}`;
+                await fBox.toFile(photoPath);
+                if (fs.existsSync(photoPath)) {
+                    wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
+                    msg.DType = DTypes.Image;
+                    msg.downloadedPath = photoPath;
+                    msgDef.isSilent = true;
+                } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
             }
-            if (ahead) {
-                if(fs.existsSync(cEPath))ctLogger.warn(`Overwriting a sticker file with same name: ${cEPath}`);
-                await (await msg.toFileBox()).toFile(cEPath, true);
-                msg.downloadedPath = cEPath;
-                wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
-                msg.md5 = md5.substring(0, 4);
-                const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, fs.createReadStream(msg.downloadedPath), true, false);
-                await stickerLib.set(msg.md5, {
-                    msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
-                });
-                msg.DType = DTypes.Text;
-                msgDef.isSilent = true;
-                content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
-            }
-        } else { // Ended Sticker process, parse as Image
-            wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
+        }   // End of Image process
+
+        // 尝试下载语音
+        if (msg.type() === wxbot.Message.Type.Audio) try {
             const fBox = await msg.toFileBox();
-            const photoPath = `./downloaded/photo/${processor.filterFilename(`${alias}-${msg.payload.filename}`)}`;
-            await fBox.toFile(photoPath);
-            if (fs.existsSync(photoPath)) {
-                wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
-                msg.DType = DTypes.Image;
-                msg.downloadedPath = photoPath;
-                msgDef.isSilent = true;
-            } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
+            // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
+            let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${processor.filterFilename(alias)}).mp3`;
+            await fBox.toFile(audioPath);
+            if (!fs.existsSync(audioPath)) throw new Error("save file error");
+            // await recogniseAudio(msg, audioPath);
+            await mod.audioRecognition.wx_audio_VTT(msg, audioPath);
+            wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
+            msg.DType = DTypes.Audio;
+            msg.downloadedPath = audioPath;
+            msgDef.isSilent = false;
+        } catch (e) {
+            wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
+            msg.DType = DTypes.Text;
+            content = "🎤(Fail to download)";
         }
-    }   // End of Image process
-
-    // 尝试下载语音
-    if (msg.type() === wxbot.Message.Type.Audio) try {
-        const fBox = await msg.toFileBox();
-        // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
-        let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${processor.filterFilename(alias)}).mp3`;
-        await fBox.toFile(audioPath);
-        if (!fs.existsSync(audioPath)) throw new Error("save file error");
-        // await recogniseAudio(msg, audioPath);
-        await mod.audioRecognition.wx_audio_VTT(msg, audioPath);
-        wxLogger.debug(`Detected as Audio, Downloaded as: ${audioPath}`);
-        msg.DType = DTypes.Audio;
-        msg.downloadedPath = audioPath;
-        msgDef.isSilent = false;
-    } catch (e) {
-        wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
-        msg.DType = DTypes.Text;
-        content = "🎤(Fail to download)";
-    }
-    // 视频消息处理或自动下载
-    if (msg.type() === wxbot.Message.Type.Video) {
-        msg.videoPresent = 1;
-        // await mod.wxMddw.handleVideoMessage(msg, alias);
-        content = `🎦(Downloading...)`;
-        msg.autoDownload = 1;
-        msgDef.isSilent = true;
-        // Due to a recent change in web-wx video, method below which can get video length and playlength
-        // failed to work now. Using default no-info method now.
-        msg.DType = DTypes.File;
-    }
-    // 文件及公众号消息类型
-    if (msg.type() === wxbot.Message.Type.Attachment) {
-        if (msg.payload.filename.endsWith(".49")) {
-            // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
-            wxLogger.debug(`Received Posts from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
-            const result = await mod.wxMddw.handlePushMessage(content, msg, name);
-            if (result !== 0) {
-                //Parse successful, ready to overwrite content
-                content = result;
-                msg.DType = DTypes.Push;
-                wxLogger.debug(`Parse successful, ready to send into 'Push' channel.`);
-            }
-        } else if (msg.payload.filename.endsWith(".url")) {
-            wxLogger.trace(`filename has suffix .url, maybe LINK.`);
-            const LinkRegex = new RegExp(/&lt;url&gt;(.*?)&lt;\/url&gt;/);
-            try {
-                let regResult = LinkRegex.exec(content);
-                const url = regResult[1].replace(/&amp;amp;/g, "&");
-                const caption = msg.payload.filename.replace(".url", "");
-                msg.DType = DTypes.Text;
-                content = `🔗 [<a href="${url}">${caption}</a>]` + (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '');
-                msgDef.isSilent = false;
-            } catch (e) {
-                wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
-            }
-        } else {
-            // const result=await deliverWxToTG();
-            const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
-            try {
-                let regResult = FileRegex.exec(content);
-                msg.filesize = parseInt(regResult[1]);
-                msgDef.isSilent = false;
-                content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                msg.toDownloadPath = `./downloaded/file/${dayjs().unix() % 1000}-${msg.payload.filename}`;
-                if (msg.filesize === 0) {
-                    wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
-                    return;
-                } else if (msg.filesize < 50) {
-                    // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
-                    // 比如块级链接和服务消息
-                    msg.autoDownload = false;
-                    msgDef.isSilent = true;
-                    content += `Too small, so it maybe not a valid file. Check DT log for detail.`
-                    wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}`);
-                } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
-                    msg.autoDownload = true;
-                    content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
-                } else {
-                    msg.autoDownload = false;
-                    content += `Send a single <code>OK</code> to retrieve that.`;
-                }
-                msg.DType = DTypes.File;
-            } catch (e) {
-                wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
-            }
+        // 视频消息处理或自动下载
+        if (msg.type() === wxbot.Message.Type.Video) {
+            msg.videoPresent = 1;
+            // await mod.wxMddw.handleVideoMessage(msg, alias);
+            content = `🎦(Downloading...)`;
+            msg.autoDownload = 1;
+            msgDef.isSilent = true;
+            // Due to a recent change in web-wx video, method below which can get video length and playlength
+            // failed to work now. Using default no-info method now.
+            msg.DType = DTypes.File;
         }
-    }
-
-    //文字消息判断:
-    if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
-
-    // Pre-processor for Text
-    if (msg.DType === DTypes.Text || msg.DType === DTypes.Push) {
-
-        if (contact.type() === wxbot.Contact.Type.Official) {
-            msg.DType = DTypes.Push;
-            wxLogger.trace(`wechaty says this is from Official Account, so classified into Push channel.`);
-        } else
-          // 筛选出公众号等通知消息，归类为Push
-            for (const testPair of CommonData.wxPushMsgFilterWord) {
-                let s = 0;
-                for (const testPairElement of testPair) {
-                    if (!content.includes(testPairElement)) s = 1;
-                }
-                if (s === 0) {
+        // 文件及公众号消息类型
+        if (msg.type() === wxbot.Message.Type.Attachment) {
+            if (msg.payload.filename.endsWith(".49")) {
+                // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
+                wxLogger.debug(`Received Posts from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
+                const result = await mod.wxMddw.handlePushMessage(content, msg, name);
+                if (result !== 0) {
+                    //Parse successful, ready to overwrite content
+                    content = result;
                     msg.DType = DTypes.Push;
-                    wxLogger.trace(`Matched pair in wxPushMsgFilterWord, so classified into Push channel.`);
-                    break;
+                    wxLogger.debug(`Parse successful, ready to send into 'Push' channel.`);
                 }
-
+            } else if (msg.payload.filename.endsWith(".url")) {
+                wxLogger.trace(`filename has suffix .url, maybe LINK.`);
+                const LinkRegex = new RegExp(/&lt;url&gt;(.*?)&lt;\/url&gt;/);
+                try {
+                    let regResult = LinkRegex.exec(content);
+                    const url = regResult[1].replace(/&amp;amp;/g, "&");
+                    const caption = msg.payload.filename.replace(".url", "");
+                    msg.DType = DTypes.Text;
+                    content = `🔗 [<a href="${url}">${caption}</a>]` + (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '');
+                    msgDef.isSilent = false;
+                } catch (e) {
+                    wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
+                }
+            } else {
+                // const result=await deliverWxToTG();
+                const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
+                try {
+                    let regResult = FileRegex.exec(content);
+                    msg.filesize = parseInt(regResult[1]);
+                    msgDef.isSilent = false;
+                    content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+                    msg.toDownloadPath = `./downloaded/file/${dayjs().unix() % 1000}-${msg.payload.filename}`;
+                    if (msg.filesize === 0) {
+                        wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
+                        return;
+                    } else if (msg.filesize < 50) {
+                        // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
+                        // 比如块级链接和服务消息
+                        msg.autoDownload = false;
+                        msgDef.isSilent = true;
+                        content += `Too small, so it maybe not a valid file. Check DT log for detail.`
+                        wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}`);
+                    } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
+                        msg.autoDownload = true;
+                        content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
+                    } else {
+                        msg.autoDownload = false;
+                        content += `Send a single <code>OK</code> to retrieve that.`;
+                    }
+                    msg.DType = DTypes.File;
+                } catch (e) {
+                    wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
+                }
             }
-        if (content.includes("bigheadimgurl") && content.includes("brandIconUrl")) {
-            content = await mod.wxMddw.parseOfficialAccountMsg(content);
         }
-    }
 
-    // 正式处理消息--------------
-    if (msg.DType > 0) {
-        const titles = secret.c11n;
-        { // **Sub:** Bulk Text Replacement
-            if (secret.misc.addHashCtLinkToMsg === 1) content = content.replace(/(?!href=")(https?:\/\/)/g, '(#ctLink)$1');
+        //文字消息判断:
+        if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
 
-            if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
-                msgDef.isSilent = true;
-                // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
-                content = content.replace(/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/, titles.unsupportedSticker);
-                wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
-            }
-            if (/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/.test(content)) {
-                content = content.replace(/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/, titles.recvCall);
-                if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
-                    // here means no valid notification hook is set
-                } else {
-                    msgDef.isSilent = true;
-                    // give a silent delivery for this message
-                }
-                wxLogger.debug(`Sending call notification from (${alias}) to User.`);
-            }
+        // Pre-processor for Text
+        if (msg.DType === DTypes.Text || msg.DType === DTypes.Push) {
 
-            // Weixin, WeChat, MicroMsg: how incredible multiple name! micro-message!!!
-            content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]/, titles.recvTransfer);
-            content = content.replace(/\[确认了一笔转账，当前微信版本不支持展示该内容。]/, titles.acceptTransfer);
-            content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
-            content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
-
-            content = mod.tgProcessor.filterMsgText(content, {isGroup, peerName: name});
-
-            for (const pair of secret.filtering.wxContentReplaceList) {
-                if (content.includes(pair[0])) {
-                    wxLogger.trace(`Replaced wx (${pair[0]}) to (${pair[1]})`);
-                    while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
-                }
-            }
-        } // End Sub: Bulk Text Replacement
-
-        if (room) {
-            // 是群消息 - - - - - - - -
-
-            // 群系统消息设为静音
-            if (name === topic) {
-                // Did system message have any impact on me? No. So silent them.
-                msgDef.isSilent = true;
-                msgDef.forceMerge = true;
-                // Force override {name} to let system message seems better
-                name = titles.systemMsgTitleInRoom;
-            }
-
-            try {
-                if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
-                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, msg.DType === DTypes.Text);
-                    if (result === true) return;
-                } else msg.preRoomNeedUpdate = true;
-            } catch (e) {
-                wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
-                state.v.msgMergeFailCount--;
-                if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
-            }
-            // 系统消息如拍一拍
-            // if (name === topic) {
-            //     wxLogger.debug(`群聊[in ${topic}] ${content}`);
-            //     await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
-            //     tgLogger.debug(`Delivered a room msg in advance as it is system msg.`);
-            //     return;
-            // }
-            const deliverResult = await deliverWxToTG(true, msg, content, msgDef);
-            if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg, msg.receiver);
-        } else {
-            //不是群消息 - - - - - - - -
-            if (alias === "微信运动") {
-                content = `[微信运动] ` + msg.payload.filename.replace(".1", "");
-                wxLogger.debug(`[WeRun] says: ${msg.payload.filename.replace(".1", "")}`);
-                if (content.includes("Champion")) {
-                    return; //Champion Message Not available, exiting
-                }
+            if (contact.type() === wxbot.Contact.Type.Official) {
                 msg.DType = DTypes.Push;
-                msg.receiver = secret.class.push;
-            }
+                wxLogger.trace(`wechaty says this is from Official Account, so classified into Push channel.`);
+            } else
+              // 筛选出公众号等通知消息，归类为Push
+                for (const testPair of CommonData.wxPushMsgFilterWord) {
+                    let s = 0;
+                    for (const testPairElement of testPair) {
+                        if (!content.includes(testPairElement)) s = 1;
+                    }
+                    if (s === 0) {
+                        msg.DType = DTypes.Push;
+                        wxLogger.trace(`Matched pair in wxPushMsgFilterWord, so classified into Push channel.`);
+                        break;
+                    }
 
-            if (content.includes("tickled")) {
-                wxLogger.trace(`Updated msgDef to Silent by keyword 'tickled'.`);
-                msgDef.isSilent = true;
+                }
+            if (content.includes("bigheadimgurl") && content.includes("brandIconUrl")) {
+                content = await mod.wxMddw.parseOfficialAccountMsg(content);
             }
-            try {
-                const _ = state.prePerson;
-                const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
-                const nowDate = dayjs().unix();
-                if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
-                    const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, alias, msg.DType === DTypes.Text);
-                    if (result === true) return;
-                } else
-                    msg.prePersonNeedUpdate = true;
-            } catch (e) {
-                wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.prePerson)}`);
-                state.v.msgMergeFailCount--;
-                if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
-            }
-            const deliverResult = await deliverWxToTG(false, msg, content, msgDef);
-            if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg, msg.receiver);
         }
 
-        // if (haveLock) talkerLocks.pop();
+        // 正式处理消息--------------
+        if (msg.DType > 0) {
+            const titles = secret.c11n;
+            { // **Sub:** Bulk Text Replacement
+                if (secret.misc.addHashCtLinkToMsg === 1) content = content.replace(/(?!href=")(https?:\/\/)/g, '(#ctLink)$1');
+
+                if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
+                    msgDef.isSilent = true;
+                    // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
+                    content = content.replace(/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/, titles.unsupportedSticker);
+                    wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
+                }
+                if (/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/.test(content)) {
+                    content = content.replace(/\[收到一条视频\/语音聊天消息，请在手机上查看]|\[Receive a video \/ voice chat message, view it on your phone]/, titles.recvCall);
+                    if (await downloader.httpsCurl(secret.notification.incoming_call_webhook(alias)) !== "SUCCESS") {
+                        // here means no valid notification hook is set
+                    } else {
+                        msgDef.isSilent = true;
+                        // give a silent delivery for this message
+                    }
+                    wxLogger.debug(`Sending call notification from (${alias}) to User.`);
+                }
+
+                // Weixin, WeChat, MicroMsg: how incredible multiple name! micro-message!!!
+                content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]/, titles.recvTransfer);
+                content = content.replace(/\[确认了一笔转账，当前微信版本不支持展示该内容。]/, titles.acceptTransfer);
+                content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
+                content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
+
+                content = mod.tgProcessor.filterMsgText(content, {isGroup, peerName: name});
+
+                for (const pair of secret.filtering.wxContentReplaceList) {
+                    if (content.includes(pair[0])) {
+                        wxLogger.trace(`Replaced wx (${pair[0]}) to (${pair[1]})`);
+                        while (content.includes(pair[0])) content = content.replace(pair[0], pair[1]);
+                    }
+                }
+            } // End Sub: Bulk Text Replacement
+
+            if (room) {
+                // 是群消息 - - - - - - - -
+
+                // 群系统消息设为静音
+                if (name === topic) {
+                    // Did system message have any impact on me? No. So silent them.
+                    msgDef.isSilent = true;
+                    msgDef.forceMerge = true;
+                    // Force override {name} to let system message seems better
+                    name = titles.systemMsgTitleInRoom;
+                }
+
+                try {
+                    if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, msg.DType === DTypes.Text);
+                        if (result === true) return;
+                    } else msg.preRoomNeedUpdate = true;
+                } catch (e) {
+                    wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
+                    state.v.msgMergeFailCount--;
+                    if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
+                }
+                // 系统消息如拍一拍
+                // if (name === topic) {
+                //     wxLogger.debug(`群聊[in ${topic}] ${content}`);
+                //     await tgBotDo.SendMessage(`[in ${topic}] ${content}`, 1);
+                //     tgLogger.debug(`Delivered a room msg in advance as it is system msg.`);
+                //     return;
+                // }
+                const deliverResult = await deliverWxToTG(true, msg, content, msgDef);
+                if (deliverResult) await addToMsgMappings(deliverResult.message_id, room, msg, msg.receiver);
+            } else {
+                //不是群消息 - - - - - - - -
+                if (alias === "微信运动") {
+                    content = `[微信运动] ` + msg.payload.filename.replace(".1", "");
+                    wxLogger.debug(`[WeRun] says: ${msg.payload.filename.replace(".1", "")}`);
+                    if (content.includes("Champion")) {
+                        return; //Champion Message Not available, exiting
+                    }
+                    msg.DType = DTypes.Push;
+                    msg.receiver = secret.class.push;
+                }
+
+                if (content.includes("tickled")) {
+                    wxLogger.trace(`Updated msgDef to Silent by keyword 'tickled'.`);
+                    msgDef.isSilent = true;
+                }
+                try {
+                    const _ = state.prePerson;
+                    const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+                    const nowDate = dayjs().unix();
+                    if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, alias, msg.DType === DTypes.Text);
+                        if (result === true) return;
+                    } else
+                        msg.prePersonNeedUpdate = true;
+                } catch (e) {
+                    wxLogger.info(`Error occurred while merging personal msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.prePerson)}`);
+                    state.v.msgMergeFailCount--;
+                    if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
+                }
+                const deliverResult = await deliverWxToTG(false, msg, content, msgDef);
+                if (deliverResult) await addToMsgMappings(deliverResult.message_id, msg.talker(), msg, msg.receiver);
+            }
+
+            // if (haveLock) talkerLocks.pop();
+        }
+    } catch (e) {
+        tgLogger.warn(`{onWxMsg()}: ${e.message}`);
+        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
 }
 
