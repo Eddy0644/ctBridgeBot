@@ -619,7 +619,8 @@ async function onWxMessage(msg) {
                 }
             }
             if (ahead) {
-                await (await msg.toFileBox()).toFile(cEPath);
+                if(fs.existsSync(cEPath))ctLogger.warn(`Overwriting a sticker file with same name: ${cEPath}`);
+                await (await msg.toFileBox()).toFile(cEPath, true);
                 msg.downloadedPath = cEPath;
                 wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
                 msg.md5 = md5.substring(0, 4);
