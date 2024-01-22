@@ -788,7 +788,7 @@ async function onWxMessage(msg) {
                 wxLogger.debug(`Sending call notification from (${alias}) to User.`);
             }
 
-            // Weixin, Wechat, MicroMsg: how incredible multiple name! micro-message!!!
+            // Weixin, WeChat, MicroMsg: how incredible multiple name! micro-message!!!
             content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]/, titles.recvTransfer);
             content = content.replace(/\[确认了一笔转账，当前微信版本不支持展示该内容。]/, titles.acceptTransfer);
             content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
@@ -883,6 +883,7 @@ async function tgCommandHandler(tgMsg) {
         await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.matched);
         state.s.helpCmdInstance = null;
     }
+    // noinspection FallThroughInSwitchStatementJS
     switch (text) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
