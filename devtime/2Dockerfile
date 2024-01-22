@@ -1,0 +1,10 @@
+FROM wechaty/wechaty
+
+# Set the working directory
+WORKDIR /bot
+
+# Copy your application files
+#COPY ./_auto.sh .
+
+# Set the command to run when the container starts
+ENTRYPOINT /bot/_auto.sh
