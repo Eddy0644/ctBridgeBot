@@ -571,22 +571,19 @@ async function onWxMessage(msg) {
         msg.DType = DTypes.Text;
     }
 
-    // 处理自定义表情,若失败再处理图片
+    // Process Image as identical photo or Sticker
     if (msg.type() === wxbot.Message.Type.Image) {
         const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
         if (/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/.test(content)) {
             const isSticker = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/);
             const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
-            // let emotionHref = isSticker[4].replace(/&amp;amp;/g, "&");
             const md5 = isSticker[2];
-            const fileExt = ".gif";
-            const cEPath = `./downloaded/customEmotion/${md5 + fileExt}`;
+            const cEPath = `./downloaded/customEmotion/${md5}.gif`;
             if (secret.misc.deliverSticker === false) {
                 wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
                 return;
             }
-            {
-                // filter duplicate-in-period sticker
+            {   // filter duplicate-in-period sticker
                 let filtered = false;
                 if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
                     // Got duplicate and continuous Sticker, skipping and CONDEMN that!
@@ -626,8 +623,7 @@ async function onWxMessage(msg) {
                 msg.downloadedPath = cEPath;
                 wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
                 msg.md5 = md5.substring(0, 4);
-                const stream = fs.createReadStream(msg.downloadedPath);
-                const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, stream, true, false);
+                const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, fs.createReadStream(msg.downloadedPath), true, false);
                 await stickerLib.set(msg.md5, {
                     msgId: tgMsg2.message_id, path: cEPath, hint: "", full_md5: md5,
                 });
@@ -635,9 +631,8 @@ async function onWxMessage(msg) {
                 msgDef.isSilent = true;
                 content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
             }
-        }else{ // Ended Sticker process
+        } else { // Ended Sticker process, parse as Image
             wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
-            // 解析为图片
             const fBox = await msg.toFileBox();
             const photoPath = `./downloaded/photo/${processor.filterFilename(`${alias}-${msg.payload.filename}`)}`;
             await fBox.toFile(photoPath);
@@ -648,7 +643,7 @@ async function onWxMessage(msg) {
                 msgDef.isSilent = true;
             } else wxLogger.info(`Detected as Image, But download failed. Ignoring.`);
         }
-    }
+    }   // End of Image process
 
     // 尝试下载语音
     if (msg.type() === wxbot.Message.Type.Audio) try {
