@@ -89,7 +89,7 @@ async function onTGMsg(tgMsg) {
         tgLogger.info("tg Msg drop lock is now OFF.");
         if (state.s.helpCmdInstance) {
             // former /help instance found, try to delete it...
-            await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.matched);
+            await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
             state.s.helpCmdInstance = null;
         }
         return;
@@ -226,7 +226,7 @@ async function onTGMsg(tgMsg) {
                 }
 
             }
-            if (state.s.helpCmdInstance && repl_to.message_id === state.s.helpCmdInstance.message_id) {
+            if (state.s.helpCmdInstance && repl_to.message_id === state.s.helpCmdInstance[0].message_id) {
                 // Consider this msg as reply to former help instance
                 if (tgMsg.text.startsWith("/")) {
                     const res = await tgCommandHandler(tgMsg);
@@ -881,7 +881,7 @@ async function tgCommandHandler(tgMsg) {
     // return 1 means not processed by this handler, continue to next steps
     if (state.s.helpCmdInstance && !['/sync_on', '/drop_on', '/drop_toggle'].includes(text)) {
         // former /help instance found, try to delete it...
-        await tgBotDo.RevokeMessage(state.s.helpCmdInstance.message_id, tgMsg.matched);
+        await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
         state.s.helpCmdInstance = null;
     }
     // noinspection FallThroughInSwitchStatementJS
@@ -891,7 +891,9 @@ async function tgCommandHandler(tgMsg) {
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
             await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
             conLogger.trace("Revoke complete. sending new /help instance...");
-            state.s.helpCmdInstance = await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null);
+            state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null),
+                // Put tg-matched inside the instance to let it be revoked correctly.
+                tgMsg.matched];
             return;
         }
         case "/clear": {
