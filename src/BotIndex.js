@@ -428,7 +428,7 @@ async function onTGMsg(tgMsg) {
 
         }
     } catch (e) {
-        tgLogger.warn(`{onTGMsg()}: ${e.message}`);
+        tgLogger.error(`{onTGMsg()}: ${e.message}`);
         tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
 
@@ -514,7 +514,7 @@ async function onWxMessage(msg) {
                 ahead = true;
                 for (const keyword of strategy.blackList) {
                     if (originName.includes(keyword)) {
-                        wxLogger.debug(`[${originName}]消息被黑名单屏蔽：${room ? alias + ' / ' : '  '}${contentSub}`);
+                        wxLogger.debug(`[${originName}]消息被黑名单屏蔽：${room ? alias + ' // ' : ' '}${contentSub}`);
                         ahead = false;
                     }
                 }
@@ -878,7 +878,7 @@ async function onWxMessage(msg) {
             // if (haveLock) talkerLocks.pop();
         }
     } catch (e) {
-        tgLogger.warn(`{onWxMsg()}: ${e.message}`);
+        tgLogger.error(`{onWxMsg()}: ${e.message}`);
         tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
 }
