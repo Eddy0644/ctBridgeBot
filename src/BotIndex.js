@@ -377,7 +377,8 @@ async function onTGMsg(tgMsg) {
                     name: "",
                 };
             }
-            ctLogger.debug(`Handled a message send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
+            //Reference: wxLogger.debug(`📥WX(${tmplc})\t--[Text]-->TG, "${content}".`);📤
+            ctLogger.debug(`📤TG(${tgMsg.chat.title})\t--[Text]-->WX(${tgMsg.matched.p.wx[0]}).`);
         } else {
             // No valid COMMAND within msg
             if (Object.keys(state.last).length === 0) {
@@ -1083,7 +1084,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 仅文本或未分类
             // Plain text or not classified
             if (msg.DType !== DTypes.Push) {
-                wxLogger.debug(`Received Text from (${tmplc}), "${content}".`);
+                wxLogger.debug(`📥WX(${tmplc})\t--[Text]-->TG, "${content}".`);
                 tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
             }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {

@@ -36,7 +36,7 @@ async function VTT_by_tx(audioPath, voiceFormat = "mp3") {
             "Data": base64Data,
             "DataLen": fileSize
         });
-        defLogger.trace(`VTT success, content:{${result.Result}`);
+        defLogger.trace(`VTT success, content:{${result.Result}}`);
         return result.Result;
     } catch (e) {
         defLogger.debug(`Try to send audio file to Txyun but failed in the process.`);
