@@ -17,11 +17,13 @@ async function handlePushMessage(rawContent, msg, name) {
         if (name === one) filtered = true;
     }
     if (filtered) {
-        wxLogger.debug(`This Post matches BlackList, no delivery!`);
+        // wxLogger.debug(`This Post matches BlackList, no delivery!`);
+        wxLogger.debug(`[${name}] Posted [${msg.payload.filename.replace(".49", "")}], ❎(BlackList)`);
         return 0;
     }
     if (secret.misc.deliverPushMessage === false) {
-        wxLogger.debug(`A Post Collection from (${name}) is skipped by denial config.`);
+        wxLogger.debug(`[${name}] Posted [${msg.payload.filename.replace(".49", "")}], ❎(denial config)`);
+        // wxLogger.debug(`A Post Collection from (${name}) is skipped by denial config.`);
         return 0;
     }
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
@@ -49,7 +51,7 @@ async function handlePushMessage(rawContent, msg, name) {
         }
         return out.replaceAll("&amp;", "&");
     } catch (e) {
-        wxLogger.debug(`Error occurred when reading xml detail. Skipping...`);
+        wxLogger.info(`Error occurred when reading xml detail. Skipping...`);
         return 0;
     }
 }
@@ -62,7 +64,7 @@ async function parseOfficialAccountMsg(rawContent) {
     try {
         return secret.c11n.officialAccountParser(ps.msg);
     } catch (e) {
-        wxLogger.debug(`Error occurred when reading xml detail of OfficialAccountMsg. Skipping...`);
+        wxLogger.info(`Error occurred when reading xml detail of OfficialAccountMsg. Skipping...`);
         return rawContent;
     }
 }

@@ -631,7 +631,7 @@ async function onWxMessage(msg) {
                     if (fs.existsSync(cEPath)) ctLogger.warn(`Overwriting a sticker file with same name: ${cEPath}`);
                     await (await msg.toFileBox()).toFile(cEPath, true);
                     msg.downloadedPath = cEPath;
-                    wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${cEPath}, and delivering...`);
+                    wxLogger.debug(`Detected as CustomEmotion, Downloaded as: ${md5}.gif, and delivering...`);
                     msg.md5 = md5.substring(0, 4);
                     const tgMsg2 = await tgBotDo.SendAnimation(`#sticker ${msg.md5}`, fs.createReadStream(msg.downloadedPath), true, false);
                     await stickerLib.set(msg.md5, {
@@ -644,10 +644,11 @@ async function onWxMessage(msg) {
             } else { // Ended Sticker process, parse as Image
                 wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
                 const fBox = await msg.toFileBox();
-                const photoPath = `./downloaded/photo/${processor.filterFilename(`${alias}-${msg.payload.filename}`)}`;
+                const fname=processor.filterFilename(`${alias}-${msg.payload.filename}`);
+                const photoPath = `./downloaded/photo/${fname}`;
                 await fBox.toFile(photoPath);
                 if (fs.existsSync(photoPath)) {
-                    wxLogger.debug(`Detected as Image, Downloaded as: ${photoPath}`);
+                    wxLogger.debug(`Detected as Image, Downloaded as: ${fname}`);
                     msg.DType = DTypes.Image;
                     msg.downloadedPath = photoPath;
                     msgDef.isSilent = true;
@@ -688,13 +689,14 @@ async function onWxMessage(msg) {
         if (msg.type() === wxbot.Message.Type.Attachment) {
             if (msg.payload.filename.endsWith(".49")) {
                 // wxLogger.trace(`filename has suffix .49, maybe pushes.`);
-                wxLogger.debug(`Received Posts from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
+                wxLogger.trace(`Received Posts from [${name}], title:[${msg.payload.filename.replace(".49", "")}].`);
                 const result = await mod.wxMddw.handlePushMessage(content, msg, name);
                 if (result !== 0) {
                     //Parse successful, ready to overwrite content
                     content = result;
                     msg.DType = DTypes.Push;
-                    wxLogger.debug(`Parse successful, ready to send into 'Push' channel.`);
+                    wxLogger.debug(`[${name}] Posted [${msg.payload.filename.replace(".49", "")}], ✅  (wxStat.MsgTotal:${state.v.wxStat.MsgTotal})`);
+                    // wxLogger.debug(`Parse successful, ready to send into 'Push' channel.`);
                 }
             } else if (msg.payload.filename.endsWith(".url")) {
                 wxLogger.trace(`filename has suffix .url, maybe LINK.`);
@@ -707,7 +709,7 @@ async function onWxMessage(msg) {
                     content = `🔗 [<a href="${url}">${caption}</a>]` + (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '');
                     msgDef.isSilent = false;
                 } catch (e) {
-                    wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
+                    wxLogger.warn(`Detected as Link, but error occurred while getting content.`);
                 }
             } else if (/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/.test(content)) {
                 wxLogger.trace(`content matched pattern, recognise as Location.`);
@@ -1084,7 +1086,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 仅文本或未分类
             // Plain text or not classified
             if (msg.DType !== DTypes.Push) {
-                wxLogger.debug(`WX(${tmplc}) 📥[Text]--> TG, "${content}".`);
+                wxLogger.debug(`WX(${tmplc}) 📥[Text]--> TG: "${content}".`);
                 tgLogger.trace(`wxStat.MsgTotal: ${state.v.wxStat.MsgTotal}; sent with msgDef: ${JSON.stringify(msgDef)}`);
             }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
@@ -1252,8 +1254,8 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
     if (s === 0) {
         await state.last.target.say(packed);
-        ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
-        ctLogger.debug(`📤TG ~~~[${media_type}]~~~>WX(${state.last.name}).`);
+        //ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
+        ctLogger.debug(`📤~~~[${media_type}]~~~>WX(${state.last.name}).`);
     } else {
         // C2C media delivery
         with (tgMsg.matched) {
