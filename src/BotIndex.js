@@ -378,7 +378,7 @@ async function onTGMsg(tgMsg) {
                 };
             }
             //Reference: wxLogger.debug(`📥WX(${tmplc})\t--[Text]-->TG, "${content}".`);📤
-            ctLogger.debug(`📤TG(${tgMsg.chat.title})\t--[Text]-->WX(${tgMsg.matched.p.wx[0]}).`);
+            ctLogger.debug(`📤TG(${tgMsg.chat.title})\t--[Text]-->WX(${tgMsg.matched.p.wx[0]}): ${tgMsg.text}`);
         } else {
             // No valid COMMAND within msg
             if (Object.keys(state.last).length === 0) {
@@ -1253,13 +1253,15 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     if (s === 0) {
         await state.last.target.say(packed);
         ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
+        ctLogger.debug(`📤TG ~~~[${media_type}]~~~>WX(${state.last.name}).`);
     } else {
         // C2C media delivery
         with (tgMsg.matched) {
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
             await wxTarget.say(packed);
-            ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
+            ctLogger.debug(`📤TG(${tgMsg.chat.title})\t--[${media_type}]-->WX(${tgMsg.matched.p.wx[0]}).`);
+            // ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         }
     }
     tgBotDo.SendChatAction("choose_sticker", receiver).then(tgBotDo.empty)
