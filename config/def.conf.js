@@ -132,13 +132,16 @@ module.exports = {
 
     },
     chatOption:{    // this section declares default behaviors of chats when not specified in C2C flag.
-        
+        // TODO implement chatOption
         // whether accept *-prefix in TG message as indicator of not forwarding to WX
         "mixed": 1,
         // whether merge WX-side messages by default
         "merge": 1,   
         // whether skip all sticker delivery by default
         "skipSticker": 0,
+        // Only apply to group; which name should be used as title of a person in a merged msg,
+        // 0 means their WeChat name, 1 means your alias for talker, 2 means their group alias.
+        "mergeTitleType": 0,
 
     },
     c11n: {  // customization

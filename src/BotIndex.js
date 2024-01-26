@@ -1366,7 +1366,7 @@ async function getFileFromWx(msg) {
 
 wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录. 可在Trace Log中取得本次会话的详细信息.`);
-    wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}  |  ${user.payload.avatar}`);
+    wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}  || puppetDoneInitTime on this device: ${state.v.wxStat.puppetDoneInitTime}`);
     state.s.selfName = user.payload.name;
     if (process.uptime() - state.v.wxStat.puppetDoneInitTime < 4) {
         // Now we know that during this boot we used cached credentials, not scanned.
@@ -1383,20 +1383,22 @@ wxbot.on('logout', async (user) => {
 });
 wxbot.start()
   .then(() => {
-      wxLogger.info('开始登陆微信...');
+      wxLogger.info('开始登录微信...');
       state.v.wxStat.puppetDoneInitTime = process.uptime();
   }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
 
+//TODO: setup a verification system!
+
 // ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
-downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
-    // 此部分代码仅供临时使用，待完善。
-    if (rs !== "SUCCESS") {
-        console.log("\n\n");
-        ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n")
-    }
-})
+// downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
+//     // 此部分代码仅供临时使用，待完善。
+//     if (rs !== "SUCCESS") {
+//         console.log("\n\n");
+//         ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n")
+//     }
+// })
 
 async function timerFunc() {
     try {

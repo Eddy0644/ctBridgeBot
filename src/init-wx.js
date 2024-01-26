@@ -73,7 +73,7 @@ module.exports = (tgBotDo, wxLogger) => {
                     wxLogger.error(`Due to wx error, initiated self restart procedure!!!\n\n`);
                     setTimeout(() => process.exit(1), 5000);
                 } else {
-                    wxLogger.info("wxBotErrorStat not reaching threshold, not exiting." + wxBotErrorStat);
+                    wxLogger.info("wxBotErrorStat not reaching threshold, not exiting.\t" + wxBotErrorStat);
                 }
             }, 10000);
         } else if (wxBotErrorStat > 0 && isWDogErr) {
