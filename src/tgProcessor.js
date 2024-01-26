@@ -23,7 +23,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
     const _ = isGroup ? state.preRoom : state.prePerson;
     // the 'newFirstTitle' is 0 when inside C2C
     const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : alias);
-    const who = isGroup ? `${_.topic}/${name}` : name;
+    const who = isGroup ? `${name}/${_.topic}` : name;
     const newItemTitle = (() => {
         const s = secret.c11n.titleForSameTalkerInMergedRoomMsg;
         if (s === false || (isGroup && _.lastTalker !== name)) {
@@ -34,7 +34,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         }
         _.talkerCount++;
         if (typeof s === "function") return s(_.talkerCount);
-        defLogger.warn(`Invalid configuration found for {settings.changeTitleForSameTalkerInMerged}!`);
+        defLogger.error(`Invalid configuration found for {settings.changeTitleForSameTalkerInMerged}!`);
         return `|→ `;
     })();
     msg[`pre${word}NeedUpdate`] = false;
@@ -46,7 +46,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         // defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into former.`);
-        defLogger.debug(`(${word}: ${who}) 🔗🔗--->📂: "${content}"`);
+        defLogger.debug(`(${who}) 🔗🔗--->📂: "${content}"`);
         return isText; // !isText?false:true
     } else {
         // Ready to modify first msg, refactoring it.
@@ -57,7 +57,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         // Ref: wxLogger.debug(`📥WX(${tmplc})\t--[Text]-->TG, "${content}".`);
-        defLogger.debug(`(${word}: ${who}) 🔗---->📂: "${content}"`);
+        defLogger.debug(`(${who}) 🔗---->📂: "${content}"`);
         //defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into first.`);
         return isText;
     }
