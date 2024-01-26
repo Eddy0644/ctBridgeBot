@@ -1085,7 +1085,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // Plain text or not classified
             if (msg.DType !== DTypes.Push) {
                 wxLogger.debug(`📥WX(${tmplc})\t--[Text]-->TG, "${content}".`);
-                tgLogger.trace(`Sending TG message with msgDef: ${JSON.stringify(msgDef)}`);
+                tgLogger.trace(`wxStat.MsgTotal: ${state.v.wxStat.MsgTotal}; sent with msgDef: ${JSON.stringify(msgDef)}`);
             }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
                 disable_web_page_preview: (msg.DType === DTypes.Push)

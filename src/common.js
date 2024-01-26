@@ -85,7 +85,7 @@ module.exports = (param) => {
                 if (type === 2) part2.wxMsgLogger.info(`--------A recalled message is below: -------------`);
                 let msgToStr = `${msg}`;
                 // fixed here to avoid contamination of <img of HTML.
-                part1.wxLogger.trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\n\t\t${isMessageDropped ? '❌[Dropped]' : ""} Verbose:` +
+                part1.wxLogger.trace(`---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\t |-| ${isMessageDropped ? '❌[Dropped]' : ""} ` +
                     `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`
                     + (isMessageDropped ? '\n' : ''));
                 part2.wxMsgLogger.info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
