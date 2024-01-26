@@ -708,6 +708,8 @@ async function onWxMessage(msg) {
                 } catch (e) {
                     wxLogger.debug(`Detected as Link, but error occurred while getting content.`);
                 }
+            } else if (/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/.test(content)) {
+                wxLogger.trace(`content matched pattern, recognise as Location.`);
             } else {
                 // const result=await deliverWxToTG();
                 const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
