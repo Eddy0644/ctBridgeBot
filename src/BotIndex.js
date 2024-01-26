@@ -568,7 +568,12 @@ async function onWxMessage(msg) {
                 content = `[Recalled ${type}]`
                   + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
                   + `: ${msgContent}`;
-            } else content = `[${recalledMessage}] was recalled.`;
+            } else {
+                wxLogger.warn(`[Recalled message] not matching preset regex, content: ${recalledMessage}`);
+                content = `[${recalledMessage}] was recalled.`;
+            }
+            // Avoid invalid character in message to cause send failure
+            content=mod.tgProcessor.filterMsgText(content);
             msg.DType = DTypes.Text;
         }
 
