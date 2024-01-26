@@ -81,6 +81,8 @@ const mod = {
 }
 env.mod = mod;
 
+// End of loading instance modules...
+
 async function onTGMsg(tgMsg) {
     if (tgMsg.DEPRESS_IDE_WARNING) return;
     if (tgMsg.text && ["/drop_off", "/drop_toggle"].includes(tgMsg.text.replace(secret.tgbot.botName, "")) && state.v.msgDropState) {
@@ -512,7 +514,7 @@ async function onWxMessage(msg) {
                 ahead = true;
                 for (const keyword of strategy.blackList) {
                     if (originName.includes(keyword)) {
-                        wxLogger.debug(`[${originName}]消息被黑名单屏蔽：${room?alias+' / ':'  '}${contentSub}`);
+                        wxLogger.debug(`[${originName}]消息被黑名单屏蔽：${room ? alias + ' / ' : '  '}${contentSub}`);
                         ahead = false;
                     }
                 }
@@ -573,7 +575,7 @@ async function onWxMessage(msg) {
                 content = `[${recalledMessage}] was recalled.`;
             }
             // Avoid invalid character in message to cause send failure
-            content=mod.tgProcessor.filterMsgText(content);
+            content = mod.tgProcessor.filterMsgText(content);
             msg.DType = DTypes.Text;
         }
 
@@ -1317,7 +1319,6 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
         tgMsgId, talker, name, wxMsg: wxMsg || null, receiver
     }
     msgMappings.push(new_mapObj);
-    // msgMappings.push([tgMsgId, talker, name, wxMsg, receiver]);
     if (state.v.targetLock === 0 && !receiver.wx) state.last = {
         s: STypes.Chat,
         target: talker,
