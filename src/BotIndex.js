@@ -512,7 +512,7 @@ async function onWxMessage(msg) {
                 ahead = true;
                 for (const keyword of strategy.blackList) {
                     if (originName.includes(keyword)) {
-                        wxLogger.debug(`[${originName}]消息因黑名单未递送： ${contentSub}`);
+                        wxLogger.debug(`[${originName}]消息被黑名单屏蔽：${room?alias+' / ':'  '}${contentSub}`);
                         ahead = false;
                     }
                 }
