@@ -1000,8 +1000,8 @@ async function tgCommandHandler(tgMsg) {
         }
         case "/reloginWX_2": {
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
-            await fs.promises.unlink("ctbridgebot.memory-card.json");
-            ctLogger.warn("Relogin request invoked by user, memory-card deletion successful, attempting reboot!");
+            await fs.promises.unlink("data/ctbridgebot.memory-card.json");
+            ctLogger.warn("Re-login request invoked by user, memory-card deletion successful, attempting reboot!");
             // write a flag to disk, in order to skip graceful timeout before sending QRCode to TG
             await fs.promises.writeFile("data/userTriggerRelogin.flag", "114514");
             process.exit(123);
@@ -1346,7 +1346,7 @@ async function getFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
         const filePath = msg.toDownloadPath;
-        const wechatyMemory = JSON.parse((await fs.promises.readFile("ctbridgebot.memory-card.json")).toString());
+        const wechatyMemory = JSON.parse((await fs.promises.readFile("data/ctbridgebot.memory-card.json")).toString());
         const cookieStr = wechatyMemory["\rpuppet\nPUPPET_WECHAT"].map((cookie) => `${cookie.name}=${cookie.value}`).join('; ');
         await downloader.httpsWithWx(fBox.remoteUrl, filePath, cookieStr);
         if (fs.existsSync(filePath)) {
