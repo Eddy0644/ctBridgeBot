@@ -46,7 +46,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         // defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into former.`);
-        defLogger.debug(`⛓️WX(${word}: ${who})\t---->📂: "${content}"`);
+        defLogger.debug(`(${word}: ${who}) 🔗🔗--->📂: "${content}"`);
         return isText; // !isText?false:true
     } else {
         // Ready to modify first msg, refactoring it.
@@ -57,7 +57,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         // Ref: wxLogger.debug(`📥WX(${tmplc})\t--[Text]-->TG, "${content}".`);
-        defLogger.debug(`🔗WX(${word}: ${who})\t---->📂: "${content}"`);
+        defLogger.debug(`(${word}: ${who}) 🔗---->📂: "${content}"`);
         //defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into first.`);
         return isText;
     }
