@@ -72,7 +72,7 @@ async function parseOfficialAccountMsg(rawContent) {
 
 async function handleVideoMessage(msg, name) {
     const {wxLogger, tgBotDo, tgLogger} = env;
-    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name.replaceAll(/\/|\\/g, ",")}).mp4`;
+    let videoPath = `./downloaded/video/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${name.replaceAll(/[\/\\]/g, ",")}).mp4`;
     wxLogger.debug(`Detected as Video, Downloading...`);
     tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty)
     const fBox = await msg.toFileBox();
@@ -117,7 +117,7 @@ async function getVideoFileInfo(videoPath) {
         const ffprobeOptions = {path: ffprobePath};
         const ffprobeAsync = util.promisify(ffprobe);
 
-        included = 1;
+        // included = 1;
 
         const info = await ffprobeAsync(videoPath, ffprobeOptions);
         if (info.streams && info.streams.length > 0 && info.streams[0].duration) {

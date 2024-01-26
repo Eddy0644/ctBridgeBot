@@ -237,7 +237,7 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                     }
                 },
                 filterFilename: function (orig) {
-                    return orig.replaceAll(/\/|\\/g, ",");
+                    return orig.replaceAll(/[\/\\]/g, ",");
                 },
             },
         };
