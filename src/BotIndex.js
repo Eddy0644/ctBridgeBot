@@ -710,6 +710,11 @@ async function onWxMessage(msg) {
                 }
             } else if (/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/.test(content)) {
                 wxLogger.trace(`content matched pattern, recognise as Location.`);
+                // Developer Comment: This is a location message,
+                // but it is not supported by WebWeChat-wechaty now, so cannot provide full support.
+                const res = content.match(/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/);
+                content = `🗺️[${res[1]}]`;
+                msg.DType = DTypes.Text;
             } else {
                 // const result=await deliverWxToTG();
                 const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
