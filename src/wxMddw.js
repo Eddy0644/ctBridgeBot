@@ -56,19 +56,19 @@ async function handlePushMessage(rawContent, msg, name) {
     }
 }
 
-async function parseCardMsg(rawContent, official=true) {
+async function parseCardMsg(rawContent, isOfficial = true) {
     const {wxLogger, secret} = env;
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
     if (ps === false) return rawContent;
     // noinspection JSUnresolvedVariable
     try {
-        return secret.c11n.officialAccountParser(ps.msg);
+        if (isOfficial) return secret.c11n.officialAccountParser(ps.msg);
+        else return secret.c11n.personCardParser(ps.msg);
     } catch (e) {
         wxLogger.info(`Error occurred when reading xml detail of OfficialAccountMsg. Skipping...`);
         return rawContent;
     }
 }
-
 
 
 async function handleVideoMessage(msg, name) {
@@ -127,8 +127,8 @@ async function getVideoFileInfo(videoPath) {
             const playlengthSecondsRemaining = Math.floor(playlengthSeconds % 60);
             // noinspection JSUnresolvedVariable
             const additional = `Codec: ${info.streams[0].codec_name}/${info.streams[0].codec_tag_string}, `
-                + `Frame: ${info.streams[0].coded_width}x${info.streams[0].coded_height}, `
-                + `Bitrate: ${parseInt(info.streams[0].bit_rate) / 1000}Kbps, ${info.streams[0].avg_frame_rate}s`;
+              + `Frame: ${info.streams[0].coded_width}x${info.streams[0].coded_height}, `
+              + `Bitrate: ${parseInt(info.streams[0].bit_rate) / 1000}Kbps, ${info.streams[0].avg_frame_rate}s`;
             return [1, fileSizeMB, `${playlengthMinutes}:${playlengthSecondsRemaining}`, additional, info.streams];
         } else {
             return [0, fileSizeMB];
