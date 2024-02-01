@@ -62,10 +62,11 @@ async function parseCardMsg(rawContent, isOfficial = true) {
     if (ps === false) return rawContent;
     // noinspection JSUnresolvedVariable
     try {
-        if (isOfficial) return secret.c11n.officialAccountParser(ps.msg);
-        else return secret.c11n.personCardParser(ps.msg);
+        // TODO brandSubscriptConfigUrl
+        if (isOfficial) return secret.c11n.officialAccountParser(ps.msg.$);
+        else return secret.c11n.personCardParser(ps.msg.$);
     } catch (e) {
-        wxLogger.info(`Error occurred when reading xml detail of OfficialAccountMsg. Skipping...`);
+        wxLogger.info(`Error occurred when reading xml detail of AccountCard_Msg. Skipping...`);
         return rawContent;
     }
 }

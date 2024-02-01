@@ -774,11 +774,11 @@ async function onWxMessage(msg) {
                     }
 
                 }
+            if (content.includes("sex") && content.includes("antispamticket")) {
+                content = await mod.wxMddw.parseCardMsg(content, false);
+            }
             if (content.includes("bigheadimgurl") && content.includes("brandIconUrl")) {
                 content = await mod.wxMddw.parseCardMsg(content, true);
-            }
-            if (content.includes("sex") && content.includes("regionCode")) {
-                content = await mod.wxMddw.parseCardMsg(content, false);
             }
         }
 

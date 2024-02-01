@@ -157,7 +157,7 @@ module.exports = {
         quotedMsgSuffixLineInPersonChat: ["YOU", "ta"],
 
         officialAccountParser: a => `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`,
-        personCardParser: a => `📇[Person <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, sex ${a.sex===1?"Male":"''"}`,
+        personCardParser: a => `📇[Person <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, sex ${a.sex===1?"Male":(a.sex===0?"(Female)?":"")}`,
 
         // what nickname will system message use in group show up, like tickle message.
         systemMsgTitleInRoom: "(System)",
