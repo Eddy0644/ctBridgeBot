@@ -644,7 +644,7 @@ async function onWxMessage(msg) {
             } else { // Ended Sticker process, parse as Image
                 wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
                 const fBox = await msg.toFileBox();
-                const fname=processor.filterFilename(`${alias}-${msg.payload.filename}`);
+                const fname = processor.filterFilename(`${alias}-${msg.payload.filename}`);
                 const photoPath = `./downloaded/photo/${fname}`;
                 await fBox.toFile(photoPath);
                 if (fs.existsSync(photoPath)) {
@@ -775,7 +775,10 @@ async function onWxMessage(msg) {
 
                 }
             if (content.includes("bigheadimgurl") && content.includes("brandIconUrl")) {
-                content = await mod.wxMddw.parseOfficialAccountMsg(content);
+                content = await mod.wxMddw.parseCardMsg(content, true);
+            }
+            if (content.includes("sex") && content.includes("regionCode")) {
+                content = await mod.wxMddw.parseCardMsg(content, false);
             }
         }
 

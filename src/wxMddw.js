@@ -56,7 +56,7 @@ async function handlePushMessage(rawContent, msg, name) {
     }
 }
 
-async function parseOfficialAccountMsg(rawContent) {
+async function parseCardMsg(rawContent, official=true) {
     const {wxLogger, secret} = env;
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
     if (ps === false) return rawContent;
@@ -68,6 +68,7 @@ async function parseOfficialAccountMsg(rawContent) {
         return rawContent;
     }
 }
+
 
 
 async function handleVideoMessage(msg, name) {
@@ -157,5 +158,5 @@ function parseXML(xml) {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {handlePushMessage, handleVideoMessage, parseOfficialAccountMsg};
+    return {handlePushMessage, handleVideoMessage, parseCardMsg};
 };
