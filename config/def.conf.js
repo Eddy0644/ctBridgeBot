@@ -32,6 +32,7 @@ module.exports = {
                 "flag": "",
             },
         ],
+        // Below is a more recommended way for a supergroup containing many chats.
         "C2C_generator":{
             "-1001888888888":[
                 [1,"name of group 1", "Group", "flags_here"],
@@ -51,7 +52,6 @@ module.exports = {
         tgContentReplaceList: [
             ["😡", "[Pout]"],
             ["😄", "[Doge]"],
-            ["😭😭", "[Hurt]"],
             ["😏", "[Onlooker]"],
             ["😣", "[Panic]"],
             ["😮‍💨", "[Sigh]"],
