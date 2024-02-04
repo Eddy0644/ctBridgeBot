@@ -32,6 +32,12 @@ module.exports = {
                 "flag": "",
             },
         ],
+        "C2C_generator":{
+            "-1001888888888":[
+                [1,"name of group 1", "Group", "flags_here"],
+                [4,"name of person 1", "Person", ""],
+            ],
+        },
     },
     filtering: {
         wxFindNameReplaceList: [

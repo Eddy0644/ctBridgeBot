@@ -50,7 +50,7 @@ config.bundle = {
         for (const item of items) {
             // item = [1001,"name", false, ""]
             let item_type = item[2] || "P";
-            item_type = item_type.replace("Person", "P").replace("Room", "R");
+            item_type = item_type.replace("Person", "P").replace("Room", "R").replace("Group", "R");
             const newC2C = {
                 "tgid": parseInt(tgid),
                 "threadId": item[0],
