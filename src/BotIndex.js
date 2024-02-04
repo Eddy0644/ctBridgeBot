@@ -937,6 +937,12 @@ async function tgCommandHandler(tgMsg) {
             if (state.last.s === STypes.Chat) {
                 const name = state.last.name;
                 const res = await tgbot.createForumTopic(tgid, name);
+                if(res.message_thread_id){
+                    // create topic success
+
+
+                    await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, null, res.message_thread_id);
+                }
             } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, null, "No available last talker.");
             return;
         }

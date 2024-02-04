@@ -119,6 +119,9 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
             message = `Attempt of '/create_topic' failed.\t Reason: ${additional}.`;
             timeout = 60;
             break;
+        case "autoCreateTopicSuccess":
+            message = `Successfully created topic '${additional}'.`;
+            break;
         case "aboutToReLoginWX":
             message = `You are about to trigger relogin of WeChat. The program will try to exit after you send /reloginWX_2 , and if the program is run under docker or other monitor tool, it would be started again and soon later you will receive new qrcode to scan. If you don't respond, then nothing will happen.`;
             timeout = 180;
