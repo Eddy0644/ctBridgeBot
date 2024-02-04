@@ -36,13 +36,14 @@ module.exports = {
         "C2C_generator": {
             // If you want to use `/create_topic` then remind the order of tgids, and the position of anchor.
             "-1001888888888": [
+                /* |autoCreateTopic Anchor| */
                 [1, "name of group 1", "Group", "flags_here"],
                 [4, "name of person 1", "Person", ""],
             ],
         },
     },
     filtering: {
-        // Use this, only if you didn't bind contacts in C2C but you often chat with them.
+        // Use this, only if you didn't bind contacts in C2C, but you often chat with them.
         wxFindNameReplaceList: [
             ["ShortenedName1", "OriginalName1"],
         ],

@@ -948,9 +948,23 @@ async function tgCommandHandler(tgMsg) {
                     };
                     secret.class.C2C.push(newC2C_Obj);
                     // -- completed temporary add to config
+                    const writeConfSuccess = (function () {
+                        try {
+                            const path = "config/user.conf.js";
+                            const old = fs.readFileSync(path, "utf-8").toString();
+                            const anchor = "/* |autoCreateTopic Anchor| */";
+                            if (!old.contains(anchor)) return 1;
+                            const str = JSON.stringify([res.message_thread_id, name, isGroup ? "R" : "P", ""]);
+                            const new_str = old.replace(anchor, `${str},\n    ${anchor}`);
+                            fs.writeFileSync(path, new_str);
+                            return 0;
+                        } catch (e) {
+                            ctLogger.error(`Failed when writing new C2C config into file:\n\t ${e.message}`);
+                            return 2;
+                        }
+                    })();
 
-
-                    await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, null, res.message_thread_id);
+                    await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, null, [res.message_thread_id, writeConfSuccess]);
                 }
             } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, null, "No available last talker.");
             return;
