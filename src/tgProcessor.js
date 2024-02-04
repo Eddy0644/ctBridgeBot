@@ -1,7 +1,7 @@
 // noinspection JSUnreachableSwitchBranches
 
 const dayjs = require("dayjs");
-const { tgBotDo } = require("./init-tg");
+const {tgBotDo} = require("./init-tg");
 const secret = require("../config/confLoader");
 let env;
 
@@ -10,10 +10,10 @@ let env;
 // }
 
 async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", isText) {
-    const { state, defLogger, tgBotDo, secret } = env;
+    const {state, defLogger, tgBotDo, secret} = env;
     if (!isText) {
         const DTypeName = ((value) => {
-            const DTypes = { Image: 2, Audio: 3, File: 5, Push: 6 };
+            const DTypes = {Image: 2, Audio: 3, File: 5, Push: 6};
             for (const name in DTypes) if (DTypes[name] === value) return name;
             return "Media";
         })(msg.DType);
@@ -38,7 +38,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         return `|→ `;
     })();
     msg[`pre${word}NeedUpdate`] = false;
-    content = filterMsgText(content, { isGroup, peerName: name });
+    content = filterMsgText(content, {isGroup, peerName: name});
     // from same talker check complete, ready to merge
     if (_.firstWord === "") {
         // Already merged, so just append newer to last
@@ -52,7 +52,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         // Ready to modify first msg, refactoring it.
         ///* newFirstTitle = 0 --> C2C msg, do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
         const newString = (newFirstTitle === 0 ? `` : `📨⛓️ [#<b>${newFirstTitle}</b>] - - - -\n`) +
-            `${_.firstWord}\n${newItemTitle} ${content}`;
+          `${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
         _.firstWord = "";
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
@@ -64,14 +64,14 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
 }
 
 async function replyWithTips(tipMode = "", target = null, timeout = 6, additional = null) {
-    const { tgLogger, state, defLogger, tgBotDo } = env;
+    const {tgLogger, state, defLogger, tgBotDo} = env;
     let message = "", form = {};
     switch (tipMode) {
-        // cannot use this now!
-        // case "needRelogin":
-        //     message = `Your WX credential expired, please refer to log or go with this [QRServer] link:\n${additional}`;
-        //     timeout = 180;
-        //     break;
+      // cannot use this now!
+      // case "needRelogin":
+      //     message = `Your WX credential expired, please refer to log or go with this [QRServer] link:\n${additional}`;
+      //     timeout = 180;
+      //     break;
         case "globalCmdToC2C":
             message = `You sent a global command to a C2C chat. The operation has been blocked and please check.`;
             break;
@@ -92,7 +92,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
             break;
         case "softReboot":
             message = `Soft Reboot Successful.\nReason: <code>${additional}</code>`;
-            form = { reply_markup: {} };
+            form = {reply_markup: {}};
             break;
         case "nothingToDo":
             message = `Nothing to do upon your message, ${target}`;
@@ -115,6 +115,10 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
         case "setAsLastAndLocked":
             message = `Already set '${additional}' as last talker and locked.`;
             break;
+        case "autoCreateTopicFail":
+            message = `Attempt of '/create_topic' failed.\t Reason: ${additional}.`;
+            timeout = 60;
+            break;
         case "aboutToReLoginWX":
             message = `You are about to trigger relogin of WeChat. The program will try to exit after you send /reloginWX_2 , and if the program is run under docker or other monitor tool, it would be started again and soon later you will receive new qrcode to scan. If you don't respond, then nothing will happen.`;
             timeout = 180;
@@ -129,7 +133,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
         defLogger.info(`Sent out following tips: {${message}}`);
         if (timeout !== 0) {
             tgLogger.debug(`Added message #${tgMsg.message_id} to poolToDelete with timer (${timeout})sec.`);
-            state.poolToDelete.push({ tgMsg: tgMsg, toDelTs: (dayjs().unix()) + timeout, receiver: target });
+            state.poolToDelete.push({tgMsg: tgMsg, toDelTs: (dayjs().unix()) + timeout, receiver: target});
         }
     } catch (e) {
         defLogger.warn(`Sending Tip failed in post-check, please check!`);
@@ -139,7 +143,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
 }
 
 async function addSelfReplyTs(name = null) {
-    const { processor, state, defLogger, secret } = env;
+    const {processor, state, defLogger, secret} = env;
     if (name === null) name = state.last.name;
     if (processor.isPreRoomValid(state.preRoom, name, false, secret.misc.mergeResetTimeout.forGroup) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
@@ -160,7 +164,7 @@ async function addSelfReplyTs(name = null) {
 }
 
 function filterMsgText(inText, args = {}) {
-    const { state } = env;
+    const {state} = env;
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
@@ -169,9 +173,10 @@ function filterMsgText(inText, args = {}) {
     while (/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/.test(txt)) {
         const match = txt.match(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
         // Here need to add some exception as DEAR WeChat cannot handle some native emojis correctly
-        const unsupportList = { "1f44c": "👌", "1f61c": "😜" };
+        const unsupportList = {"1f44c": "👌", "1f61c": "😜"};
         // Check if it is in unsupported emoji list
-        const emojiId = match[1].replace("emoji emoji", ""); let replaceTo = "";
+        const emojiId = match[1].replace("emoji emoji", "");
+        let replaceTo = "";
         if (unsupportList[emojiId]) {
             replaceTo = unsupportList[emojiId];
         }
@@ -227,7 +232,7 @@ function filterMsgText(inText, args = {}) {
 
 
 function isSameTGTarget(in1, in2) {
-    const { secret } = env;
+    const {secret} = env;
     const parser = in0 => {
         // in <-- <C2C-pair> / secret.class.def  ( msg.receiver )
         if (in0.tgid) {
@@ -252,5 +257,5 @@ function isSameTGTarget(in1, in2) {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return { addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText };
+    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText};
 };

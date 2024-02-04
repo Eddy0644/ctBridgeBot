@@ -924,11 +924,20 @@ async function tgCommandHandler(tgMsg) {
         }
         case "/create_topic": {
             // This is an entry point for auto creating a new topic,
-            // in order to put new contacts under a certain supergroup,
+            // in order to put new contacts (state.last) under a certain supergroup,
             // to avoid user to modify the user.conf.js and restart program manually.
             // We will use the first `tgid` entry in C2C_generator as the destination,
             // so please put your most recent supergroup as the first entry.
             // TODO complete /create_topic
+            const tgid = Object.keys(secret.class.C2C_generator)[0];
+            if (!tgid) {
+                await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, null, "No tgid specified in config:C2C_generator !")
+                return;
+            }
+            if (state.last.s === STypes.Chat) {
+                const name = state.last.name;
+                const res = await tgbot.createForumTopic(tgid, name);
+            } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, null, "No available last talker.");
             return;
         }
         case "/find": {
