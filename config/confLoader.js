@@ -52,7 +52,7 @@ config.bundle = {
             let item_type = item[2] || "P";
             item_type = item_type.replace("Person", "P").replace("Room", "R");
             const newC2C = {
-                tgid,
+                "tgid": parseInt(tgid),
                 "threadId": item[0],
                 "wx": [item[1], /* isGroup */item_type === "R"],
                 "flag": item[3] || "",
