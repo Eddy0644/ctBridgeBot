@@ -931,7 +931,7 @@ async function tgCommandHandler(tgMsg) {
             // TODO complete /create_topic
             const tgid = Object.keys(secret.class.C2C_generator)[0];
             if (!tgid) {
-                await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, null, "No tgid specified in config:C2C_generator !")
+                await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No tgid specified in config:C2C_generator !")
                 return;
             }
             if (state.last.s === STypes.Chat) {
@@ -963,10 +963,10 @@ async function tgCommandHandler(tgMsg) {
                             return 2;
                         }
                     })();
-
-                    await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, null, [res.message_thread_id, writeConfSuccess]);
+                    const msgText = (writeConfSuccess === 0 ? "[Write to log successful.]" : "[Could not write to user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
+                    await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, 0, msgText);
                 }
-            } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, null, "No available last talker.");
+            } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No available last talker.");
             return;
         }
         case "/find": {
@@ -1448,7 +1448,7 @@ require('./common')("startup");
 //     // 此部分代码仅供临时使用，待完善。
 //     if (rs !== "SUCCESS") {
 //         console.log("\n\n");
-//         ctLogger.warn("New version maybe released and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n")
+//         ctLogger.warn("New version maybe released, and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n")
 //     }
 // })
 
