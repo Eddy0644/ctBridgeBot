@@ -33,11 +33,11 @@ module.exports = {
             },
         ],
         // Below is a more recommended way for a supergroup containing many chats.
-        "C2C_generator":{
-            // If you want to use `/create_topic` then remind the order of tgids.
-            "-1001888888888":[
-                [1,"name of group 1", "Group", "flags_here"],
-                [4,"name of person 1", "Person", ""],
+        "C2C_generator": {
+            // If you want to use `/create_topic` then remind the order of tgids, and the position of anchor.
+            "-1001888888888": [
+                [1, "name of group 1", "Group", "flags_here"],
+                [4, "name of person 1", "Person", ""],
             ],
         },
     },
@@ -142,12 +142,12 @@ module.exports = {
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
     },
-    chatOption:{    // this section declares default behaviors of chats when not specified in C2C flag.
+    chatOption: {    // this section declares default behaviors of chats when not specified in C2C flag.
         // TODO implement chatOption
         // whether accept *-prefix in TG message as indicator of not forwarding to WX
         "mixed": 1,
         // whether merge WX-side messages by default
-        "merge": 1,   
+        "merge": 1,
         // whether skip all sticker delivery by default
         "skipSticker": 0,
         // Only apply to group; which name should be used as title of a person in a merged msg,
@@ -168,13 +168,13 @@ module.exports = {
         quotedMsgSuffixLineInPersonChat: ["YOU", "ta"],
 
         officialAccountParser: a => `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`,
-        personCardParser: a => `📇[Person <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, sex ${a.sex===1?"Male":(a.sex===0?"(Female)?":"")}`,
+        personCardParser: a => `📇[Person <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, sex ${a.sex === 1 ? "Male" : (a.sex === 0 ? "(Female)?" : "")}`,
 
         // what nickname will system message use in group show up, like tickle message.
         systemMsgTitleInRoom: "(System)",
         // If a sticker with former delivery found, then run this func to get formatted text.
         stickerWithLink: (url_p, flib, md5) => flib.hint ?
-            `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
+          `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
         // original text here (wrapped with []), to suppress replacing here.

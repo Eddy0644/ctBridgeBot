@@ -937,8 +937,17 @@ async function tgCommandHandler(tgMsg) {
             if (state.last.s === STypes.Chat) {
                 const name = state.last.name;
                 const res = await tgbot.createForumTopic(tgid, name);
-                if(res.message_thread_id){
-                    // create topic success
+                if (res.message_thread_id) {
+                    // -- create topic success
+                    const isGroup = !!state.last.target.member; // Only room have member().
+                    const newC2C_Obj = {
+                        "tgid": parseInt(tgid),
+                        "threadId": res.message_thread_id,
+                        "wx": [name, isGroup],
+                        "flag": "",
+                    };
+                    secret.class.C2C.push(newC2C_Obj);
+                    // -- completed temporary add to config
 
 
                     await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, null, res.message_thread_id);
