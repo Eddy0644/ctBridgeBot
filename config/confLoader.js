@@ -41,4 +41,25 @@ config.bundle = {
     getTGBotHookURL: suffix => `${config.tgbot.webHookUrlPrefix}${suffix}/bot${config.tgbot.botToken}`,
 };
 
+// Prepare and reify C2C-generator
+{
+    const generator = config.class.C2C_generator;
+    const C2C_result = config.class.C2C;
+    for (const tgid in generator) if (generator.hasOwnProperty(tgid)) {
+        const items = generator[tgid];
+        for (const item of items) {
+            // item = [1001,"name", false, ""]
+            let item_type = item[2] || "P";
+            item_type = item_type.replace("Person", "P").replace("Room", "R");
+            const newC2C = {
+                tgid,
+                "threadId": item[0],
+                "wx": [item[1], /* isGroup */item_type === "R"],
+                "flag": item[3] || "",
+            };
+            C2C_result.push(newC2C);
+        }
+    }
+}
+
 module.exports = config;
