@@ -31,11 +31,14 @@ module.exports = {
             },
         ],
         // Below is a more recommended way for a supergroup containing many chats.
-        "C2C_generator":{
-            "-1001888888888":[
-                [1,"name of group 1", "Group", "flags_here"],
-                [4,"name of person 1", "Person", ""],
+        "C2C_generator": {
+            "-1001888888888": [
+                [1, "name of group 1", "Group", "flags_here"],
+                [4, "name of person 1", "Person", ""],
             ],
         },
+    },
+    misc: {
+        deliverPushMessage: true,
     },
 }

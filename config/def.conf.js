@@ -41,14 +41,17 @@ module.exports = {
         },
     },
     filtering: {
+        // Use this, only if you didn't bind contacts in C2C but you often chat with them.
         wxFindNameReplaceList: [
             ["ShortenedName1", "OriginalName1"],
         ],
+        // mainly used to replace wx-side emoji to universal emoji
         wxContentReplaceList: [
             ["[Pout]", "{😠}"],
             ["[Facepalm]", "{😹}"],
             ["[Hurt]", "{😭}"],
         ],
+        // mainly used to replace universal emoji to wx-side emoji
         tgContentReplaceList: [
             ["😡", "[Pout]"],
             ["😄", "[Doge]"],
@@ -57,6 +60,7 @@ module.exports = {
             ["😮‍💨", "[Sigh]"],
         ],
         wxNameFilterStrategy: {
+            // You can choose to use either 'blackList' or 'whiteList' (only one)
             useBlackList: true,
             blackList: [
                 "美团",
