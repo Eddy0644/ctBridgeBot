@@ -34,6 +34,7 @@ module.exports = {
         ],
         // Below is a more recommended way for a supergroup containing many chats.
         "C2C_generator":{
+            // If you want to use `/create_topic` then remind the order of tgids.
             "-1001888888888":[
                 [1,"name of group 1", "Group", "flags_here"],
                 [4,"name of person 1", "Person", ""],

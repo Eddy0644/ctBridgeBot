@@ -922,6 +922,15 @@ async function tgCommandHandler(tgMsg) {
             await softReboot("User triggered.");
             return;
         }
+        case "/create_topic": {
+            // This is an entry point for auto creating a new topic,
+            // in order to put new contacts under a certain supergroup,
+            // to avoid user to modify the user.conf.js and restart program manually.
+            // We will use the first `tgid` entry in C2C_generator as the destination,
+            // so please put your most recent supergroup as the first entry.
+            // TODO complete /create_topic
+            return;
+        }
         case "/find": {
             // This is not a recommended way to search target
             let form = {
