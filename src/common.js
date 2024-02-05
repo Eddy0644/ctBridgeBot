@@ -126,7 +126,7 @@ module.exports = (param) => {
 /drop_on & /drop_off : [msg drop]
 /sync_on & /sync_off : [self sync]
 /info ; /placeholder ; /try_edit 
-/reloginWX ;
+/reloginWX_2 ; /create_topic ; 
 Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.last.name : "-"}]`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],
@@ -135,21 +135,6 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                 ],
             },
             downloader: {
-                httpNoProxy: async function (url, pathName) {
-                    return new Promise((resolve, reject) => {
-                        const file = fs.createWriteStream(pathName);
-                        http.get(url, {}, (response) => {
-                            // response.setEncoding("binary");
-                            response.pipe(file);
-                            file.on('finish', () => {
-                                file.close();
-                                resolve("SUCCESS");
-                            });
-                        }).on('error', (error) => {
-                            fs.unlink(pathName, () => reject(error));
-                        });
-                    });
-                },
                 httpsWithProxy: async function (url, pathName) {
                     return new Promise((resolve, reject) => {
                         if (!pathName) log4js.getLogger("default").error(`Undefined Download target!`);
