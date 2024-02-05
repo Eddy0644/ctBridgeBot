@@ -711,7 +711,7 @@ async function onWxMessage(msg) {
                     wxLogger.warn(`Detected as Link, but error occurred while getting content.`);
                 }
             } else if (/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/.test(content)) {
-                wxLogger.trace(`content matched pattern, recognise as Location.`);
+                wxLogger.trace(`content matched pattern, recognised as Location.`);
                 // Developer Comment: This is a location message,
                 // but it is not supported by WebWeChat-wechaty now, so cannot provide full support.
                 const res = content.match(/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/);
@@ -725,7 +725,18 @@ async function onWxMessage(msg) {
                     msg.filesize = parseInt(regResult[1]);
                     msgDef.isSilent = false;
                     content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                    msg.toDownloadPath = `./downloaded/file/${dayjs().unix() % 1000}-${msg.payload.filename}`;
+                    msg.toDownloadPath = (function () {   // Local Path Generator
+                        const path1 = `./downloaded/file/`;
+                        const filename = msg.payload.filename;
+                        let rand = 0;
+                        if (fs.existsSync(path1 + filename)) {
+                            do {
+                                rand = (Math.random() * 122).toFixed();
+                            }
+                            while (fs.existsSync(path1 + `(${rand})` + filename));
+                            wxLogger.debug(`Renamed a duplicate local file [${filename}] with factor ${rand}.`)
+                        } else return path1 + filename;
+                    })();
                     if (msg.filesize === 0) {
                         wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
                         return;
@@ -744,7 +755,8 @@ async function onWxMessage(msg) {
                         content += `Send a single <code>OK</code> to retrieve that.`;
                     }
                     msg.DType = DTypes.File;
-                } catch (e) {
+                } catch
+                  (e) {
                     wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
                 }
             }
@@ -887,7 +899,8 @@ async function onWxMessage(msg) {
 
             // if (haveLock) talkerLocks.pop();
         }
-    } catch (e) {
+    } catch
+      (e) {
         tgLogger.error(`{onWxMsg()}: ${e.message}`);
         tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
