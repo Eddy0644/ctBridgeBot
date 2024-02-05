@@ -1,6 +1,6 @@
 {
   "name": "ctbridgebot",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Bridge your messages from a notorious IM in China:{WeChat}, to an excellent IM:{Telegram}.",
   "superagent": "src/BotIndex.js",
   "scripts": {
@@ -16,13 +16,12 @@
     "wechaty",
     "telegram"
   ],
-  "author": "netcyabc",
+  "author": "Eddy0644",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
     "dayjs": "^1.11.7",
     "ffprobe": "^1.1.2",
-    "ffprobe-static": "^3.1.0",
     "file-box": "^1.5.5",
     "https-proxy-agent": "^6.1.0",
     "log4js": "^6.7.1",
