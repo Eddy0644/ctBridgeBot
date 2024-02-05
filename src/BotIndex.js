@@ -582,7 +582,6 @@ async function onWxMessage(msg) {
 
         // Process Image as identical photo or Sticker
         if (msg.type() === wxbot.Message.Type.Image) {
-            const CustomEmotionRegex = new RegExp(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/g);
             if (/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/.test(content)) {
                 const isSticker = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/);
                 const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
@@ -1418,7 +1417,7 @@ async function getFileFromWx(msg) {
 
 wxbot.on('login', async user => {
     wxLogger.info(`${user}已登录. 可在Trace Log中取得本次会话的详细信息.`);
-    wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}  || puppetDoneInitTime on this device: ${state.v.wxStat.puppetDoneInitTime}`);
+    wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}`);
     state.s.selfName = user.payload.name;
     if (process.uptime() - state.v.wxStat.puppetDoneInitTime < 4) {
         // Now we know that during this boot we used cached credentials, not scanned.
@@ -1435,8 +1434,8 @@ wxbot.on('logout', async (user) => {
 });
 wxbot.start()
   .then(() => {
-      wxLogger.info('开始登录微信...');
       state.v.wxStat.puppetDoneInitTime = process.uptime();
+      wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime} s`);
   }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
