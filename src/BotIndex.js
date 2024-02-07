@@ -916,6 +916,12 @@ async function tgCommandHandler(tgMsg) {
         await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
         state.s.helpCmdInstance = null;
     }
+    if (text.startsWith("/eval ")) {
+        // Eval specified code
+        const code = text.replace("/eval ", "");
+        const res = eval(code);
+        ctLogger.info(`Eval result:\n${res}`);
+    }
     // noinspection FallThroughInSwitchStatementJS
     switch (text) {
         case "/help": {
@@ -1067,6 +1073,9 @@ async function tgCommandHandler(tgMsg) {
             // write a flag to disk, in order to skip graceful timeout before sending QRCode to TG
             await fs.promises.writeFile("data/userTriggerRelogin.flag", "114514");
             process.exit(123);
+        }
+        case "/eval": {
+            return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
         }
         default: {
             const skip = secret.misc.passUnrecognizedCmdNext;
