@@ -1505,6 +1505,10 @@ async function timerFunc() {
 // General Timer Function
 setInterval(timerFunc, 5000);
 
+setInterval(() => {
+    const str = `Uptime: ${(process.uptime() / 3600).toFixed(2)}hrs | wxMsgTotal: ${state.v.wxStat.MsgTotal}\n`;
+    ctLogger.debug(`[Status Report] ${str}`);
+}, secret.misc.status_report_interval);
 
 // noinspection JSIgnoredPromiseFromCall
 onTGMsg({

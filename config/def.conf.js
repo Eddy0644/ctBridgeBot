@@ -138,6 +138,8 @@ module.exports = {
 
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
+        // Interval between each automatic status report
+        status_report_interval: 4 * 3600,
         // How many 5-seconds should system wait before auto cancel /drop_on command.
         keep_drop_on_x5s: 100,
         // This variable is deprecated, therefore not recommended to change.
