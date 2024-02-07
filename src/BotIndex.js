@@ -274,7 +274,7 @@ async function onTGMsg(tgMsg) {
                                 await mod.tgProcessor.addSelfReplyTs();
                             }
                             tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
-                            ctLogger.debug(`Handled a message send-back to ${mapPair.name}.`);
+                            ctLogger.debug(`TG[Default] DirectReply--> WX(${mapPair.name}): ${tgMsg.text}`);
                             return;
                         } else {
                             ctLogger.info(`In C2C chat found a message with reply flag which is not 'OK' or '@'. Sending...`);
