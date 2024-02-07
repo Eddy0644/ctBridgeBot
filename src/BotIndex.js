@@ -967,6 +967,10 @@ async function tgCommandHandler(tgMsg) {
                     };
                     secret.class.C2C.push(newC2C_Obj);
                     // -- completed temporary add to config
+                    // Send initial message to thread
+                    await tgbot.sendMessage(tgid, secret.c11n.newTopicCreated(name), {
+                        message_thread_id: res.message_thread_id,
+                    });
                     const writeConfSuccess = (function () {
                         try {
                             const path = "config/user.conf.js";
