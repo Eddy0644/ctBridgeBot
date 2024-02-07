@@ -34,7 +34,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         }
         _.talkerCount++;
         if (typeof s === "function") return s(_.talkerCount);
-        defLogger.error(`Invalid configuration found for {settings.changeTitleForSameTalkerInMerged}!`);
+        defLogger.error(`Invalid configuration found for {settings.c11n.titleForSameTalkerInMergedRoomMsg}!`);
         return `|→ `;
     })();
     msg[`pre${word}NeedUpdate`] = false;
@@ -50,7 +50,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         return isText; // !isText?false:true
     } else {
         // Ready to modify first msg, refactoring it.
-        ///* newFirstTitle = 0 --> C2C msg, do not need header */qdata.receiver.qTarget ? `` :`📨⛓️ [<b>${name}</b>] - - - -\n`)
+        ///* newFirstTitle = 0 --> C2C msg, do not need header */
         const newString = (newFirstTitle === 0 ? `` : `📨⛓️ [#<b>${newFirstTitle}</b>] - - - -\n`) +
           `${_.firstWord}\n${newItemTitle} ${content}`;
         _.msgText = newString;
