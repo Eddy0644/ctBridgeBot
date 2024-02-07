@@ -132,6 +132,10 @@ module.exports = {
         // 1: pass unrecognized cmd to chat process logic; 0: directly return
         passUnrecognizedCmdNext: 1,
 
+        // If you want to use /eval tg command, then set this to true.
+        // WARNING this may be a security risk, as it allows arbitrary code execution.
+        debug_evalEnabled: false,
+
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
         // How many 5-seconds should system wait before auto cancel /drop_on command.
@@ -141,7 +145,6 @@ module.exports = {
 
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
-
     },
     chatOption: {    // this section declares default behaviors of chats when not specified in C2C flag.
         // TODO implement chatOption

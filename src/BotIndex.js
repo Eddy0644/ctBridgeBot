@@ -918,6 +918,7 @@ async function tgCommandHandler(tgMsg) {
     }
     if (text.startsWith("/eval ")) {
         // Eval specified code
+        if (!secret.misc.allowEval) return ctLogger.warn(`Received /eval request, but the function has been disabled.`);
         const code = text.replace("/eval ", "");
         const res = eval(code);
         ctLogger.info(`Eval result:\n${res}`);
