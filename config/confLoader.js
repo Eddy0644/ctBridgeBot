@@ -62,4 +62,6 @@ config.bundle = {
     }
 }
 
+delete config.class.C2C_generator["-1001888888888"];
+
 module.exports = config;
