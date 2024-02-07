@@ -1495,7 +1495,6 @@ async function timerFunc() {
                 await mod.tgProcessor.replyWithTips("dropCmdAutoOff", null, 0);
             }
         }
-
     } catch (e) {
         ctLogger.info(`An exception happened within timer function with x${state.v.timerDataCount} reset cycles left:\n\t${e.toString()}`);
         state.v.timerDataCount--;
@@ -1503,7 +1502,9 @@ async function timerFunc() {
     }
 }
 
-const timerData = setInterval(timerFunc, 5000);
+// General Timer Function
+setInterval(timerFunc, 5000);
+
 
 // noinspection JSIgnoredPromiseFromCall
 onTGMsg({
