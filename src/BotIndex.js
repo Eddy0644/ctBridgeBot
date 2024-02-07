@@ -972,7 +972,7 @@ async function tgCommandHandler(tgMsg) {
                             const path = "config/user.conf.js";
                             const old = fs.readFileSync(path, "utf-8").toString();
                             const anchor = "/* |autoCreateTopic Anchor| */";
-                            if (!old.contains(anchor)) return 1;
+                            if (!old.includes(anchor)) return 1;
                             const str = JSON.stringify([res.message_thread_id, name, isGroup ? "R" : "P", ""]);
                             const new_str = old.replace(anchor, `${str},\n    ${anchor}`);
                             fs.writeFileSync(path, new_str);
@@ -982,7 +982,7 @@ async function tgCommandHandler(tgMsg) {
                             return 2;
                         }
                     })();
-                    const msgText = (writeConfSuccess === 0 ? "[Write to log successful.]" : "[Could not write to user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
+                    const msgText = (writeConfSuccess === 0 ? "[Write to log successful.]" : "[Could not write user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
                     await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, 0, msgText);
                 }
             } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No available last talker.");
