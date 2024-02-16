@@ -918,10 +918,11 @@ async function tgCommandHandler(tgMsg) {
     }
     if (text.startsWith("/eval ")) {
         // Eval specified code
-        if (!secret.misc.allowEval) return ctLogger.warn(`Received /eval request, but the function has been disabled.`);
+        if (!secret.misc.debug_evalEnabled) return ctLogger.warn(`Received /eval request, but the function has been disabled.`);
         const code = text.replace("/eval ", "");
         const res = eval(code);
         ctLogger.info(`Eval result:\n${res}`);
+        return;
     }
     // noinspection FallThroughInSwitchStatementJS
     switch (text) {
@@ -1080,7 +1081,7 @@ async function tgCommandHandler(tgMsg) {
             process.exit(123);
         }
         case "/eval": {
-            return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
+            //return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
         }
         default: {
             const skip = secret.misc.passUnrecognizedCmdNext;
