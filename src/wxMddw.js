@@ -1,7 +1,7 @@
 const xml2js = require("xml2js");
 const dayjs = require("dayjs");
 const fs = require("fs");
-const {path: ffprobePath} = require("ffprobe-static");
+
 const util = require("util");
 const ffprobe = require("ffprobe");
 let env;
