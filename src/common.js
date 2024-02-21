@@ -86,14 +86,14 @@ module.exports = (param) => {
                 let msgToStr = `${msg}`;
                 // fixed here to avoid contamination of <img of HTML.
                 part1.wxLogger.trace(`${isMessageDropped ? '❌[Dropped] ' : ""}---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\t   ` +
-                    `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`);
-                    //+ (isMessageDropped ? '\n' : ''));
+                  `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`);
+                //+ (isMessageDropped ? '\n' : ''));
                 part2.wxMsgLogger.info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
             [🗣talkerId=${msg.payload.talkerId}][👥roomId=${msg.payload.roomId}]
             [filename=${msg.payload.filename}]
-            ${msg.payload.text}${type===0?'\n\t'+msg.log_payload:''}
+            ${msg.payload.text}${type === 0 ? '\n\t' + msg.log_payload : ''}
             ---------------------`);
-                if(msg.log_payload) delete msg.log_payload;
+                if (msg.log_payload) delete msg.log_payload;
             },
 
             //////-----------Above is mostly of logger ---------------------//////
@@ -117,8 +117,11 @@ module.exports = (param) => {
                     {command: '/spoiler', description: 'Add spoiler to the replied message.'},
                     // TODO fix /drop_toggle
                     {command: '/drop_toggle', description: 'Toggle /drop status. (Incomplete)'},
-                    {command: '/reloginWX_2', description: 'Immediately invalidate current WX login credential and reboot.'},
-                    
+                    {
+                        command: '/reloginWX_2',
+                        description: 'Immediately invalidate current WX login credential and reboot.'
+                    },
+
                     // Add more commands as needed
                 ],
                 // Explanation: ein -> on, aus -> off
@@ -168,6 +171,28 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                         });
                     });
                 },
+                httpsGet: async function (url) {
+                    return new Promise((resolve) => {
+                        https.get(url, (res) => {
+                            let data = '';
+
+                            // A chunk of data has been received.
+                            res.on('data', (chunk) => {
+                                data += chunk;
+                            });
+
+                            // The whole response has been received.
+                            res.on('end', () => {
+                                resolve([res.statusCode, data]);
+                            });
+
+                        }).on('error', (err) => {
+                            // An error occurred, set opcode to 0 and return the error message.
+                            resolve([0, err.message]);
+                        });
+                    });
+                },
+
                 httpsWithWx: async function (url, pathName, cookieStr) {
                     return new Promise((resolve, reject) => {
                         const file = fs.createWriteStream(pathName);
