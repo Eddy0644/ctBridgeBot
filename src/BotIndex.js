@@ -1463,7 +1463,7 @@ wxbot.on('logout', async (user) => {
 wxbot.start()
   .then(() => {
       state.v.wxStat.puppetDoneInitTime = process.uptime();
-      wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime} s`);
+      wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
   }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
