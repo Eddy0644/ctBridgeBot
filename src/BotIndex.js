@@ -1465,27 +1465,25 @@ wxbot.on('login', async user => {
             ctLogger.error("Cannot parse package.json file correctly! Please check if the file is intact, and if your PWD is 'src/' rather than project root.");
             ver = "0.0.0";
         }
-        await downloader.httpsCurl(`https://ctbr.ryancc.top/verify-v1` +
+        const ret = await downloader.httpsGet(`https://ctbr.ryancc.top/verify-v1` +
           `?token=${ec(secret.ctToken)}&wxname=${ec(user.payload.name)}&cli_ver=${ver}`);
+
     }
 });
 
 wxbot.on('logout', async (user) => {
     wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxStat.MsgTotal}).`);
 });
-wxbot.start()
-  .then(() => {
-      state.v.wxStat.puppetDoneInitTime = process.uptime();
-      wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
-  }).catch((e) => wxLogger.error(e));
+// wxbot.start()
+//   .then(() => {
+//       state.v.wxStat.puppetDoneInitTime = process.uptime();
+//       wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
+//   }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
+    // downloader.httpsGet(`https://ctbr.ryancc.top/verify-v1`?token=&wxname=1&cli_ver=2.0.0`).then(e=>console.log);
 
 // Verification Block, please do not modify
-{
-
-
-}
 
 // ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
 // downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
