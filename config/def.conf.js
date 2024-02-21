@@ -136,6 +136,9 @@ module.exports = {
         // WARNING this may be a security risk, as it allows arbitrary code execution.
         debug_evalEnabled: false,
 
+        // Set either to display related message about your ctToken, default on
+        display_ctToken_info: 1,
+
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
         // Interval between each automatic status report

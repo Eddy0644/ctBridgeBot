@@ -1468,7 +1468,10 @@ wxbot.start()
 
 require('./common')("startup");
 
-//TODO: setup a verification system!
+// Verification Block, please do not modify
+{
+    // In order to grab user's WeChat name for metric, put this block after logging.
+}
 
 // ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
 // downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
