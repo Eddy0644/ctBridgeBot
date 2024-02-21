@@ -1455,6 +1455,19 @@ wxbot.on('login', async user => {
     setTimeout(() => {
         wxLogger.info(`Timer report: ${state.v.wxStat.MsgTotal} messages have passed 30s after wx login.`);
     }, 30000);  // sometimes the program is too slow that 10s is far from enough to fetch all messages.
+    {
+        // In order to grab user's WeChat name for metric, put this block after logging.
+        let ec = encodeURIComponent, ver = "";
+        try {
+            const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
+            ver = (JSON.parse(pkgjson)).version;
+        } catch (e) {
+            ctLogger.error("Cannot parse package.json file correctly! Please check if the file is intact, and if your PWD is 'src/' rather than project root.");
+            ver = "0.0.0";
+        }
+        await downloader.httpsCurl(`https://ctbr.ryancc.top/verify-v1` +
+          `?token=${ec(secret.ctToken)}&wxname=${ec(user.payload.name)}&cli_ver=${ver}`);
+    }
 });
 
 wxbot.on('logout', async (user) => {
@@ -1470,7 +1483,8 @@ require('./common')("startup");
 
 // Verification Block, please do not modify
 {
-    // In order to grab user's WeChat name for metric, put this block after logging.
+
+
 }
 
 // ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
