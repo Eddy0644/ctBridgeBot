@@ -1463,7 +1463,7 @@ wxbot.on('login', async user => {
             const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
             ver = (JSON.parse(pkgjson)).version;
         } catch (e) {
-            ctLogger.error("Cannot parse package.json file correctly! Please check if the file is intact, and if your PWD is 'src/' rather than project root.");
+            ctLogger.error("Cannot parse 'package.json' file correctly! Please ensure the file is intact, and your PWD is project root rather than 'src/'.");
             ver = "0.0.0";
         }
         const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +
@@ -1476,6 +1476,7 @@ wxbot.on('login', async user => {
                 const setting = secret.misc.display_ctToken_info;
                 if (ret1.success === 1) {
                     if (setting === 1) ctLogger.debug(`ctToken registered successfully. Welcome to use ctBridgeBot.`);
+                    if (ret1.msg && setting < 999) ctLogger.info(`Server message: ${ret1.msg}`);
                 } else {
                     if (setting < 999) ctLogger.warn(`Your ctToken encountered a problem. ${ret1.msg || ""}`);
                 }
@@ -1495,25 +1496,16 @@ wxbot.on('login', async user => {
 wxbot.on('logout', async (user) => {
     wxLogger.info(`${user} 已被登出. (TotalMsgCount:${state.v.wxStat.MsgTotal}).`);
 });
-// wxbot.start()
-//   .then(() => {
-//       state.v.wxStat.puppetDoneInitTime = process.uptime();
-//       wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
-//   }).catch((e) => wxLogger.error(e));
+wxbot.start()
+  .then(() => {
+      state.v.wxStat.puppetDoneInitTime = process.uptime();
+      wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
+  }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
-// downloader.httpsGet(`https://ctbr.ryancc.top/verify-v1`?token=&wxname=1&cli_ver=2.0.0`).then(e=>console.log);
 
-// Verification Block, please do not modify
+// In-developing Verification Block, please do not modify
 
-// ctLogger.info("Welcome to use ctBridgeBot trial version! If you think this program really helped you, then please consider making　*donations* in afdian link!");
-// downloader.httpsCurl("https://ccdn.ryancc.top/trial_v1.txt").then(rs => {
-//     // 此部分代码仅供临时使用，待完善。
-//     if (rs !== "SUCCESS") {
-//         console.log("\n\n");
-//         ctLogger.warn("New version maybe released, and it's strongly recommended to upgrade to newer version!\n  Or, you could depress this message in BotIndex.js.\n\n")
-//     }
-// })
 
 async function timerFunc() {
     try {
