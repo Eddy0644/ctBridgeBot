@@ -27,6 +27,7 @@ const state = {
             // because every time boot will load history messages, so no need for persistence
             puppetDoneInitTime: 0
         },
+        extra: 1,
     },
     last: {},
     s: { // session
@@ -1465,9 +1466,29 @@ wxbot.on('login', async user => {
             ctLogger.error("Cannot parse package.json file correctly! Please check if the file is intact, and if your PWD is 'src/' rather than project root.");
             ver = "0.0.0";
         }
-        const ret = await downloader.httpsGet(`https://ctbr.ryancc.top/verify-v1` +
+        const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +
           `?token=${ec(secret.ctToken)}&wxname=${ec(user.payload.name)}&cli_ver=${ver}`);
-
+        if (ret[0] === 200) {   // Positive reply from server
+            try {
+                // Token valid
+                const ret1 = JSON.parse(ret[1]);
+                state.v.extra = ret1.extra;
+                const setting = secret.misc.display_ctToken_info;
+                if (ret1.success === 1) {
+                    if (setting === 1) ctLogger.debug(`ctToken registered successfully. Welcome to use ctBridgeBot.`);
+                } else {
+                    if (setting < 999) ctLogger.warn(`Your ctToken encountered a problem. ${ret1.msg || ""}`);
+                }
+            } catch (e) {
+                if (setting < 999) ctLogger.debug(`ctToken registration failed. Cannot read from server.`);
+            }
+        } else if (ret[0] === 400) {
+            // No ctToken provided
+            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.`);
+        } else if (ret[0] === 404) {
+            // Wrong ctToken that not in database
+            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.`);
+        }
     }
 });
 
@@ -1481,7 +1502,7 @@ wxbot.on('logout', async (user) => {
 //   }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
-    // downloader.httpsGet(`https://ctbr.ryancc.top/verify-v1`?token=&wxname=1&cli_ver=2.0.0`).then(e=>console.log);
+// downloader.httpsGet(`https://ctbr.ryancc.top/verify-v1`?token=&wxname=1&cli_ver=2.0.0`).then(e=>console.log);
 
 // Verification Block, please do not modify
 
