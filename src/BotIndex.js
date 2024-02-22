@@ -1477,9 +1477,9 @@ wxbot.on('login', async user => {
                 if (ret1.success === 1) {
                     // Please do not modify here, your appreciation will help the author a lot.
                     if (ret1.trial === 0) ctLogger.trace(`ctToken verified successfully.`);
-                    else if (ret1.trial < 10) ctLogger.info(`Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\nand another notice would be sent again in a few days.`);
+                    else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\nand another notice would be sent again in a few days.}}`);
                     else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version.`);
-                    else if (ret1.trial > 99) ctLogger.info(`It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author?`);
+                    else if (ret1.trial > 99) ctLogger.info(`{{ It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author?}}`);
                     if (ret1.msg && setting < 999) ctLogger.info(`Server message: ${ret1.msg}`);
                     // Please do not modify 'server announce' code, as there may be some critical messages delivered in this way.
                     if (ret1.announce) ctLogger.warn(`Server Announce: ${ret1.announce}`);
@@ -1495,10 +1495,10 @@ wxbot.on('login', async user => {
             }
         } else if (ret[0] === 401) {
             // No ctToken provided
-            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.`);
+            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.s\nIf you don't have a token, please goto trial register site or purchase a donated one.`);
         } else if (ret[0] === 406) {
             // Wrong ctToken that not in database
-            ctLogger.warn(``);
+            ctLogger.warn(`It seems that your ctToken is not correct. Please check your spell and try again. \nIf you don't have a token, please goto trial register site or purchase a donated one.`);
         } else {
             // Other error, like network error
             if (setting === 1) ctLogger.info(`Error occurred when connecting to ct server. Check log for detail.`);
