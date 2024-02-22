@@ -1468,27 +1468,41 @@ wxbot.on('login', async user => {
         }
         const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +
           `?token=${ec(secret.ctToken)}&wxname=${ec(user.payload.name)}&cli_ver=${ver}`);
+        const setting = secret.misc.display_ctToken_info;
         if (ret[0] === 200) {   // Positive reply from server
             try {
                 // Token valid
                 const ret1 = JSON.parse(ret[1]);
                 state.v.extra = ret1.extra;
-                const setting = secret.misc.display_ctToken_info;
                 if (ret1.success === 1) {
-                    if (setting === 1) ctLogger.debug(`ctToken registered successfully. Welcome to use ctBridgeBot.`);
+                    // Please do not modify here, your appreciation will help the author a lot.
+                    if (ret1.trial === 0) ctLogger.trace(`ctToken verified successfully.`);
+                    else if (ret1.trial < 10) ctLogger.info(`Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\nand another notice would be sent again in a few days.`);
+                    else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version.`);
+                    else if (ret1.trial > 99) ctLogger.info(`It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author?`);
                     if (ret1.msg && setting < 999) ctLogger.info(`Server message: ${ret1.msg}`);
+                    // Please do not modify 'server announce' code, as there may be some critical messages delivered in this way.
+                    if (ret1.announce) ctLogger.warn(`Server Announce: ${ret1.announce}`);
+                    if (ret1.announceStop) {
+                        ctLogger.error(`We're sorry, but the author wants you to notice something above. \n\nThe program will stop, but we'll not block your next run. \nThanks for your understanding.`);
+                        process.exit(1);
+                    }
                 } else {
                     if (setting < 999) ctLogger.warn(`Your ctToken encountered a problem. ${ret1.msg || ""}`);
                 }
             } catch (e) {
                 if (setting < 999) ctLogger.debug(`ctToken registration failed. Cannot read from server.`);
             }
-        } else if (ret[0] === 400) {
+        } else if (ret[0] === 401) {
             // No ctToken provided
             ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.`);
-        } else if (ret[0] === 404) {
+        } else if (ret[0] === 406) {
             // Wrong ctToken that not in database
-            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.`);
+            ctLogger.warn(``);
+        } else {
+            // Other error, like network error
+            if (setting === 1) ctLogger.info(`Error occurred when connecting to ct server. Check log for detail.`);
+            ctLogger.trace(`[ct Server Fault] If you are using a latest version, then this maybe a problem of the server. This will have no affect on program, you can skip this message. ${ret[1]}`)
         }
     }
 });
