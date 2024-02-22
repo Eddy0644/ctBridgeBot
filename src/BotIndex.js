@@ -27,7 +27,7 @@ const state = {
             // because every time boot will load history messages, so no need for persistence
             puppetDoneInitTime: 0
         },
-        extra: 1,
+        extra: 250,
     },
     last: {},
     s: { // session
@@ -1457,8 +1457,8 @@ wxbot.on('login', async user => {
         wxLogger.info(`Timer report: ${state.v.wxStat.MsgTotal} messages have passed 30s after wx login.`);
     }, 30000);  // sometimes the program is too slow that 10s is far from enough to fetch all messages.
     {
-        // In order to grab user's WeChat name for metric, put this block after logging.
-        let ec = encodeURIComponent, ver = "";
+        // In order to grab user's WeChat name for metric, put this block after logging in.
+        let ec = encodeURIComponent, ver;
         try {
             const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
             ver = (JSON.parse(pkgjson)).version;
@@ -1477,7 +1477,7 @@ wxbot.on('login', async user => {
                 if (ret1.success === 1) {
                     // Please DO NOT modify here, your appreciation will help the author a lot.
                     if (ret1.trial === 0) ctLogger.trace(`ctToken verified successfully.`);
-                    else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\nand another notice would be sent again in a few days. }}`);
+                    else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\n then another notice would be sent again in a few days. }}\n`);
                     else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version.`);
                     else if (ret1.trial > 99) ctLogger.info(`{{ It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author? }}`);
                     if (ret1.msg && setting < 999) ctLogger.info(`Server message: ${ret1.msg}`);
@@ -1495,14 +1495,14 @@ wxbot.on('login', async user => {
             }
         } else if (ret[0] === 401) {
             // No ctToken provided
-            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a token.s\nIf you don't have a token, please goto trial register site or purchase a donated one.`);
+            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a ctToken.\nIf you don't have one, please goto trial register site or purchase a donated one.`);
         } else if (ret[0] === 406) {
             // Wrong ctToken that not in database
             ctLogger.warn(`It seems that your ctToken is not correct. Please check your spell and try again. \nIf you don't have a token, please goto trial register site or purchase a donated one.`);
         } else {
             // Other error, like network error
             if (setting === 1) ctLogger.info(`Error occurred when connecting to ct server. Check log for detail.`);
-            ctLogger.trace(`[ct Server Fault] If you are using a latest version, then this maybe a problem of the server. This will have no affect on program, you can skip this message. ${ret[1]}`)
+            ctLogger.trace(`[ct Server Fault] If you are using a latest version, then this maybe a problem of the server. This will have no affect on program, you can skip this message. \n${ret[1]}`)
         }
     }
 });
