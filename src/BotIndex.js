@@ -1475,16 +1475,16 @@ wxbot.on('login', async user => {
                 const ret1 = JSON.parse(ret[1]);
                 state.v.extra = ret1.extra;
                 if (ret1.success === 1) {
-                    // Please do not modify here, your appreciation will help the author a lot.
+                    // Please DO NOT modify here, your appreciation will help the author a lot.
                     if (ret1.trial === 0) ctLogger.trace(`ctToken verified successfully.`);
-                    else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\nand another notice would be sent again in a few days.}}`);
+                    else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\nand another notice would be sent again in a few days. }}`);
                     else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version.`);
-                    else if (ret1.trial > 99) ctLogger.info(`{{ It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author?}}`);
+                    else if (ret1.trial > 99) ctLogger.info(`{{ It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author? }}`);
                     if (ret1.msg && setting < 999) ctLogger.info(`Server message: ${ret1.msg}`);
                     // Please do not modify 'server announce' code, as there may be some critical messages delivered in this way.
                     if (ret1.announce) ctLogger.warn(`Server Announce: ${ret1.announce}`);
                     if (ret1.announceStop) {
-                        ctLogger.error(`We're sorry, but the author wants you to notice something above. \n\nThe program will stop, but we'll not block your next run. \nThanks for your understanding.`);
+                        ctLogger.error(`We're sorry, but the server wants you to notice something above. \n\nThe program will stop, but we'll not block your next run. \nThanks for your understanding.`);
                         process.exit(1);
                     }
                 } else {
