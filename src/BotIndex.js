@@ -1525,7 +1525,6 @@ wxbot.start()
 
 require('./common')("startup");
 
-
 async function timerFunc() {
     try {
         // Handle state.poolToDelete
