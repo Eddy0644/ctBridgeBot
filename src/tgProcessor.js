@@ -46,7 +46,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
         _.msgText = newString;
         _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
         // defLogger.debug(`Merged msg from ${word}: ${who}, "${content}" into former.`);
-        defLogger.debug(`(${who}) 🔗🔗--->📂: "${content}"`);
+        defLogger.debug(`(${who}) 🔗+ -->📂: "${content}"`);
         return isText; // !isText?false:true
     } else {
         // Ready to modify first msg, refactoring it.
@@ -187,7 +187,7 @@ function filterMsgText(inText, args = {}) {
     }
 
     // process quoted message
-    if (/"(.{1,10}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
+    if (/"(.{1,20}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
         const match = txt.match(/"(.{1,10}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
