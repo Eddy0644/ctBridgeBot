@@ -23,11 +23,16 @@ package-lock.json
 /config/cli.pem
 /config/srv.pem
 /config/web.pem
-/config/user.conf.js
-/stickers.json
+
+# in data/
+/data/user.conf.js
+/data/sticker_l4.json
+/data/ctbridgebot.memory-card.json
+
+# miscellaneous
 /IGNT/
 /downloaded/*/*
 /.run/*
 /1tq.sh
 ct_temppacked.tar.gz
-sticker_v2.json
+

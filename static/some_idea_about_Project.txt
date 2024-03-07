@@ -1,0 +1,9 @@
+In test, sending a TG sticker to Wx takes about 8 seconds.
+
+If a network error is classified as WARN, then maybe a message failed to send.
+
+For a group rename event, its origin is old group, and sender name is new group, with content { changed the group name to "" }
+
+Notes for the future document:
+1. run initialisation script to create necessary file
+2. put proxy.js inside data/ to use at docker
