@@ -23,10 +23,10 @@ if [ ! -e "data/sticker_l4.json" ]; then
 fi
 
 # Check if 'downloaded/' exists, if not copy everything from 'static/template___downloaded/'
-if [ ! -d "downloaded/" ]; then
-    echo "'downloaded/' directory does not exist. Copying from 'static/template___downloaded/'."
-    cp -r "static/template___downloaded/" "downloaded/"
-fi
+#if [ ! -d "downloaded/" ]; then
+#    echo "'downloaded/' directory does not exist. Copying from 'static/template___downloaded/'."
+#    cp -r "static/template___downloaded/" "downloaded/"
+#fi
 
 
 #export WECHATY_LOG=silly

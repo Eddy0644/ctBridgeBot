@@ -4,7 +4,7 @@ FROM wechaty/wechaty
 WORKDIR /bot
 
 # Copy your application files
-#COPY ./_auto.sh .
+# COPY ./_auto.sh .
 
 # Set the command to run when the container starts
 ENTRYPOINT /bot/static/3entry.sh

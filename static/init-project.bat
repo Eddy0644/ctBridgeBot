@@ -8,7 +8,7 @@ pause
 
 copy "config\minimum_user.conf.js" "data\CHANGE_ME)user.conf.js"
 echo {} > data\sticker_l4.json
-xcopy "static\template___downloaded" "downloaded"
+@REM xcopy "static\template___downloaded" "downloaded"
 
 echo Completed! Please check if all files in right position.
 timeout -t 5
