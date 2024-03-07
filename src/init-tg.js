@@ -4,13 +4,14 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const {tgLogger} = require('./common')();
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 process.env["NTBA_FIX_350"] = "1";
-
 const {downloader} = require("./common")();
+
+const proxyG = require((require("fs").existsSync('../data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
 
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secret.tgbot.botToken,
-        {polling: {interval: secret.tgbot.polling.interval}, request: {proxy: require("../proxy")},});
+      {polling: {interval: secret.tgbot.polling.interval}, request: {proxy: proxyG},});
     tgbot.deleteWebHook().then(() => {
     });
 } else {
@@ -22,7 +23,7 @@ if (isPolling) {
             key: "config/srv.pem",
             cert: "config/cli.pem",
         },
-        request: {proxy: require("../proxy")}
+        request: {proxy: proxyG}
     });
     tgbot.setWebHook(secret.bundle.getTGBotHookURL(process.argv[3]), {
         drop_pending_updates: true
@@ -163,7 +164,8 @@ const tgBotDo = {
 };
 let errorStat = 0;
 tgbot.on('polling_error', async (e) => {
-    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = `[${process.uptime().toFixed(2)}]\t`, msg3 = "[Err]\t";
+    let msg = "Polling - " + e.message.replace("Error: ", ""), msg2 = `[${process.uptime().toFixed(2)}]\t`,
+      msg3 = "[Err]\t";
     if (errorStat === 0) {
         errorStat = 1;
         setTimeout(async () => {
