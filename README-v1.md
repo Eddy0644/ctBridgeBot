@@ -8,7 +8,7 @@ _This document is no longer maintained and is lack of detail, please refer to [M
 1. log into your server (eg. Cloud Server or docker container).
 2. Clone the whole repository into your disk (assume that code are under `/opt/ctBridgeBot`, then you should run `cd /opt && git clone https://github.com/Eddy0644/ctBridgeBot.git`).
 3. copy `config/def.conf.js` into `config/user.conf.js` and make changes to some required parameter and credentials, like TG bot token or so.
-4. move `devtime/template___downloaded` into `downloaded/` as the default folder of media received upon wx or tg message.
+4. move `static/template___downloaded` into `downloaded/` as the default folder of media received upon wx or tg message.
 5. edit `proxy.js` to your real proxy server address.
 6. - if you have webHook successfully setup on remote server, you could start the application using `npm run h0` to start the app using `https://www.com/webHook0`.
    - if you want to use poll method temporary, please run `npm run p`.
@@ -21,7 +21,7 @@ _This document is no longer maintained and is lack of detail, please refer to [M
 2. `downloaded/` : all your downloaded media files from WeChat or Telegram.
 3. `src/` : all source code of this project.
 4. `log/` : two types of log files, one is for verbosed program log, and the other is for WeChat raw message log.
-5. `devtime/` : containing some files you may need when deploying this project.
+5. `static/` : containing some files you may need to use or read when deploying this project.
 6. `data/` : containing some variable file which may change during program runtime.
 7. `proxy.js` : a proxy server configuration for Telegram, which is used to get rid of the network ban in specific region. (recommended to stay unoutched upon deployment)
 
