@@ -1445,11 +1445,11 @@ async function getFileFromWx(msg) {
 }
 
 wxbot.on('login', async user => {
-    wxLogger.info(`${user}已登录. 可在Trace Log中取得本次会话的详细信息.`);
+    wxLogger.info(`${user} 已登录成功.`);
     wxLogger.trace(`Logged User info: id=(${user.id})  |  ${user.payload.name}`);
     state.s.selfName = user.payload.name;
     if (process.uptime() - state.v.wxStat.puppetDoneInitTime < 4) {
-        // Now we know that during this boot we used cached credentials, not scanned.
+        // Now we know that during this boot we used cached credentials, user didn't scan QRCode.
         // TODO check when user last manual login
     }
     // start timer for count skipped msg
@@ -1478,7 +1478,7 @@ wxbot.on('login', async user => {
                     // Please DO NOT modify here, your appreciation will help the author a lot.
                     if (ret1.trial === 0) ctLogger.trace(`ctToken verified successfully. Thanks for your support.`);
                     else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\n then another notice would be sent again in a few days. }}\n`);
-                    else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version.`);
+                    else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version......`);
                     else if (ret1.trial > 99) ctLogger.info(`{{ It's been a while since your first try with this program.\nIf you appreciate this project, why not consider give a small donation to the author? Thanks ^_^ }}`);
                     if (ret1.msg && setting < 999) ctLogger.info(`Server message: ${ret1.msg}`);
                     // Please do not modify 'server announce' code, as there may be some critical messages delivered in this way.
@@ -1517,8 +1517,6 @@ wxbot.start()
   }).catch((e) => wxLogger.error(e));
 
 require('./common')("startup");
-
-// In-developing Verification Block, please do not modify
 
 
 async function timerFunc() {
