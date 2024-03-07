@@ -1,6 +1,6 @@
 {
   "name": "ctbridgebot",
-  "version": "3.1.1",
+  "version": "3.1.0",
   "description": "Bridge your messages from a notorious IM in China:{WeChat}, to an excellent IM:{Telegram}.",
   "superagent": "src/BotIndex.js",
   "scripts": {
@@ -13,7 +13,7 @@
     "puppet-install": "node node_modules/.bin/wechaty-puppet-install"
   },
   "keywords": [
-    "wechaty",
+    "wechat",
     "telegram"
   ],
   "author": "Eddy0644",
