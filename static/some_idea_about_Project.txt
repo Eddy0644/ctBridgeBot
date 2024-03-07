@@ -7,3 +7,4 @@ For a group rename event, its origin is old group, and sender name is new group,
 Notes for the future document:
 1. run initialisation script to create necessary file
 2. put proxy.js inside data/ to use at docker
+3. Docker will become available next step
