@@ -22,5 +22,12 @@ if [ ! -e "data/sticker_l4.json" ]; then
     echo "{}" > "data/sticker_l4.json"
 fi
 
+# Check if 'downloaded/' exists, if not copy everything from 'static/template___downloaded/'
+if [ ! -d "downloaded/" ]; then
+    echo "'downloaded/' directory does not exist. Copying from 'static/template___downloaded/'."
+    cp -r "static/template___downloaded/" "downloaded/"
+fi
+
+
 #export WECHATY_LOG=silly
 npm run p

@@ -7,4 +7,4 @@ WORKDIR /bot
 #COPY ./_auto.sh .
 
 # Set the command to run when the container starts
-ENTRYPOINT /bot/static/3docker_entry.sh
+ENTRYPOINT /bot/static/3entry.sh
