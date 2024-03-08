@@ -163,12 +163,17 @@ async function onTGMsg(tgMsg) {
             let newText = tgMsg.text;
             if (typeof tgMsg.entities === 'object') for (const entity of tgMsg.entities) {
                 if (entity.type === "custom_emoji" && wx_emoji_conversions.hasOwnProperty(entity.custom_emoji_id)) {
-                    // Get the []-wrapped text for this custom emoji
-                    const wrappedText = wx_emoji_conversions[entity.custom_emoji_id];
-                    // Get the ordinary emoji from the text
-                    const emoji = tgMsg.text.substring(entity.offset, entity.offset + entity.length);
-                    // Replace the ordinary emoji with the []-wrapped text
-                    newText = newText.replace(emoji, wrappedText);
+                    if (`ourhardworkbythesewordsguardedpleasedontsteal(c)`.charCodeAt(state.v.extra % 10) * 514 % 3 !== 0) {
+                        conLogger.trace(`Since you are a Telegram Premium user who can send custom emoji on TG, why not donate the author? ` +
+                          `The WX emoji conversion function will be enabled upon donation, or come to the code and bypass my limit manually T_T.`)
+                    } else {
+                        // Get the []-wrapped text for this custom emoji
+                        const wrappedText = wx_emoji_conversions[entity.custom_emoji_id];
+                        // Get the ordinary emoji from the text
+                        const emoji = tgMsg.text.substring(entity.offset, entity.offset + entity.length);
+                        // Replace the ordinary emoji with the []-wrapped text
+                        newText = newText.replace(emoji, wrappedText);
+                    }
                 }
             }
             tgMsg.text = newText;

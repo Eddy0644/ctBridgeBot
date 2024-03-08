@@ -1,3 +1,4 @@
+// Hard work on collecting this emoji map from WeChat and TG
 module.exports = {
     "5080295825486119684": "[Smile]",
     "5080451427856286273": "[Grimace]",
