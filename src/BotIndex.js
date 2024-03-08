@@ -1481,6 +1481,8 @@ wxbot.on('login', async user => {
                 state.v.extra = ret1.extra;
                 if (ret1.success === 1) {
                     // Please DO NOT modify here, your appreciation will help the author a lot.
+                    // Please DO NOT modify here, your appreciation will help the author a lot.
+                    // Please DO NOT modify here, your appreciation will help the author a lot.
                     if (ret1.trial === 0) ctLogger.trace(`ctToken verified successfully. Thanks for your support.`);
                     else if (ret1.trial < 10) ctLogger.info(`{{ Login successful, welcome to use ctBridgeBot 'trial' version!\nNow please enjoy your moment, from tomorrow on, we'll try not to disturb you,\n then another notice would be sent again in a few days. }}\n`);
                     else if (ret1.trial > 199) ctLogger.info(`Welcome to use ctBridgeBot trial version......`);
