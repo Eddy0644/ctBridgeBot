@@ -980,7 +980,7 @@ async function tgCommandHandler(tgMsg) {
                     });
                     const writeConfSuccess = (function () {
                         try {
-                            const path = "config/user.conf.js";
+                            const path = "data/user.conf.js";
                             const old = fs.readFileSync(path, "utf-8").toString();
                             const anchor = "/* |autoCreateTopic Anchor| */";
                             if (!old.includes(anchor)) return 1;
