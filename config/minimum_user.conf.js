@@ -10,7 +10,7 @@
 * find corresponding setting, and copy to current file.
 * */
 module.exports = {
-    ctToken: 'EnterYourCtTokenHere',
+    ctToken: 'EnterYourCtTokenHere##############',
     tgbot: {
         botToken: '5000:ABCDE',
         botName: '@your_bot_username_ending_in_bot',

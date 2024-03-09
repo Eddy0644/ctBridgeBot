@@ -2,7 +2,7 @@
 // -------------
 // Configuration File, updated upon every version update:
 module.exports = {
-    ctToken: 'EnterYourCtTokenHere',
+    ctToken: 'EnterYourCtTokenHere##############',
     tgbot: {
         botToken: '5000:ABCDE',
         botName: '@your_bot_username_ending_in_bot',
@@ -32,7 +32,7 @@ module.exports = {
                 "flag": "",
             },
         ],
-        // Below is a more recommended way for a supergroup containing many chats.
+        // Below is a more recommended way for defining a supergroup containing many different chats.
         "C2C_generator": {
             // If you want to use `/create_topic` then remind the order of tgids, and the position of anchor.
             "-1001888888888": [
@@ -43,7 +43,9 @@ module.exports = {
         },
     },
     filtering: {
+
         // Use this, only if you didn't bind contacts in C2C, but you often chat with them.
+        // Now this option is NOT recommended to use, unless you'll use find function very often.
         wxFindNameReplaceList: [
             ["ShortenedName1", "OriginalName1"],
         ],
@@ -62,7 +64,7 @@ module.exports = {
             ["😮‍💨", "[Sigh]"],
         ],
         wxNameFilterStrategy: {
-            // You can choose to use either 'blackList' or 'whiteList' (only one)
+            // You can choose to use either 'blackList' or 'whiteList' (only one can be activated at a time)
             useBlackList: true,
             blackList: [
                 "美团",
@@ -96,43 +98,51 @@ module.exports = {
             forGroup: 80,
         },
 
+        // TODO add 'onceMergeCapacity', consists of time,media_count,message_count
+
         // s=false, no delivery
         // s=true, send to Push channel
         // s=<tgTargetObj>, send to this target
         deliverPushMessage: true,
 
-        // as there are additional information, this section can NOT be set to 'true'.
+        // This option defines where WeChat stickers will settle down.
+        // It is recommended to create another new group chat to hold it.
+        // as there are additional information, this section can NOT be set to <true>.
+        // either a object like below, or a simple <false>.
         deliverSticker: {
             tgid: -100000, threadId: 777,
             urlPrefix: "https://t.me/c/000/777/",
         },
 
-        // 0, no advance (default); 1, only not filtered; 2, apply on all room chats
+        // 0, no advance (default); 1, only when not being filtered; 2, apply on all room chats
         deliverRoomRedPacketInAdvance: 2,
 
-        // If set to false, all post message will no longer save to log,
-        // as only one of posts would take up to 40KB in log file.
+        // If set to <false>, all post message will no longer be copied to log,
+        // as only a single post would take up to 40KB in log file.
         savePostRawDataInDetailedLog: false,
 
         // Determine whether first item in a merged person msg should have a title of timestamp,
-        // like [11:00:00] a \n[11:00:02] b
+        // <true> be like: [11:00:00] a \n[11:00:02] b
         PutStampBeforeFirstMergedMsg: false,
 
-        // -1: no add; 0: only add to wx Link; 1: add to wx Link and text link
+        // This option is designed to separate authentic links from fake links like Sticker Pointer.
+        // -1: no addition; 0: only add to wx Link; 1: add to wx Link and text link
         addHashCtLinkToMsg: 0,
 
         wxMsgBufferPool: {
-            // !Not implemented
+            // !Not implemented; DO NOT USE now
             switch: "on",
             // switch pool when items exceeds __ num
             itemTrig: 10,
             // switch pool when time expired __s
             timeTrig: 30,
         },
-        // 1: pass unrecognized cmd to chat process logic; 0: directly return
+
+        // This option defines how the program behaviors when it encounters unrecognized tg command.
+        // 1: will not be recognized as command; send to your chat peer; 0: do nothing and won't be sent to WeChat.
         passUnrecognizedCmdNext: 1,
 
-        // If you want to use /eval tg command, then set this to true.
+        // If you want to use /eval in tg commands, then set this to <true>.
         // WARNING this may be a security risk, as it allows arbitrary code execution.
         debug_evalEnabled: false,
 
@@ -141,7 +151,7 @@ module.exports = {
 
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
-        // Interval between each automatic status report
+        // Interval between each automatic status report [to Console].
         status_report_interval: 4 * 3600,
         // How many 5-seconds should system wait before auto cancel /drop_on command.
         keep_drop_on_x5s: 100,
@@ -151,8 +161,10 @@ module.exports = {
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
     },
-    chatOption: {    // this section declares default behaviors of chats when not specified in C2C flag.
-        // TODO implement chatOption
+    chatOption: {
+        // this section declares default behaviors of chats when not specified in C2C flag.
+        // TODO implement chatOption -_- -_- -_-
+
         // whether accept *-prefix in TG message as indicator of not forwarding to WX
         "mixed": 1,
         // whether merge WX-side messages by default
@@ -189,7 +201,7 @@ module.exports = {
 
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
-        // original text here (wrapped with []), to suppress replacing here.
+        // original text here (wrapped with []), to disable replacement here.
         unsupportedSticker: "{-🧩-}",
         recvCall: "{📞📲}",
         recvSplitBill: "{💰✂️📥, 👋}",
