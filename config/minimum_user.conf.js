@@ -13,7 +13,7 @@ module.exports = {
     ctToken: 'EnterYourCtTokenHere##############',
     tgbot: {
         botToken: '5000:ABCDE',
-        botName: '@your_bot_username_ending_in_bot',
+        botName: '@your_bot_username_ending_in_this_suffix__bot',
         tgAllowList: [5000000001],
     },
     class: {
@@ -21,6 +21,7 @@ module.exports = {
             "tgid": -100000,
         },
         "push": {
+            // Could set to the same as default channel for short use
             "tgid": -10000,
         },
         "C2C": [

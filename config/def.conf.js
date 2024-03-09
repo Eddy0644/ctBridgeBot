@@ -44,10 +44,10 @@ module.exports = {
     },
     filtering: {
 
-        // Use this, only if you didn't bind contacts in C2C, but you often chat with them.
+        // Use this, only if you didn't bind some contacts in C2C, but you often chat with them.
         // Now this option is NOT recommended to use, unless you'll use find function very often.
         wxFindNameReplaceList: [
-            ["ShortenedName1", "OriginalName1"],
+            //["Shortened Name 1", "Original Name 1"],
         ],
         // mainly used to replace wx-side emoji to universal emoji
         wxContentReplaceList: [
@@ -101,7 +101,7 @@ module.exports = {
         // TODO add 'onceMergeCapacity', consists of time,media_count,message_count
 
         // s=false, no delivery
-        // s=true, send to Push channel
+        // s=true, send to Push channel [defined in 'root.class']
         // s=<tgTargetObj>, send to this target
         deliverPushMessage: true,
 
@@ -119,9 +119,10 @@ module.exports = {
 
         // If set to <false>, all post message will no longer be copied to log,
         // as only a single post would take up to 40KB in log file.
+        // If you have spare disk space, why don't save these stuff? [lol]
         savePostRawDataInDetailedLog: false,
 
-        // Determine whether first item in a merged person msg should have a title of timestamp,
+        // Determine whether the first item in a merged person msg should have a title of timestamp,
         // <true> be like: [11:00:00] a \n[11:00:02] b
         PutStampBeforeFirstMergedMsg: false,
 
