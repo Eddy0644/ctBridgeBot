@@ -1502,10 +1502,10 @@ wxbot.on('login', async user => {
             }
         } else if (ret[0] === 401) {
             // No ctToken provided
-            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a ctToken.\nIf you don't have one, please goto trial register site or purchase a donated one.`);
+            ctLogger.warn(`We cannot detect a ctToken. Please refer to 'user.conf.js' and fill in a ctToken.\nIf you don't have one, please goto trial register site or purchase a donated one.\n\n\n\n`);
         } else if (ret[0] === 406) {
             // Wrong ctToken that not in database
-            ctLogger.warn(`It seems that your ctToken is not correct. Please check your spell and try again. \nIf you don't have a token, please goto trial register site or purchase a donated one.`);
+            ctLogger.warn(`It seems that your ctToken is not correct. Please check your spell and try again. \nIf you don't have a token, please goto trial register site or purchase a donated one.\n\n\n\n`);
         } else {
             // Other error, like network error
             if (setting === 1) ctLogger.info(`Error occurred when connecting to ct server. Check log for detail.`);
