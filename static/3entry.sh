@@ -10,8 +10,11 @@ if [ ! -e "data/proxy.js" ] && [ ! -e "proxy.js" ]; then
 fi
 
 if [ ! -e "data/user.conf.js" ]; then
-    echo "Copying user.conf.js template to data/ dir."
-    cp "config/minimum_user.conf.js" "data/CHANGE_ME)user.conf.js"
+  # We added below code to avoid user written their config with heart but forgot to rename it
+  if [ ! -e "data/CHANGE_ME)user.conf.js" ]; then
+      echo "Copying user.conf.js template to data/ dir."
+      cp "config/minimum_user.conf.js" "data/CHANGE_ME)user.conf.js"
+  fi
 fi
 
 if [ -e "data/CHANGE_ME)user.conf.js" ]; then
