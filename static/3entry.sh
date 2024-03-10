@@ -1,12 +1,5 @@
 #!/bin/bash
 
-#sleep 3
-#if [ -e "../package.json" ] && [ -e "../package.json" ]; then
-#  cd ..
-#  echo "1. [PASSED] Switching to project root..."
-#else
-#  echo "1. [PASSED] running in project root,package.json exists."
-#fi
 
 # Now we use this to ensure it sits in the right directory -- project root
 cd "$(dirname "$0")/.."
@@ -14,10 +7,12 @@ cd "$(dirname "$0")/.."
 ins_ok=0
 if [ -e "data/install.ok" ]; then
   ins_ok=1
+else
+  pwd
 fi
 
 if [ -e "package.json" ]; then
-  cd ..
+  #cd .. this is a silly error
   [ $ins_ok -eq 1 ] || echo "1. [PASSED] We are currently in project root."
 else
   echo "1. [FAILED] cannot find package.json. Please run this script in the project root."
