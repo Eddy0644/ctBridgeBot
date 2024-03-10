@@ -10,3 +10,6 @@
 
 // Other Proxies you like
 // module.exports = "http://192.168.1.1:7890" ;
+
+// Or, If you don't want to use proxy at all:
+module.exports = "" ;
