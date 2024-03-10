@@ -1,7 +1,8 @@
 #!/bin/bash
 sleep 3
-cd /bot
-
+if [ ! -e "data/user.conf.js" ]; then
+cd ..
+fi
 
 if [ ! -e "data/user.conf.js" ]; then
     echo "Copying user.conf.js template to data/ dir."
