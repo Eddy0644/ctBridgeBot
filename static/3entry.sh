@@ -1,7 +1,12 @@
 #!/bin/bash
 sleep 3
-if [ ! -e "data/user.conf.js" ]; then
-cd ..
+if [ ! -e "package.json" ]; then
+  cd ..
+fi
+
+if [ ! -e "data/proxy.js" ] && [ ! -e "proxy.js" ]; then
+    echo "Copying proxy.js-template to data/ dir."
+    cp "config/proxy.js-template" "data/proxy.js"
 fi
 
 if [ ! -e "data/user.conf.js" ]; then
