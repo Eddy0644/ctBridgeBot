@@ -6,7 +6,7 @@ const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 process.env["NTBA_FIX_350"] = "1";
 const {downloader} = require("./common")();
 
-const proxyG = require((require("fs").existsSync('../data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
+const proxyG = require((require("fs").existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
 
 let tgbot;
 if (isPolling) {

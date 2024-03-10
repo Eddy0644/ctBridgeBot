@@ -1,7 +1,7 @@
 const log4js = require('log4js');
 const fs = require("fs");
 // const proxy = require("../proxy");
-const proxy = require((fs.existsSync('../data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
+const proxy = require((fs.existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
 
 const dayjs = require("dayjs");
 const https = require("https");
