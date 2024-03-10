@@ -1,0 +1,15 @@
+// This is a device-specific proxy setting, which is used to bypass the firewall.
+// When updating the code, you could make no change to this file.
+// =====================================================================
+
+// Please write your HTTP proxy with patterns below:
+// Eg. v2rayN
+// module.exports = "http://127.0.0.1:10809" ;
+// Eg. NekoRay
+// module.exports = "http://127.0.0.1:7080" ;
+
+// Other Proxies you like
+// module.exports = "http://192.168.1.1:7890" ;
+
+// Or, If you don't want to use proxy at all:
+module.exports = "" ;
