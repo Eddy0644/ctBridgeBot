@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rm -f ct_temp.tar.gz && tar czvf ct_temp.tar.gz src data config package.json",
     "p": "node src/BotIndex.js poll",
-    "verify": "bash static/3entry.sh",
+    "verify": "bash static/3entry.sh verify",
     "h1": "node src/BotIndex.js hook 1",
     "h2": "node src/BotIndex.js hook 2",
     "h0": "node src/BotIndex.js hook 0",

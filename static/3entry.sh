@@ -95,4 +95,7 @@ fi
 
 #export WECHATY_LOG=silly
 
+if [ "$1" = "verify" ]; then
+  exit 0
+fi
 npm run p
