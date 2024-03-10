@@ -4,8 +4,9 @@
   "description": "Bridge your messages from a notorious IM in China:{WeChat}, to an excellent IM:{Telegram}.",
   "superagent": "src/BotIndex.js",
   "scripts": {
-    "build": "rm -f ct_temppacked.tar.gz && tar czvf ct_temppacked.tar.gz src data config package.json",
+    "build": "rm -f ct_temp.tar.gz && tar czvf ct_temp.tar.gz src data config package.json",
     "p": "node src/BotIndex.js poll",
+    "verify": "bash static/3entry.sh",
     "h1": "node src/BotIndex.js hook 1",
     "h2": "node src/BotIndex.js hook 2",
     "h0": "node src/BotIndex.js hook 0",

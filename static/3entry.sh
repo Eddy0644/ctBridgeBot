@@ -1,5 +1,9 @@
 #!/bin/bash
-
+#####################
+##   A bash script which is used to check if the project is ready to run,
+##   or being the entrypoint of Docker image.
+##   For Linux users only.
+#####################
 
 # Now we use this to ensure it sits in the right directory -- project root
 cd "$(dirname "$0")/.."
