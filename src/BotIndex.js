@@ -111,16 +111,16 @@ async function onTGMsg(tgMsg) {
         tgMsg.matched = null;
         // s=0 -> default, s=1 -> C2C
         with (secret.class) {
+            const thread_verify = function(pair){
+                if (pair.threadId) {
+                    if (tgMsg.message_thread_id) {
+                        return pair.threadId === tgMsg.message_thread_id;
+                    } else return false;
+                } else return true;
+            };
             for (const pair of C2C) {
                 // thread_id verification without reply-to support
-                const thread_verify = (() => {
-                    if (pair.threadId) {
-                        if (tgMsg.message_thread_id) {
-                            return pair.threadId === tgMsg.message_thread_id;
-                        } else return false;
-                    } else return true;
-                })();
-                if (tgMsg.chat.id === pair.tgid && thread_verify) {
+                if (tgMsg.chat.id === pair.tgid && thread_verify(pair)) {
                     tgMsg.matched = {s: 1, p: pair};
                     tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
                     if (pair.flag.includes("mixed") &&
@@ -164,7 +164,7 @@ async function onTGMsg(tgMsg) {
             if (typeof tgMsg.entities === 'object') for (const entity of tgMsg.entities) {
                 if (entity.type === "custom_emoji" && wx_emoji_conversions.hasOwnProperty(entity.custom_emoji_id)) {
                     if (`ourhardworkbythesewordsguardedpleasedontsteal(c)`.charCodeAt(state.v.extra % 10) * 514 % 3 !== 0) {
-                        conLogger.trace(`Since you are a Telegram Premium user who can send custom emoji on TG, why not donate the author? ` +
+                        conLogger.trace(`Since you are a Telegram Premium user who purchased to Durov and can send custom emoji on TG, why not donate the author? ` +
                           `The WX emoji conversion function will be enabled upon donation, or come to the code and bypass my limit manually T_T.`)
                     } else {
                         // Get the []-wrapped text for this custom emoji
