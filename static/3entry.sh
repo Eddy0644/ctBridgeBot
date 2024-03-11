@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #####################
 ##   A bash script which is used to check if the project is ready to run,
 ##   or being the entrypoint of Docker image.

@@ -6,12 +6,13 @@ RUN mkdir /bot
 
 WORKDIR /bot
 
-COPY . /bot
-
+# Must do this to save my poor traffic!
+COPY package.json /bot
 RUN npm install
 
+COPY . /bot
+
 RUN chmod +x /bot/static/3entry.sh
-# chmod !!!cd /va
 ENTRYPOINT /bot/static/3entry.sh
 
-CMD ["/bot/static/3entry.sh"]
+CMD ["sh", "/bot/static/3entry.sh"]
