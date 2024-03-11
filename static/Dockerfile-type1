@@ -1,0 +1,18 @@
+# Only Use this file, if you don't want Docker to handle all files!
+# This image will only serve necessary environment for the bot to run,
+# and you have to clone the repo and map the volume to the container!
+# However, it'll make you easier to alter codes, access logs, and so on.
+# (Like me, I'm using this image currently, cuz I can sync code from and to my local machine.)
+
+FROM wechaty/wechaty
+
+# Set the working directory
+WORKDIR /bot
+
+## [ Manually volume /bot !!] ##
+
+# Copy your application files
+# COPY ./_auto.sh .
+
+# Set the command to run when the container starts
+ENTRYPOINT /bot/static/2.entry.sh
