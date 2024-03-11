@@ -6,6 +6,14 @@ RUN mkdir /bot
 
 WORKDIR /bot
 
+# Install necessary packages required by chromium
+RUN apt-get update && apt-get install -y \
+    # this line to solve 'shared libraries: libnss3.so ENOENT'
+    libnss3-dev libgdk-pixbuf2.0-dev libgtk-3-dev libxss-dev\
+    # this line to solve 'shared libraries: libasound.so.2 ENOENT'
+    libasound2\
+ && rm -rf /var/lib/apt/lists/*
+
 # Must do this to save my poor traffic!
 COPY package.json /bot
 RUN npm install
