@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-bookworm
 
 LABEL maintainer="Eddy0644 <i@ryancc.top>"
 
@@ -15,4 +15,4 @@ COPY . /bot
 RUN chmod +x /bot/static/3entry.sh
 ENTRYPOINT /bot/static/3entry.sh
 
-CMD ["sh", "/bot/static/3entry.sh"]
+CMD ["/bot/static/3entry.sh", "go"]
