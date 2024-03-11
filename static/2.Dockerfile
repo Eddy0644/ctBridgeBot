@@ -10,6 +10,8 @@ COPY . /bot
 
 RUN npm install
 
+RUN chmod +x /bot/static/3entry.sh
+# chmod !!!cd /va
 ENTRYPOINT /bot/static/3entry.sh
 
 CMD ["/bot/static/3entry.sh"]
