@@ -23,7 +23,7 @@ RUN npm install
 
 COPY . /bot
 
-RUN chmod +x /bot/static/3entry.sh
-ENTRYPOINT /bot/static/3entry.sh
+RUN chmod +x /bot/static/2.entry.sh
+ENTRYPOINT /bot/static/2.entry.sh
 
-CMD ["/bot/static/3entry.sh", "go"]
+CMD ["/bot/static/2.entry.sh", "go"]

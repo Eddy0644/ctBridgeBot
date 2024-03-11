@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Please skip this script ----------------------------
+
 # Set default values
 screenName="CT"
 dockerName="51"
