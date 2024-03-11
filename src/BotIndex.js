@@ -954,7 +954,6 @@ async function tgCommandHandler(tgMsg) {
             // to avoid user to modify the user.conf.js and restart program manually.
             // We will use the first `tgid` entry in C2C_generator as the destination,
             // so please put your most recent supergroup as the first entry.
-            // TODO complete /create_topic
             const tgid = Object.keys(secret.class.C2C_generator)[0];
             if (!tgid) {
                 await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No tgid specified in config:C2C_generator !")
@@ -990,6 +989,7 @@ async function tgCommandHandler(tgMsg) {
                             return 0;
                         } catch (e) {
                             ctLogger.error(`Failed when writing new C2C config into file:\n\t ${e.message}`);
+                            ctLogger.warn(`Please add this entry manually to your 'user.conf.js', to keep your data consistency:\n\t ${JSON.stringify(newC2C_Obj)}`);
                             return 2;
                         }
                     })();
