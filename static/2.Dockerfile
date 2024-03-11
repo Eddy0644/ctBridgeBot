@@ -1,3 +1,6 @@
+# Dockerfile type 2 to bootstrap ctBridgeBot with single volume
+
+# Use node:20-bookworm as base image, as alpine lack some unknown libraries
 FROM node:20-bookworm
 
 LABEL maintainer="Eddy0644 <i@ryancc.top>"
