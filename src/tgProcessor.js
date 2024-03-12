@@ -3,6 +3,7 @@
 const dayjs = require("dayjs");
 const {tgBotDo} = require("./init-tg");
 const secret = require("../config/confLoader");
+const nativeEmojiMap = require('../config/native_emoji_map.js');
 let env;
 
 // async function a() {
@@ -167,24 +168,41 @@ async function addSelfReplyTs(name = null) {
 }
 
 function filterMsgText(inText, args = {}) {
-    const {state} = env;
+    const {state, defLogger} = env;
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
 
-    // process wx original emoji
-    while (/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/.test(txt)) {
-        const match = txt.match(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
-        // Here need to add some exception as DEAR WeChat cannot handle some native emojis correctly
-        const unsupportList = {"1f44c": "👌", "1f61c": "😜"};
-        // Check if it is in unsupported emoji list
-        const emojiId = match[1].replace("emoji emoji", "");
-        let replaceTo = "";
-        if (unsupportList[emojiId]) {
-            replaceTo = unsupportList[emojiId];
+    { // Emoji dual processor
+        const timerLabel = `Emoji processor - Debug timer #${process.uptime() % 100}`;
+        console.time(timerLabel);
+        // Process qqemoji (WeChat exclusive emoji)
+        let qqemojiRegex = /<img class="qqemoji qqemoji(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/g;
+        txt = txt.replace(qqemojiRegex, (match, emojiId, text) => {
+            text = text.replace('_web', '');
+            return text;
+        });
+
+        // Process emoji (WeChat modified, native emoji)
+        let flag = 0;
+        let emojiRegex = /<img class="emoji emoji(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/g;
+        txt = txt.replace(emojiRegex, (match, emojiId, text) => {
+            flag = 1;
+            return `[emoji${emojiId}]`; // Replace with bracketed form
+        });
+
+        // Iterate over nativeEmojiMap and replace bracketed emojis
+        if (flag) for (let key in nativeEmojiMap) {
+            // Regexp is much slower than regular replacement!
+            // In my test on a 10th gen-i5 machine, it takes 42s to complete a single check.
+            // ####################let regex = new RegExp(key, 'g');
+            const val = nativeEmojiMap[key][0]
+            txt = txt.replace(key, val);
+            defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
         }
-        txt = txt.replaceAll(match[0], match[2].replace("_web", replaceTo));
-    }
+        console.timeEnd(timerLabel);
+    } // END: Emoji dual processor
+
 
     // process quoted message
     if (/"(.{1,20}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
