@@ -189,7 +189,8 @@ function filterMsgText(inText, args = {}) {
     // }
 
     { // Emoji dual processor
-
+        const timerLabel = `Emoji processor - Debug timer #${process.uptime() % 100}`;
+        console.time(timerLabel);
         // Process qqemoji (WeChat exclusive emoji)
         let qqemojiRegex = /<img class="qqemoji qqemoji(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/g;
         txt = txt.replace(qqemojiRegex, (match, emojiId, text) => {
@@ -208,9 +209,11 @@ function filterMsgText(inText, args = {}) {
         // Iterate over nativeEmojiMap and replace bracketed emojis
         if (flag) for (let key in nativeEmojiMap) {
             let value = nativeEmojiMap[key];
-            let regex = new RegExp(key, 'g');
-            txt = txt.replace(regex, value);
+            // let regex = new RegExp(key, 'g');
+            // txt = txt.replace(regex, value);
+            txt = txt.replace(key, value[0]);
         }
+        console.timeEnd(timerLabel);
     } // END: Emoji dual processor
 
 
