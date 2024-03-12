@@ -1,5 +1,16 @@
 // noinspection JSNonASCIINames
 
+// Hello user, let me explain what WeChat does on their Web Client.
+// Perhaps its original goal was compatibility. It created a list of emojis and their corresponding random codes on their server.
+// The web client only receives a bundled image with all these emojis inside. Every time it receives an emoji, it replaces it with a random code.
+// This code is wrapped within an <img> element. The Web Client then locates the position of the emoji in the bundled image, crops a small piece of it,
+// and uses this piece to display the emoji.
+// In simple terms, WeChat has hijacked all emojis through their server, creating a challenging situation for developers.
+// I need to find the correspondence between the random codes and the authentic emojis, and replace them only if the incoming message includes an emoji.
+// I tested 1742 emojis, and found that over 550 need to be replaced. I painstakingly collected this conversion map, which now covers most commonly used emojis in daily life.
+// If you discover more emojis that have been replaced by WeChat but yet not contained by this table, please let me know.
+
+
 module.exports = {
     "[emoji1f63a]": ["😺", 124],
     "[emoji1f604]": ["😄", 3],
