@@ -173,21 +173,6 @@ function filterMsgText(inText, args = {}) {
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
 
-    // TODO qqemoji qqemoji* just take its name; emoji emoji* need to look up table
-    // // process wx original emoji
-    // while (/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/.test(txt)) {
-    //     const match = txt.match(/<img class="(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/);
-    //     // Here need to add some exception as DEAR WeChat cannot handle some native emojis correctly
-    //     const unsupportList = {"1f44c": "👌", "1f61c": "😜"};
-    //     // Check if it is in unsupported emoji list
-    //     const emojiId = match[1].replace("emoji emoji", "");
-    //     let replaceTo = "";
-    //     if (unsupportList[emojiId]) {
-    //         replaceTo = unsupportList[emojiId];
-    //     }
-    //     txt = txt.replaceAll(match[0], match[2].replace("_web", replaceTo));
-    // }
-
     { // Emoji dual processor
         const timerLabel = `Emoji processor - Debug timer #${process.uptime() % 100}`;
         console.time(timerLabel);
