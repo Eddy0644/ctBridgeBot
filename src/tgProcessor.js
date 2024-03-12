@@ -168,7 +168,7 @@ async function addSelfReplyTs(name = null) {
 }
 
 function filterMsgText(inText, args = {}) {
-    const {state} = env;
+    const {state, defLogger} = env;
     let txt = inText;
     let appender = "";
     txt = txt.replaceAll("<br/>", "\n");
@@ -208,10 +208,12 @@ function filterMsgText(inText, args = {}) {
 
         // Iterate over nativeEmojiMap and replace bracketed emojis
         if (flag) for (let key in nativeEmojiMap) {
-            let value = nativeEmojiMap[key];
-            // let regex = new RegExp(key, 'g');
-            // txt = txt.replace(regex, value);
-            txt = txt.replace(key, value[0]);
+            // Regexp is much slower than regular replacement!
+            // In my test on a 10th gen-i5 machine, it takes 42s to complete a single check.
+            // ####################let regex = new RegExp(key, 'g');
+            const val = nativeEmojiMap[key][0]
+            txt = txt.replace(key, val);
+            defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
         }
         console.timeEnd(timerLabel);
     } // END: Emoji dual processor
