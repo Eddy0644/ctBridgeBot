@@ -1,3 +1,5 @@
+// noinspection JSNonASCIINames
+
 module.exports = {
     "[emoji1f63a]": ["😺", 124],
     "[emoji1f604]": ["😄", 3],
