@@ -1473,7 +1473,7 @@ wxbot.on('login', async user => {
         try {
             // const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
             // ver = (JSON.parse(pkgjson)).version;
-            ver = await fs.promises.readFile('config/version.txt', 'utf-8');
+            ver = await fs.promises.readFile('config/ver', 'utf-8');
         } catch (e) {
             ctLogger.error("Cannot access version file! Please ensure the file is intact, and your PWD is correct. (project root rather than 'src/')");
             ver = "0.0.0";
