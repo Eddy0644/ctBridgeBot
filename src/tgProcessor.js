@@ -174,8 +174,7 @@ function filterMsgText(inText, args = {}) {
     txt = txt.replaceAll("<br/>", "\n");
 
     { // Emoji dual processor
-        const timerLabel = `Emoji processor - Debug timer #${process.uptime().toFixed(2)}`;
-        console.time(timerLabel);
+
         // Process qqemoji (WeChat exclusive emoji)
         let qqemojiRegex = /<img class="qqemoji qqemoji(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/g;
         txt = txt.replace(qqemojiRegex, (match, emojiId, text) => {
@@ -192,15 +191,19 @@ function filterMsgText(inText, args = {}) {
         });
 
         // Iterate over nativeEmojiMap and replace bracketed emojis
-        if (flag) for (let key in nativeEmojiMap) {
-            // Regexp is much slower than regular replacement!
-            // In my test on a 10th gen-i5 machine, it takes 42s to complete a single check.
-            // ####################let regex = new RegExp(key, 'g');
-            const val = nativeEmojiMap[key][0]
-            txt = txt.replace(key, val);
-            defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
+        if (flag) {
+            const timerLabel = `Emoji processor - Debug timer #${process.uptime().toFixed(2)}`;
+            console.time(timerLabel);
+            for (let key in nativeEmojiMap) {
+                // Regexp is much slower than regular replacement!
+                // In my test on a 10th gen-i5 machine, it takes 42s to complete a single check.
+                // ####################let regex = new RegExp(key, 'g');
+                const val = nativeEmojiMap[key][0]
+                txt = txt.replace(key, val);
+                defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
+            }
+            console.timeEnd(timerLabel);
         }
-        console.timeEnd(timerLabel);
     } // END: Emoji dual processor
 
 
