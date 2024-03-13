@@ -13,11 +13,11 @@ RUN apt-get update && apt-get install -y \
     libasound2\
  && rm -rf /var/lib/apt/lists/*\
     # mkdir for workdir ?
- && mkdir /bot
+ && mkdir /bot && touch /bot/docker.flag
 
 WORKDIR /bot
 
-# Must do this to save my poor traffic!
+# Must do this to save traffic for author and all users!
 COPY package.json /bot
 RUN npm install
 

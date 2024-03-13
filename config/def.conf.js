@@ -152,6 +152,9 @@ module.exports = {
 
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
+        // The Level of timers you want to see in console, which are used to measure operation time.
+        // Currently only 1 or 0.
+        debug_add_console_timers: 1,
         // Interval between each automatic status report [to Console].
         status_report_interval: 4 * 3600,
         // How many 5-seconds should system wait before auto cancel /drop_on command.

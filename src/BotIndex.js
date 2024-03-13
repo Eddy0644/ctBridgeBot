@@ -111,7 +111,12 @@ async function onTGMsg(tgMsg) {
         tgMsg.matched = null;
         // s=0 -> default, s=1 -> C2C
         with (secret.class) {
-            const thread_verify = function(pair){
+            let timerLabel;
+            if (secret.misc.debug_add_console_timers) {
+                timerLabel = `tgMsg origin dispatcher - Debug timer #${process.uptime().toFixed(2)}`;
+                console.time(timerLabel);
+            }
+            const thread_verify = function (pair) {
                 if (pair.threadId) {
                     if (tgMsg.message_thread_id) {
                         return pair.threadId === tgMsg.message_thread_id;
@@ -157,6 +162,7 @@ async function onTGMsg(tgMsg) {
                 tgLogger.trace(`Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title})`);
                 return;
             }
+            if (timerLabel) console.timeEnd(timerLabel);
         }
 
         { // **Sub:** replaceWXCustomEmojis
@@ -823,7 +829,7 @@ async function onWxMessage(msg) {
                 }
 
                 // Weixin, WeChat, MicroMsg: how incredible multiple name! micro-message!!!
-                content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]/, titles.recvTransfer);
+                content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]|向他人发起了一笔转账，当前微信版本不支持展示该内容。|确认了一笔转账，当前微信版本不支持展示该内容。/, titles.recvTransfer);
                 content = content.replace(/\[确认了一笔转账，当前微信版本不支持展示该内容。]/, titles.acceptTransfer);
                 content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
                 content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
@@ -1465,10 +1471,11 @@ wxbot.on('login', async user => {
         // In order to grab user's WeChat name for metric, put this block after logging in.
         let ec = encodeURIComponent, ver;
         try {
-            const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
-            ver = (JSON.parse(pkgjson)).version;
+            // const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
+            // ver = (JSON.parse(pkgjson)).version;
+            ver = await fs.promises.readFile('config/ver', 'utf-8');
         } catch (e) {
-            ctLogger.error("Cannot parse 'package.json' file correctly! Please ensure the file is intact, and your PWD is project root rather than 'src/'.");
+            ctLogger.error("Cannot access version file! Please ensure the file is intact, and your PWD is correct. (project root rather than 'src/')");
             ver = "0.0.0";
         }
         const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +

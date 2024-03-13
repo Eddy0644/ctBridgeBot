@@ -1,7 +1,7 @@
 {
   "name": "ctbridgebot",
-  "version": "3.1.1",
-  "description": "Bridge your messages from a notorious IM in China:{WeChat}, to an excellent IM:{Telegram}.",
+  "version": "3.2.0",
+  "description": "Bridge messages between WeChat and Telegram. maximized customization.",
   "superagent": "src/BotIndex.js",
   "scripts": {
     "build": "rm -f ct_temp.tar.gz && tar czvf ct_temp.tar.gz src data config package.json",
