@@ -823,7 +823,7 @@ async function onWxMessage(msg) {
                 }
 
                 // Weixin, WeChat, MicroMsg: how incredible multiple name! micro-message!!!
-                content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]|向他人发起了一笔转账，当前微信版本不支持展示该内容。/, titles.recvTransfer);
+                content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]|向他人发起了一笔转账，当前微信版本不支持展示该内容。|确认了一笔转账，当前微信版本不支持展示该内容。/, titles.recvTransfer);
                 content = content.replace(/\[确认了一笔转账，当前微信版本不支持展示该内容。]/, titles.acceptTransfer);
                 content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
                 content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
