@@ -1471,10 +1471,11 @@ wxbot.on('login', async user => {
         // In order to grab user's WeChat name for metric, put this block after logging in.
         let ec = encodeURIComponent, ver;
         try {
-            const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
-            ver = (JSON.parse(pkgjson)).version;
+            // const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
+            // ver = (JSON.parse(pkgjson)).version;
+            ver = await fs.promises.readFile('config/version.txt', 'utf-8');
         } catch (e) {
-            ctLogger.error("Cannot parse 'package.json' file correctly! Please ensure the file is intact, and your PWD is project root rather than 'src/'.");
+            ctLogger.error("Cannot access version file! Please ensure the file is intact, and your PWD is correct. (project root rather than 'src/')");
             ver = "0.0.0";
         }
         const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +
