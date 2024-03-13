@@ -111,7 +111,12 @@ async function onTGMsg(tgMsg) {
         tgMsg.matched = null;
         // s=0 -> default, s=1 -> C2C
         with (secret.class) {
-            const thread_verify = function(pair){
+            let timerLabel;
+            if (secret.misc.debug_add_console_timers) {
+                timerLabel = `tgMsg origin dispatcher - Debug timer #${process.uptime().toFixed(2)}`;
+                console.time(timerLabel);
+            }
+            const thread_verify = function (pair) {
                 if (pair.threadId) {
                     if (tgMsg.message_thread_id) {
                         return pair.threadId === tgMsg.message_thread_id;
@@ -157,6 +162,7 @@ async function onTGMsg(tgMsg) {
                 tgLogger.trace(`Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title})`);
                 return;
             }
+            if (timerLabel) console.timeEnd(timerLabel);
         }
 
         { // **Sub:** replaceWXCustomEmojis
