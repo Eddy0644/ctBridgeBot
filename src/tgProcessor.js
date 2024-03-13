@@ -174,7 +174,7 @@ function filterMsgText(inText, args = {}) {
     txt = txt.replaceAll("<br/>", "\n");
 
     { // Emoji dual processor
-        const timerLabel = `Emoji processor - Debug timer #${process.uptime() % 100}`;
+        const timerLabel = `Emoji processor - Debug timer #${process.uptime().toFixed(2)}`;
         console.time(timerLabel);
         // Process qqemoji (WeChat exclusive emoji)
         let qqemojiRegex = /<img class="qqemoji qqemoji(.*?)" text="(.*?)" src="\/zh_CN\/htmledition\/v2\/images\/spacer.gif" \/>/g;
