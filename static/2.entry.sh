@@ -25,6 +25,14 @@ else
   exit
 fi
 
+if [ -e "data/README.md" ] && [ -e "docker.flag" ]; then
+  echo "1. [ WARN ] data directory abnormal."
+  echo "It seems that you are running the project in Docker, and we detected a README file in 'data' directory, which shouldn't exist in our thought. "
+  echo "Due to above reason, I must tell you to check if the volume mapping is done correct. It should be: mapping a dir on your actual storage, to /bot/data."
+  echo "If you didn't use an empty folder to map or know what you've done, then ignore this message, after a grace period of 5 seconds."
+  sleep 5
+fi
+
 if [ ! -e "data/proxy.js" ] && [ ! -e "proxy.js" ]; then
     echo "2. [ WARN ] proxy setting not found."
     echo "      Copying proxy.js-template to data/ dir."
