@@ -999,7 +999,7 @@ async function tgCommandHandler(tgMsg) {
                             return 2;
                         }
                     })();
-                    const msgText = (writeConfSuccess === 0 ? "[Write to log successful.]" : "[Could not write user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
+                    const msgText = (writeConfSuccess === 0 ? "[Write to config successful.]" : "[Could not write user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
                     await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, 0, msgText);
                 }
             } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No available last talker.");
