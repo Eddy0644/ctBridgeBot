@@ -199,7 +199,7 @@ function filterMsgText(inText, args = {}) {
                 // In my test on a 10th gen-i5 machine, it takes 42s to complete a single check.
                 // ####################let regex = new RegExp(key, 'g');
                 const val = nativeEmojiMap[key][0]
-                txt = txt.replace(key, val);
+                txt = txt.replaceAll(key, val);
                 defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
             }
             console.timeEnd(timerLabel);
