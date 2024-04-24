@@ -41,6 +41,11 @@ const state = {
         topic: "",
         msgText: "",
         lastTalker: "",
+        stat: {
+            "tsStarted": 0,
+            "mediaCount": 0,
+            "messageCount": 0,
+        },
     },
     prePerson: {
         tgMsg: null,
@@ -857,7 +862,7 @@ async function onWxMessage(msg) {
                 }
 
                 try {
-                    if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
+                    if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
                         const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, msg.DType === DTypes.Text);
                         if (result === true) return;
                     } else msg.preRoomNeedUpdate = true;
@@ -1192,6 +1197,11 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                     receiver: msg.receiver,
                     lastTalker: name,
                     talkerCount: 0,
+                    stat: {
+                        "tsStarted": process.uptime(),
+                        "mediaCount": 0,
+                        "messageCount": 0,
+                    },
                 }
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
@@ -1235,6 +1245,11 @@ async function softReboot(reason) {
         name: "",
         msgText: "",
         lastTalker: "",
+        stat: {
+            "tsStarted": 0,
+            "mediaCount": 0,
+            "messageCount": 0,
+        },
     };
     state.v.timerDataCount = 6;
     state.v.msgMergeFailCount = 6;

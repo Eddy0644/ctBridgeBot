@@ -100,6 +100,11 @@ module.exports = {
 
         // TODO add 'onceMergeCapacity', consists of time,media_count,message_count
 
+        onceMergeCapacity: {
+            timeSpan: 15 * 60 * 60,
+            mediaCount: 5,
+            messageCount: 50,
+        },
         // s=false, no delivery
         // s=true, send to Push channel [defined in 'root.class']
         // s=<tgTargetObj>, send to this target

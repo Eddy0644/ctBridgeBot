@@ -4,6 +4,7 @@ const dayjs = require("dayjs");
 const {tgBotDo} = require("./init-tg");
 const secret = require("../config/confLoader");
 const nativeEmojiMap = require('../config/native_emoji_map.js');
+const log4js = require("log4js");
 let env;
 
 // async function a() {
@@ -149,7 +150,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
 async function addSelfReplyTs(name = null) {
     const {processor, state, defLogger, secret} = env;
     if (name === null) name = state.last.name;
-    if (processor.isPreRoomValid(state.preRoom, name, false, secret.misc.mergeResetTimeout.forGroup) && state.preRoom.firstWord === "") {
+    if (isPreRoomValid(state.preRoom, name, false, secret.misc.mergeResetTimeout.forGroup) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n← [${dayjs().format("H:mm:ss")}] {My Reply}`;
@@ -279,7 +280,26 @@ function isSameTGTarget(in1, in2) {
     }
 }
 
+function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) {
+    const {secret,} = env;
+    try {
+        const _ = preRoomState;
+        // noinspection JSUnresolvedVariable
+        const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+        const nowDate = dayjs().unix();
+        if (_.topic === targetTopic && (nowDate - lastDate < timeout || forceMerge)) {
+            // Let's continue check for 'onceMergeCapacity'
+            const exist = _.stat, limit = secret.misc.onceMergeCapacity;
+
+        } else return false;
+    } catch (e) {
+        console.error(`Maybe bug here!`);
+        log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
+        return false;
+    }
+}
+
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText};
+    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText, isPreRoomValid};
 };
