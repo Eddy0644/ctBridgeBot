@@ -97,9 +97,9 @@ module.exports = {
             forPerson: 20,
             forGroup: 80,
         },
-
-        // TODO add 'onceMergeCapacity', consists of time,media_count,message_count
-
+        // this option defines how many messages should be merged into single TG message at most,
+        // in time span(started from the first message), media count(as so many media will let the text going far away),
+        // and total message count. When any of them matched, the merge will be restarted.
         onceMergeCapacity: {
             timeSpan: 15 * 60 * 60,
             mediaCount: 5,

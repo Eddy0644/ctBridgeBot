@@ -863,8 +863,16 @@ async function onWxMessage(msg) {
 
                 try {
                     if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, msg.DType === DTypes.Text);
-                        if (result === true) return;
+                        const isText = msg.DType === DTypes.Text;
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, isText);
+                        if (result === true) {
+                            // Let's continue on 'onceMergeCapacity'
+                            with (state.preRoom) {
+                                stat.messageCount++;
+                                stat.mediaCount += (isText ? 0 : 1);
+                            }
+                            return;
+                        }
                     } else msg.preRoomNeedUpdate = true;
                 } catch (e) {
                     wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
