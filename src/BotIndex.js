@@ -1353,17 +1353,28 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
     await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
-    let packed;
+    let packed = null;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
-        if (secret.upyun.switch !== "on") {
-            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled. Message not delivered.`);
-            await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
-            return;
+        try {
+            // Try to use sharp as image processor
+            const sharp = require('sharp');
+            const buffer = await sharp(file_path).gif().toBuffer();
+            packed = await FileBox.fromBuffer(buffer, "sticker.gif");
+        } catch (e) {
+            ctLogger.debug(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tSwitching to upyun middleware instead.`);
+            if (secret.upyun.switch !== "on") {
+                tgLogger.warn(`TG sticker pre-process interrupted as 'sharp' failed and upyun not enabled. Message not delivered.`);
+                await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
+                return;
+            } else {
+                file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
+            }
         }
-        file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
+
+
     }
-    packed = await FileBox.fromFile(file_path);
+    if (!packed) packed = await FileBox.fromFile(file_path);
 
     tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
     if (s === 0) {
@@ -1440,7 +1451,7 @@ async function getC2CPeer(pair) {
         }
         if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
         else state.C2CTemp[p.wx[0]] = wxTarget;
-        if(timerLabel)console.timeEnd(timerLabel);
+        if (timerLabel) console.timeEnd(timerLabel);
     } else wxTarget = state.C2CTemp[p.wx[0]];
     return wxTarget;
 }
