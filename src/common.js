@@ -222,19 +222,6 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
             },
 
             processor: {
-                isPreRoomValid: function (preRoomState, targetTopic, forceMerge = false, timeout) {
-                    try {
-                        const _ = preRoomState;
-                        // noinspection JSUnresolvedVariable
-                        const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
-                        const nowDate = dayjs().unix();
-                        return (_.topic === targetTopic && (nowDate - lastDate < timeout || forceMerge));
-                    } catch (e) {
-                        console.info(`Maybe bug here!`);
-                        log4js.getLogger("tg").debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
-                        return false;
-                    }
-                },
                 isTimeValid: function (targetTS, maxDelay) {
                     const nowDate = dayjs().unix();
                     return (nowDate - targetTS < maxDelay);

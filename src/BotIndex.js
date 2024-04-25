@@ -41,6 +41,11 @@ const state = {
         topic: "",
         msgText: "",
         lastTalker: "",
+        stat: {
+            "tsStarted": 0,
+            "mediaCount": 0,
+            "messageCount": 0,
+        },
     },
     prePerson: {
         tgMsg: null,
@@ -857,9 +862,17 @@ async function onWxMessage(msg) {
                 }
 
                 try {
-                    if (processor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, msg.DType === DTypes.Text);
-                        if (result === true) return;
+                    if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
+                        const isText = msg.DType === DTypes.Text;
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, isText);
+                        if (result === true) {
+                            // Let's continue on 'onceMergeCapacity'
+                            with (state.preRoom) {
+                                stat.messageCount++;
+                                stat.mediaCount += (isText ? 0 : 1);
+                            }
+                            return;
+                        }
                     } else msg.preRoomNeedUpdate = true;
                 } catch (e) {
                     wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
@@ -1192,6 +1205,11 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                     receiver: msg.receiver,
                     lastTalker: name,
                     talkerCount: 0,
+                    stat: {
+                        "tsStarted": process.uptime(),
+                        "mediaCount": 0,
+                        "messageCount": 0,
+                    },
                 }
             }
             if (!isRoom && msg.prePersonNeedUpdate) {
@@ -1235,6 +1253,11 @@ async function softReboot(reason) {
         name: "",
         msgText: "",
         lastTalker: "",
+        stat: {
+            "tsStarted": 0,
+            "mediaCount": 0,
+            "messageCount": 0,
+        },
     };
     state.v.timerDataCount = 6;
     state.v.msgMergeFailCount = 6;
@@ -1403,6 +1426,12 @@ async function getC2CPeer(pair) {
     // FIXed : will send to wrong target when 2 C2C with same tgid appeared
     // now use wx name as key
     if (!state.C2CTemp[p.wx[0]]) {
+        // Below is used to track WeChat contact find time
+        let timerLabel;
+        if (secret.misc.debug_add_console_timers) {
+            timerLabel = `C2C peer finder - Debug timer #${process.uptime().toFixed(2)}`;
+            console.time(timerLabel);
+        }
         if (p.wx[1] === true) {
             wxTarget = await wxbot.Room.find({topic: p.wx[0]});
         } else {
@@ -1411,6 +1440,7 @@ async function getC2CPeer(pair) {
         }
         if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
         else state.C2CTemp[p.wx[0]] = wxTarget;
+        if(timerLabel)console.timeEnd(timerLabel);
     } else wxTarget = state.C2CTemp[p.wx[0]];
     return wxTarget;
 }

@@ -4,6 +4,7 @@ const dayjs = require("dayjs");
 const {tgBotDo} = require("./init-tg");
 const secret = require("../config/confLoader");
 const nativeEmojiMap = require('../config/native_emoji_map.js');
+
 let env;
 
 // async function a() {
@@ -18,7 +19,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", alias = "", i
             for (const name in DTypes) if (DTypes[name] === value) return name;
             return "Media";
         })(msg.DType);
-        content = `[${DTypeName}]`; // Temporary override in this func
+        content = `[${DTypeName}]`; // Temporary override in this function
     }
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
@@ -149,7 +150,7 @@ async function replyWithTips(tipMode = "", target = null, timeout = 6, additiona
 async function addSelfReplyTs(name = null) {
     const {processor, state, defLogger, secret} = env;
     if (name === null) name = state.last.name;
-    if (processor.isPreRoomValid(state.preRoom, name, false, secret.misc.mergeResetTimeout.forGroup) && state.preRoom.firstWord === "") {
+    if (isPreRoomValid(state.preRoom, name, false, secret.misc.mergeResetTimeout.forGroup) && state.preRoom.firstWord === "") {
         // preRoom valid and already merged (more than 2 msg)
         const _ = state.preRoom;
         const newString = `${_.msgText}\n← [${dayjs().format("H:mm:ss")}] {My Reply}`;
@@ -279,7 +280,37 @@ function isSameTGTarget(in1, in2) {
     }
 }
 
+function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) {
+    const {secret, tgLogger} = env;
+    try {
+        const _ = preRoomState;
+        // noinspection JSUnresolvedVariable
+        const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
+        const nowDate = dayjs().unix();
+        if (_.topic === targetTopic && (nowDate - lastDate < timeout || forceMerge)) {
+            // Let's continue check for 'onceMergeCapacity'
+            const exist = _.stat, limit = secret.misc.onceMergeCapacity;
+            if (process.uptime() - exist.tsStarted > limit.timeSpan) {
+                tgLogger.debug(`[Merge] time span reached, resetting...`);
+                return false;
+            }
+            if (exist.mediaCount >= limit.mediaCount) {
+                tgLogger.debug(`[Merge] mediaCount reached, resetting...`);
+                return false;
+            }
+            if (exist.messageCount >= limit.messageCount) {
+                tgLogger.debug(`[Merge] messageCount reached, resetting...`);
+                return false;
+            }
+        } else return false;
+    } catch (e) {
+        console.error(`Maybe bug here!`);
+        tgLogger.debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
+        return false;
+    }
+}
+
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText};
+    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText, isPreRoomValid};
 };

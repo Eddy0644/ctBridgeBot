@@ -3,7 +3,7 @@
 const defaultConfig = require("./def.conf.js");
 // const userConfigPath = require("path").join(__dirname, "user.conf.js");
 const userConfigPath = "../data/user.conf.js";
-const {ctLogger} = require('../src/common')("lite");
+// const {ctLogger} = require('../src/common')("lite");
 
 function mergeConfig(defaultConfig, userConfig) {
 
@@ -30,7 +30,8 @@ function loadConfig() {
         mergeConfig(defaultConfig, userConfig);
         return defaultConfig;
     } catch (error) {
-        ctLogger.error("Error loading user configuration:", error, "\nProgram Will take default Config!!");
+        console.error("\nError loading user configuration:", error, "\nProgram Will take default Config!!\n\n\n");
+        // ctLogger.error("Error loading user configuration:", error, "\nProgram Will take default Config!!");
         return defaultConfig;
     }
 }
