@@ -302,6 +302,7 @@ function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) 
                 tgLogger.debug(`[Merge] messageCount reached, resetting...`);
                 return false;
             }
+            return true;
         } else return false;
     } catch (e) {
         console.error(`Maybe bug here!`);
