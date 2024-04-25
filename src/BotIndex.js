@@ -1356,14 +1356,19 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     let packed = null;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
+        const srv_type = secret.misc.service_type_on_webp_conversion;
         try {
-            // Try to use sharp as image processor
-            const sharp = require('sharp');
-            const buffer = await sharp(file_path).gif().toBuffer();
-            // We used telegram-side file_unique_id here as filename, because wechat keeps image name in their servers.
-            packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
+            if (srv_type === 0) {
+                // If you want to bypass conversion, here you are.
+            } else {
+                // Try to use sharp as image processor
+                const sharp = require('sharp');
+                const buffer = await sharp(file_path).gif().toBuffer();
+                // We used telegram-side file_unique_id here as filename, because wechat keeps image name in their servers.
+                packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
+            }
         } catch (e) {
-            ctLogger.debug(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tSwitching to upyun middleware instead.`);
+            if (srv_type === 2) ctLogger.debug(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tSwitching to upyun middleware instead.`);
             if (secret.upyun.switch !== "on") {
                 tgLogger.warn(`TG sticker pre-process interrupted as 'sharp' failed and upyun not enabled. Message not delivered.`);
                 await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
@@ -1372,8 +1377,6 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
                 file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
             }
         }
-
-
     }
     if (!packed) packed = await FileBox.fromFile(file_path);
 

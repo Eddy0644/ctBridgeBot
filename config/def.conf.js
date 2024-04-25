@@ -155,6 +155,14 @@ module.exports = {
         // Set either to display related message about your ctToken, set to 0 to depress.
         display_ctToken_info: 1,
 
+        // This option defined what service should be used to convert tg_sticker.webp to gif
+        // 0 means bypass and will send .webp directly to WeChat;
+        // 1 means using upyun Object Storage as image converter, not suggested by now;
+        // 2 means using local node module 'sharp' to convert.
+        // Note that this module requires nodejs(^18.17.0 or >= 20.3.0) and libvips, which may be unavailable for some users.
+        // So we offered a switch here. And, as for now, when sharp is not available, we will fallback to {1}.
+        service_type_on_webp_conversion: 2,
+
         /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
 
         // The Level of timers you want to see in console, which are used to measure operation time.
