@@ -1426,6 +1426,12 @@ async function getC2CPeer(pair) {
     // FIXed : will send to wrong target when 2 C2C with same tgid appeared
     // now use wx name as key
     if (!state.C2CTemp[p.wx[0]]) {
+        // Below is used to track WeChat contact find time
+        let timerLabel;
+        if (secret.misc.debug_add_console_timers) {
+            timerLabel = `C2C peer finder - Debug timer #${process.uptime().toFixed(2)}`;
+            console.time(timerLabel);
+        }
         if (p.wx[1] === true) {
             wxTarget = await wxbot.Room.find({topic: p.wx[0]});
         } else {
@@ -1434,6 +1440,7 @@ async function getC2CPeer(pair) {
         }
         if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
         else state.C2CTemp[p.wx[0]] = wxTarget;
+        if(timerLabel)console.timeEnd(timerLabel);
     } else wxTarget = state.C2CTemp[p.wx[0]];
     return wxTarget;
 }
