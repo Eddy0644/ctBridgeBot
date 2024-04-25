@@ -191,7 +191,11 @@ async function onTGMsg(tgMsg) {
         } // End Sub: replaceWXCustomEmojis
 
         if (tgMsg.photo) return await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
-        if (tgMsg.sticker) return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+        if (tgMsg.sticker) {
+            // We want to enable video_sticker.webm full support here, but almost all libraries require ffmpeg,
+            // which is difficult to implement now. TODO webm conversion here
+            return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+        }
         if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
         if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
         if (tgMsg.voice) return await deliverTGToWx(tgMsg, tgMsg.voice, "voice!");
@@ -1353,17 +1357,32 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
     await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
-    let packed;
+    let packed = null;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
-        if (secret.upyun.switch !== "on") {
-            tgLogger.debug(`TG sticker pre-process interrupted as Upyun not enabled. Message not delivered.`);
-            await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
-            return;
+        const srv_type = secret.misc.service_type_on_webp_conversion;
+        try {
+            if (srv_type === 0) {
+                // If you want to bypass conversion, here you are.
+            } else {
+                // Try to use sharp as image processor
+                const sharp = require('sharp');
+                const buffer = await sharp(file_path).gif().toBuffer();
+                // We used telegram-side file_unique_id here as filename, because wechat keeps image name in their servers.
+                packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
+            }
+        } catch (e) {
+            if (srv_type === 2) ctLogger.debug(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tSwitching to upyun middleware instead.`);
+            if (secret.upyun.switch !== "on") {
+                tgLogger.warn(`TG sticker pre-process interrupted as 'sharp' failed and upyun not enabled. Message not delivered.`);
+                await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
+                return;
+            } else {
+                file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
+            }
         }
-        file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
     }
-    packed = await FileBox.fromFile(file_path);
+    if (!packed) packed = await FileBox.fromFile(file_path);
 
     tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
     if (s === 0) {
@@ -1440,7 +1459,7 @@ async function getC2CPeer(pair) {
         }
         if (!wxTarget) return await mod.tgProcessor.replyWithTips("C2CNotFound", p);
         else state.C2CTemp[p.wx[0]] = wxTarget;
-        if(timerLabel)console.timeEnd(timerLabel);
+        if (timerLabel) console.timeEnd(timerLabel);
     } else wxTarget = state.C2CTemp[p.wx[0]];
     return wxTarget;
 }
