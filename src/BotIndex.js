@@ -1360,7 +1360,8 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
             // Try to use sharp as image processor
             const sharp = require('sharp');
             const buffer = await sharp(file_path).gif().toBuffer();
-            packed = await FileBox.fromBuffer(buffer, "sticker.gif");
+            // We used telegram-side file_unique_id here as filename, because wechat keeps image name in their servers.
+            packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
         } catch (e) {
             ctLogger.debug(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tSwitching to upyun middleware instead.`);
             if (secret.upyun.switch !== "on") {
