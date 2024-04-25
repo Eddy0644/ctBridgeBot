@@ -90,21 +90,8 @@ module.exports = {
 
     },
     misc: {
-        enableInlineSearchForUnreplaced: true,
+        /* ------------ [ Delivery Options ] ------------ */
 
-        // define how many seconds between this and last msg, to stop merging
-        mergeResetTimeout: {
-            forPerson: 20,
-            forGroup: 80,
-        },
-        // this option defines how many messages should be merged into single TG message at most,
-        // in time span(started from the first message), media count(as so many media will let the text going far away),
-        // and total message count. When any of them matched, the merge will be restarted.
-        onceMergeCapacity: {
-            timeSpan: 15 * 60 * 60,
-            mediaCount: 5,
-            messageCount: 50,
-        },
         // s=false, no delivery
         // s=true, send to Push channel [defined in 'root.class']
         // s=<tgTargetObj>, send to this target
@@ -122,31 +109,23 @@ module.exports = {
         // 0, no advance (default); 1, only when not being filtered; 2, apply on all room chats
         deliverRoomRedPacketInAdvance: 2,
 
-        // If set to <false>, all post message will no longer be copied to log,
-        // as only a single post would take up to 40KB in log file.
-        // If you have spare disk space, why don't save these stuff? [lol]
-        savePostRawDataInDetailedLog: false,
+        /* ------------ [ Merging Options ] ------------ */
 
-        // Determine whether the first item in a merged person msg should have a title of timestamp,
-        // <true> be like: [11:00:00] a \n[11:00:02] b
-        PutStampBeforeFirstMergedMsg: false,
-
-        // This option is designed to separate authentic links from fake links like Sticker Pointer.
-        // -1: no addition; 0: only add to wx Link; 1: add to wx Link and text link
-        addHashCtLinkToMsg: 0,
-
-        wxMsgBufferPool: {
-            // !Not implemented; DO NOT USE now
-            switch: "on",
-            // switch pool when items exceeds __ num
-            itemTrig: 10,
-            // switch pool when time expired __s
-            timeTrig: 30,
+        // define how many seconds between this and last msg, to stop merging
+        mergeResetTimeout: {
+            forPerson: 20,
+            forGroup: 80,
+        },
+        // this option defines how many messages should be merged into single TG message at most,
+        // in time span(started from the first message), media count(as so many media will let the text going far away),
+        // and total message count. When any of them matched, the merge will be restarted.
+        onceMergeCapacity: {
+            timeSpan: 15 * 60 * 60,
+            mediaCount: 5,
+            messageCount: 50,
         },
 
-        // This option defines how the program behaviors when it encounters unrecognized tg command.
-        // 1: will not be recognized as command; send to your chat peer; 0: do nothing and won't be sent to WeChat.
-        passUnrecognizedCmdNext: 1,
+        /* ------------ [ Debug Options ] ------------ */
 
         // If you want to use /eval in tg commands, then set this to <true>.
         // WARNING this may be a security risk, as it allows arbitrary code execution.
@@ -154,6 +133,25 @@ module.exports = {
 
         // Set either to display related message about your ctToken, set to 0 to depress.
         display_ctToken_info: 1,
+
+        // The level of debug timers you want to see in console, which are used to measure operation time.
+        // Currently only 1 or 0 is accepted.
+        debug_add_console_timers: 1,
+
+        /* ------------ [  ] ------------ */
+
+        // If set to <false>, all post message will no longer be copied to log,
+        // as only a single post would take up to 40KB in log file.
+        // If you have spare disk space, why not keep these stuff? [lol]
+        savePostRawDataInDetailedLog: false,
+
+        // This option is designed to separate authentic links from fake links like Sticker Pointer.
+        // -1: no addition; 0: only add to wx Link; 1: add to wx Link and text link
+        addHashCtLinkToMsg: 0,
+
+        // This option defines how the program behaviors when it encounters unrecognized tg command.
+        // 1: will not be recognized as command; send to your chat peer; 0: do nothing and won't be sent to WeChat.
+        passUnrecognizedCmdNext: 1,
 
         // This option defined what service should be used to convert tg_sticker.webp to gif
         // 0 means bypass and will send .webp directly to WeChat;
@@ -163,20 +161,30 @@ module.exports = {
         // So we offered a switch here. And, as for now, when sharp is not available, we will fallback to {1}.
         service_type_on_webp_conversion: 2,
 
-        /////////--------[  Advanced Misc Setting, less need to edit  ]--------//////////
+        /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
-        // The Level of timers you want to see in console, which are used to measure operation time.
-        // Currently only 1 or 0.
-        debug_add_console_timers: 1,
         // Interval between each automatic status report [to Console].
         status_report_interval: 4 * 3600,
         // How many 5-seconds should system wait before auto cancel /drop_on command.
         keep_drop_on_x5s: 100,
         // This variable is deprecated, therefore not recommended to change.
         addSelfReplyTimestampToRoomMergedMsg: false,
-
+        // This option is also limited by TG bot API, so cannot be much larger.
         wxAutoDownloadSizeThreshold: 3 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
+
+        enableInlineSearchForUnreplaced: true,
+        // Determine whether the first item in a merged person msg should have a title of timestamp,
+        // <true> be like: [11:00:00] a \n[11:00:02] b
+        PutStampBeforeFirstMergedMsg: false,
+        wxMsgBufferPool: {
+            // !Not implemented; DO NOT USE now
+            switch: "on",
+            // switch pool when items exceeds __ num
+            itemTrig: 10,
+            // switch pool when time expired __s
+            timeTrig: 30,
+        },
     },
     chatOption: {
         // this section declares default behaviors of chats when not specified in C2C flag.

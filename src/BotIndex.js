@@ -191,7 +191,11 @@ async function onTGMsg(tgMsg) {
         } // End Sub: replaceWXCustomEmojis
 
         if (tgMsg.photo) return await deliverTGToWx(tgMsg, tgMsg.photo, "photo");
-        if (tgMsg.sticker) return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+        if (tgMsg.sticker) {
+            // We want to enable video_sticker.webm full support here, but almost all libraries require ffmpeg,
+            // which is difficult to implement now. TODO webm conversion here
+            return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+        }
         if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
         if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
         if (tgMsg.voice) return await deliverTGToWx(tgMsg, tgMsg.voice, "voice!");
