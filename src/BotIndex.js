@@ -1142,8 +1142,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         let tmpl, tmplc;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            tmpl = isRoom ? `[<b>${name}</b>]` : ``;
-            // tmplc = name;
+            tmpl = isRoom ? secret.c11n.C2C_group_mediaCaption(name) : ``;
         } else {
             tmpl = isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
         }
