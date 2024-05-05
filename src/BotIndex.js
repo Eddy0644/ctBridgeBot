@@ -591,7 +591,7 @@ async function onWxMessage(msg) {
                 // Use match-and-replace strategy to get original msg content
                 content = `[Recalled ${type}]`
                   + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
-                  + `: ${msgContent}`;
+                  + `: <s>${msgContent}</s>`;
             } else {
                 wxLogger.warn(`[Recalled message] not matching preset regex, content: ${recalledMessage}`);
                 content = `[${recalledMessage}] was recalled.`;
@@ -1368,7 +1368,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
                 // Try to use sharp as image processor
                 const sharp = require('sharp');
                 const buffer = await sharp(file_path).gif().toBuffer();
-                // We used telegram-side file_unique_id here as filename, because wechat keeps image name in their servers.
+                // We used telegram-side file_unique_id here as filename, because WeChat keeps image name in their servers.
                 packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
             }
         } catch (e) {
