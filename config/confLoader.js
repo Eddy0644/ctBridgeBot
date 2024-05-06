@@ -71,6 +71,10 @@ delete config.class.C2C_generator["-1001888888888"];
     const def = config.chatOptions;
     // below: supported boolean or number properties list
     const single_props = ['mixed', 'merge', 'skipSticker', 'groupDispNameType'];
+    for (const propName in def) if (def.hasOwnProperty(propName)) {
+        // apply defaults for default channel first
+        config.class.def.opts[propName] = def[propName];
+    }
     for (const oneC2C of config.class.C2C) {
         oneC2C.flag = oneC2C.flag || "";  // in case no flag specified
         oneC2C.opts={};
