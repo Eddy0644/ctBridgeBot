@@ -38,6 +38,14 @@ if [ ! -e "data/proxy.js" ] && [ ! -e "proxy.js" ]; then
     echo "      Copying proxy.js-template to data/ dir."
     echo "      Please change that file to your current proxy setting."
     cp "config/proxy.js-template" "data/proxy.js"
+    # Check if HTTPS_PROXY environment variable is set
+    if [ -n "$HTTPS_PROXY" ]; then
+        # Write module.exports="$HTTPS_PROXY" into data/proxy.js
+        echo "module.exports=\"$HTTPS_PROXY\";" > "data/proxy.js"
+        echo "      HTTPS_PROXY environment variable set. Writing to data/proxy.js."
+        echo "      Please notice that only when data/proxy.js not exist, the environment variable will be used."
+
+    fi
 else
   [ $ins_ok -eq 1 ] || echo "2. [PASSED] proxy setting is in place."
 fi
