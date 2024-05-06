@@ -3,6 +3,7 @@
 const defaultConfig = require("./def.conf.js");
 // const userConfigPath = require("path").join(__dirname, "user.conf.js");
 const userConfigPath = "../data/user.conf.js";
+
 // const {ctLogger} = require('../src/common')("lite");
 
 function mergeConfig(defaultConfig, userConfig) {
@@ -20,6 +21,7 @@ function mergeConfig(defaultConfig, userConfig) {
             }
         }
     }
+
 
     mergeObjects(defaultConfig, userConfig);
 }
@@ -42,6 +44,7 @@ config.bundle = {
     getTGFileURL: suffix => `https://api.telegram.org/file/bot${config.tgbot.botToken}/${suffix}`,
     getTGBotHookURL: suffix => `${config.tgbot.webHookUrlPrefix}${suffix}/bot${config.tgbot.botToken}`,
 };
+delete config.class.C2C_generator["-1001888888888"];
 
 // Prepare and reify C2C-generator
 {
@@ -63,7 +66,38 @@ config.bundle = {
         }
     }
 }
-
-delete config.class.C2C_generator["-1001888888888"];
+// Parsing flags and chatOptions for each C2C
+{
+    const def = config.chatOptions;
+    // below: supported boolean or number properties list
+    const single_props = ['mixed', 'merge', 'skipSticker', 'groupDispNameType'];
+    for (const oneC2C of config.class.C2C) {
+        oneC2C.flag = oneC2C.flag || "";  // in case no flag specified
+        oneC2C.opts={};
+        for (const propName in def) if (def.hasOwnProperty(propName)) {
+            // copy all in def to opts, a.k.a load defaults
+            oneC2C.opts[propName] = def[propName];
+        }
+        for (const prop of oneC2C.flag.split(" ")) {
+            if(prop === "") continue;  // skip empty string
+            const parts = prop.split("=");  // split by "="
+            if (!single_props.includes(parts[0])) {
+                console.error(`Unparsed Flags entry: "${prop}", please check!`);
+                continue;
+            }
+            if (parts.length === 1)
+                oneC2C.opts[parts[0]] = true;  // just enable that option
+            else if (parts.length === 2) {
+                // user chose the value of that option
+                oneC2C.opts[parts[0]] = parseInt(parts[1]);
+            }
+        }
+        for (const propName in oneC2C.chatOptions) if (oneC2C.chatOptions.hasOwnProperty(propName)) {
+            // copy all in chatOptions to opts
+            oneC2C.opts[propName] = oneC2C.chatOptions[propName];
+        }
+    }
+    // Use c2c.opts in later code
+}
 
 module.exports = config;
