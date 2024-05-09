@@ -1200,6 +1200,13 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             });
             // Push messages do not need 'state.pre__'
             if (msg.DType === DTypes.Push) return;
+            // below two if-s are the start of merge process
+            // disable them by checking msg.receiver.opts.merge
+            if (!msg.receiver) ctLogger.debug(`#34263 null value for wxMsg.receiver.`);
+            else if (!msg.receiver.opts) ctLogger.debug(`#34264 null value for wxMsg.receiver.opts.`);
+            else if (msg.receiver.opts.merge === 0)
+                return ctLogger.trace(`Merge disabled by C2C pair config.`);
+
             if (isRoom && msg.preRoomNeedUpdate) {
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {

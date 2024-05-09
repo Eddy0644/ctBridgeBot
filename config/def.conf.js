@@ -188,6 +188,7 @@ module.exports = {
     },
     chatOptions: {
         // this section declares default behaviors of chats when not specified in C2C flag.
+        // Notice: for boolean variables, set to exactly 0 to explicitly disable!
 
         // whether accept *-prefix in TG message as indicator of not forwarding to WX
         "mixed": 1,
