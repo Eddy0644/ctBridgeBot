@@ -482,6 +482,7 @@ async function onWxMessage(msg) {
         if (room) topic = await room.topic();
         let name = await contact.name();
         let alias = await contact.alias() || await contact.name(); // 发消息人备注
+        let dname = alias;  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
             isSilent: false,
             forceMerge: false,
@@ -523,6 +524,19 @@ async function onWxMessage(msg) {
             if (!msg.receiver) {
                 msg.receiver = def;
             }
+            // rewrite dname, with msg.receiver.opts.nameType
+            // now only apply to group
+            if (isGroup) switch (msg.receiver.opts.nameType) {
+                case 2:
+                    dname = await room.alias(contact);
+                    break;
+                case 0:
+                    dname = name;
+                    break;
+                default:    // 1 or other value
+                    dname = alias;
+            }
+            msg.dname = dname;
         }
 
         // lock is hard to make; used another strategy.
@@ -587,6 +601,7 @@ async function onWxMessage(msg) {
             const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s/;
             const match = `${recalledMessage}`.replace("Message#", "").match(regex);
             if (match) {
+                // TODO refactor this, fetch data from `msg` directly.
                 const type = match[1], contactName = match[2], groupName = match[3] || '',
                   msgContent = match.input.replace(match[0], '');
                 // Use match-and-replace strategy to get original msg content
@@ -874,13 +889,13 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     msgDef.forceMerge = true;
                     // Force override {name} to let system message seems better
-                    name = titles.systemMsgTitleInRoom;
+                    dname = titles.systemMsgTitleInRoom;
                 }
 
                 try {
                     if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
                         const isText = msg.DType === DTypes.Text;
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, isText);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, dname, isText);
                         if (result === true) {
                             // Let's continue on 'onceMergeCapacity'
                             with (state.preRoom) {
@@ -925,7 +940,7 @@ async function onWxMessage(msg) {
                     const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                     const nowDate = dayjs().unix();
                     if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, alias, msg.DType === DTypes.Text);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, dname, msg.DType === DTypes.Text);
                         if (result === true) return;
                     } else
                         msg.prePersonNeedUpdate = true;
@@ -1136,7 +1151,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const contact = msg.talker();
     const room = msg.room();
     const name = await contact.name();
-    const alias = await contact.alias() || await contact.name();
+    // const alias = await contact.alias() || await contact.name();
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
     const topic = isRoom ? await room.topic() : "";
@@ -1150,15 +1165,20 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             msg.receiver = secret.class.push;
         }
     }
+    let dname = msg.dname;
+    if (!dname) {
+        wxLogger.warn(`#34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
+        dname = name;
+    }
     const {tmpl, tmplc} = (() => {
         let tmpl, tmplc;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            tmpl = isRoom ? secret.c11n.C2C_group_mediaCaption(name) : ``;
+            tmpl = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
         } else {
-            tmpl = isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
+            tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
         }
-        tmplc = isRoom ? `${name}/${topic}` : `${alias}`;
+        tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
         return {tmpl, tmplc};
     })();
 
