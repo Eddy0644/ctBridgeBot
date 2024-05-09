@@ -131,9 +131,10 @@ async function onTGMsg(tgMsg) {
             for (const pair of C2C) {
                 // thread_id verification without reply-to support
                 if (tgMsg.chat.id === pair.tgid && thread_verify(pair)) {
+                    // match this C2C pair
                     tgMsg.matched = {s: 1, p: pair};
                     tgLogger.trace(`Message from C2C group: ${pair.tgid}, setting message default target to wx(${pair.wx[0]})`);
-                    if (pair.flag.includes("mixed") &&
+                    if (pair.opts.mixed &&
                       ((tgMsg.text && tgMsg.text.startsWith("*")) || (tgMsg.caption && tgMsg.caption.startsWith("*")))
                     ) {
                         tgLogger.debug(`Message started with * and is in mixed C2C chat, skipping...`);
@@ -481,6 +482,7 @@ async function onWxMessage(msg) {
         if (room) topic = await room.topic();
         let name = await contact.name();
         let alias = await contact.alias() || await contact.name(); // 发消息人备注
+        let dname = alias;  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
             isSilent: false,
             forceMerge: false,
@@ -522,6 +524,19 @@ async function onWxMessage(msg) {
             if (!msg.receiver) {
                 msg.receiver = def;
             }
+            // rewrite dname, with msg.receiver.opts.nameType
+            // now only apply to group
+            if (isGroup) switch (msg.receiver.opts.nameType) {
+                case 2:
+                    dname = await room.alias(contact);
+                    break;
+                case 0:
+                    dname = name;
+                    break;
+                default:    // 1 or other value
+                    dname = alias;
+            }
+            msg.dname = dname;
         }
 
         // lock is hard to make; used another strategy.
@@ -586,12 +601,13 @@ async function onWxMessage(msg) {
             const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s/;
             const match = `${recalledMessage}`.replace("Message#", "").match(regex);
             if (match) {
+                // TODO refactor this, fetch data from `msg` directly.
                 const type = match[1], contactName = match[2], groupName = match[3] || '',
                   msgContent = match.input.replace(match[0], '');
                 // Use match-and-replace strategy to get original msg content
                 content = `[Recalled ${type}]`
                   + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
-                  + `: ${msgContent}`;
+                  + `: <s>${msgContent}</s>`;
             } else {
                 wxLogger.warn(`[Recalled message] not matching preset regex, content: ${recalledMessage}`);
                 content = `[${recalledMessage}] was recalled.`;
@@ -604,13 +620,19 @@ async function onWxMessage(msg) {
         // Process Image as identical photo or Sticker
         if (msg.type() === wxbot.Message.Type.Image) {
             if (/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/.test(content)) {
-                const isSticker = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/);
                 const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
-                const md5 = isSticker[2];
-                const cEPath = `./downloaded/customEmotion/${md5}.gif`;
-                if (secret.misc.deliverSticker === false) {
-                    wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
-                    return;
+                const md5 = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/)[2];
+                let cEPath = `./downloaded/customEmotion/${md5}.gif`;
+                if (secret.misc.deliverSticker === false)
+                    return wxLogger.trace(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
+                // Below: check C2C opt: skipSticker
+                if (!msg.receiver) ctLogger.debug(`#34265 null value for wxMsg.receiver.`);
+                else if (!msg.receiver.opts) ctLogger.debug(`#34266 null value for wxMsg.receiver.opts.`);
+                else if (msg.receiver.opts.skipSticker === 2)
+                    return wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is skipped due to C2C pair config.`);
+                else if (msg.receiver.opts.skipSticker) {
+                    // This variable is null, only when the sticker is rewritten.
+                    cEPath = null;
                 }
                 {   // filter duplicate-in-period sticker
                     let filtered = false;
@@ -627,7 +649,7 @@ async function onWxMessage(msg) {
                     if (filtered) return;
                 }
                 let ahead = true;   // Will the sticker be delivered
-                {
+                if (cEPath) {
                     // skip stickers that already sent and replace them into text
                     const fetched = await stickerLib.get(md5.substring(0, 4));
                     if (fetched === null) {
@@ -647,7 +669,7 @@ async function onWxMessage(msg) {
                         ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
                     }
                 }
-                if (ahead) {
+                if (ahead && cEPath) {
                     if (fs.existsSync(cEPath)) ctLogger.warn(`Overwriting a sticker file with same name: ${cEPath}`);
                     await (await msg.toFileBox()).toFile(cEPath, true);
                     msg.downloadedPath = cEPath;
@@ -660,6 +682,11 @@ async function onWxMessage(msg) {
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
                     content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
+                }
+                if (!cEPath) {
+                    wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is rewritten to TEXT due to C2C pair config.`);
+                    // Rewrite sticker to text
+                    content = secret.c11n.stickerSkipped(msg.md5);
                 }
             } else { // Ended Sticker process, parse as Image
                 wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);
@@ -862,13 +889,13 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     msgDef.forceMerge = true;
                     // Force override {name} to let system message seems better
-                    name = titles.systemMsgTitleInRoom;
+                    dname = titles.systemMsgTitleInRoom;
                 }
 
                 try {
                     if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
                         const isText = msg.DType === DTypes.Text;
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, alias, isText);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, dname, isText);
                         if (result === true) {
                             // Let's continue on 'onceMergeCapacity'
                             with (state.preRoom) {
@@ -913,7 +940,7 @@ async function onWxMessage(msg) {
                     const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                     const nowDate = dayjs().unix();
                     if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, alias, msg.DType === DTypes.Text);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, dname, msg.DType === DTypes.Text);
                         if (result === true) return;
                     } else
                         msg.prePersonNeedUpdate = true;
@@ -1124,7 +1151,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const contact = msg.talker();
     const room = msg.room();
     const name = await contact.name();
-    const alias = await contact.alias() || await contact.name();
+    // const alias = await contact.alias() || await contact.name();
     // const topic = await room.topic();
     let content = contentO.replaceAll("<br/>", "\n");
     const topic = isRoom ? await room.topic() : "";
@@ -1138,17 +1165,24 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             msg.receiver = secret.class.push;
         }
     }
-    const {tmpl, tmplc} = (() => {
-        let tmpl, tmplc;
+    let dname = msg.dname;
+    if (!dname) {
+        wxLogger.warn(`#34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
+        dname = name;
+    }
+    const {tmpl, tmplc, tmplm} = (() => {
+        // Template text; template console; template media.
+        let tmpl, tmplc, tmplm;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            tmpl = isRoom ? `[<b>${name}</b>]` : ``;
-            // tmplc = name;
+            tmpl = isRoom ? `[<u>${name}</u>]` : ``;
+            tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
         } else {
-            tmpl = isRoom ? `📬[<b>${name}</b>/#${topic}]` : `📨[#<b>${alias}</b>]`;
+            tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+            tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
         }
-        tmplc = isRoom ? `${name}/${topic}` : `${alias}`;
-        return {tmpl, tmplc};
+        tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
+        return {tmpl, tmplc, tmplm};
     })();
 
     let tgMsg, retrySend = 2;
@@ -1159,16 +1193,16 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 语音
             wxLogger.debug(`Got New Voice message from ${tmplc}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmpl}` + msg.audioParsed, stream, false);
+            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmplm}` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
             // 正常图片消息
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmpl}`, stream, true, false);
+            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认
             if (!msg.videoPresent) wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
             else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmplm} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction
@@ -1200,6 +1234,13 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             });
             // Push messages do not need 'state.pre__'
             if (msg.DType === DTypes.Push) return;
+            // below two if-s are the start of merge process
+            // disable them by checking msg.receiver.opts.merge
+            if (!msg.receiver) ctLogger.debug(`#34263 null value for wxMsg.receiver.`);
+            else if (!msg.receiver.opts) ctLogger.debug(`#34264 null value for wxMsg.receiver.opts.`);
+            else if (msg.receiver.opts.merge === 0)
+                return ctLogger.trace(`Merge disabled by C2C pair config.`);
+
             if (isRoom && msg.preRoomNeedUpdate) {
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {
@@ -1368,7 +1409,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
                 // Try to use sharp as image processor
                 const sharp = require('sharp');
                 const buffer = await sharp(file_path).gif().toBuffer();
-                // We used telegram-side file_unique_id here as filename, because wechat keeps image name in their servers.
+                // We used telegram-side file_unique_id here as filename, because WeChat keeps image name in their servers.
                 packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
             }
         } catch (e) {

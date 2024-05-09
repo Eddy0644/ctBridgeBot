@@ -100,7 +100,7 @@ module.exports = {
         // This option defines where WeChat stickers will settle down.
         // It is recommended to create another new group chat to hold it.
         // as there are additional information, this section can NOT be set to <true>.
-        // either a object like below, or a simple <false>.
+        // either an object like below, or a simple <false>.
         deliverSticker: {
             tgid: -100000, threadId: 777,
             urlPrefix: "https://t.me/c/000/777/",
@@ -157,8 +157,8 @@ module.exports = {
         // 0 means bypass and will send .webp directly to WeChat;
         // 1 means using upyun Object Storage as image converter, not suggested by now;
         // 2 means using local node module 'sharp' to convert.
-        // Note that this module requires nodejs(^18.17.0 or >= 20.3.0) and libvips, which may be unavailable for some users.
-        // So we offered a switch here. And, as for now, when sharp is not available, we will fallback to {1}.
+        // Note that this module requires Node.js(^18.17.0 or >= 20.3.0) and libvips, which may be unavailable for some users.
+        // So we offered a switch here. And, as for now, when sharp is not available, we will fall back to {1}.
         service_type_on_webp_conversion: 2,
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
@@ -186,9 +186,9 @@ module.exports = {
             timeTrig: 30,
         },
     },
-    chatOption: {
+    chatOptions: {
         // this section declares default behaviors of chats when not specified in C2C flag.
-        // TODO implement chatOption -_- -_- -_-
+        // Notice: for boolean variables, set to exactly 0 to explicitly disable!
 
         // whether accept *-prefix in TG message as indicator of not forwarding to WX
         "mixed": 1,
@@ -196,9 +196,9 @@ module.exports = {
         "merge": 1,
         // whether skip all sticker delivery by default
         "skipSticker": 0,
-        // Only apply to group; which name should be used as title of a person in a merged msg,
+        // which name should be used as title of a person in a room chat,
         // 0 means their WeChat name, 1 means your alias for talker, 2 means their group alias.
-        "mergeTitleType": 0,
+        "nameType": 0,
 
     },
     c11n: {  // customization
@@ -210,7 +210,8 @@ module.exports = {
         // s=<function>, would be executed with parameter 'count' and taken return value
         titleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
 
-        // For person chat, if wx-side msg have quoted msg, then use these two nickname to replace raw contact name.
+        // For person chat, if wx-side msg have quoted msg, then we'll use these two nickname to replace the raw contact name.
+        // Or, set this to null, to disable this feature.
         quotedMsgSuffixLineInPersonChat: ["YOU", "ta"],
 
         officialAccountParser: a => `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`,
@@ -221,9 +222,11 @@ module.exports = {
         // If a sticker with former delivery found, then run this func to get formatted text.
         stickerWithLink: (url_p, flib, md5) => flib.hint ?
           `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
+        stickerSkipped: md5 => `[Sticker](${md5})`,
         // What should display when new topic created automatically.
         newTopicCreated: (name) => `📌Topic Created.\nYour conversation starts here.`,
 
+        C2C_group_mediaCaption: name => `from [${name}]`,
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
         // original text here (wrapped with []), to disable replacement here.
