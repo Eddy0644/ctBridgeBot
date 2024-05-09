@@ -1170,16 +1170,19 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         wxLogger.warn(`#34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
         dname = name;
     }
-    const {tmpl, tmplc} = (() => {
-        let tmpl, tmplc;
+    const {tmpl, tmplc, tmplm} = (() => {
+        // Template text; template console; template media.
+        let tmpl, tmplc, tmplm;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            tmpl = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
+            tmpl = isRoom ? `[<u>${name}</u>]` : ``;
+            tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
         } else {
             tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+            tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
         }
         tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
-        return {tmpl, tmplc};
+        return {tmpl, tmplc, tmplm};
     })();
 
     let tgMsg, retrySend = 2;
@@ -1190,16 +1193,16 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 语音
             wxLogger.debug(`Got New Voice message from ${tmplc}.`);
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmpl}` + msg.audioParsed, stream, false);
+            tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmplm}` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
             // 正常图片消息
             const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmpl}`, stream, true, false);
+            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认
             if (!msg.videoPresent) wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
             else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmplm} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction
