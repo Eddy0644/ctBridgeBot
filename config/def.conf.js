@@ -210,7 +210,8 @@ module.exports = {
         // s=<function>, would be executed with parameter 'count' and taken return value
         titleForSameTalkerInMergedRoomMsg: c => `<code>${c}|→</code> `,
 
-        // For person chat, if wx-side msg have quoted msg, then use these two nickname to replace raw contact name.
+        // For person chat, if wx-side msg have quoted msg, then we'll use these two nickname to replace the raw contact name.
+        // Or, set this to null, to disable this feature.
         quotedMsgSuffixLineInPersonChat: ["YOU", "ta"],
 
         officialAccountParser: a => `[Official Account <a href="${a.smallheadimgurl}">Card</a>]${a.nickname} , from ${a.province} ${a.city}, operator ${a.certinfo || ""}`,
