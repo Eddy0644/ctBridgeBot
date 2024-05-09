@@ -100,7 +100,7 @@ module.exports = {
         // This option defines where WeChat stickers will settle down.
         // It is recommended to create another new group chat to hold it.
         // as there are additional information, this section can NOT be set to <true>.
-        // either a object like below, or a simple <false>.
+        // either an object like below, or a simple <false>.
         deliverSticker: {
             tgid: -100000, threadId: 777,
             urlPrefix: "https://t.me/c/000/777/",
@@ -157,8 +157,8 @@ module.exports = {
         // 0 means bypass and will send .webp directly to WeChat;
         // 1 means using upyun Object Storage as image converter, not suggested by now;
         // 2 means using local node module 'sharp' to convert.
-        // Note that this module requires nodejs(^18.17.0 or >= 20.3.0) and libvips, which may be unavailable for some users.
-        // So we offered a switch here. And, as for now, when sharp is not available, we will fallback to {1}.
+        // Note that this module requires Node.js(^18.17.0 or >= 20.3.0) and libvips, which may be unavailable for some users.
+        // So we offered a switch here. And, as for now, when sharp is not available, we will fall back to {1}.
         service_type_on_webp_conversion: 2,
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////

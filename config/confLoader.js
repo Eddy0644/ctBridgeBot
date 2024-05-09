@@ -68,6 +68,7 @@ delete config.class.C2C_generator["-1001888888888"];
 }
 // Parsing flags and chatOptions for each C2C
 {
+    config.class.def.opts = {};
     const def = config.chatOptions;
     // below: supported boolean or number properties list
     const single_props = ['mixed', 'merge', 'skipSticker', 'nameType'];
@@ -77,13 +78,13 @@ delete config.class.C2C_generator["-1001888888888"];
     }
     for (const oneC2C of config.class.C2C) {
         oneC2C.flag = oneC2C.flag || "";  // in case no flag specified
-        oneC2C.opts={};
+        oneC2C.opts = {};
         for (const propName in def) if (def.hasOwnProperty(propName)) {
             // copy all in def to opts, a.k.a load defaults
             oneC2C.opts[propName] = def[propName];
         }
         for (const prop of oneC2C.flag.split(" ")) {
-            if(prop === "") continue;  // skip empty string
+            if (prop === "") continue;  // skip empty string
             const parts = prop.split("=");  // split by "="
             if (!single_props.includes(parts[0])) {
                 console.error(`Unparsed Flags entry: "${prop}", please check!`);
