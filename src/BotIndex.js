@@ -605,13 +605,19 @@ async function onWxMessage(msg) {
         // Process Image as identical photo or Sticker
         if (msg.type() === wxbot.Message.Type.Image) {
             if (/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/.test(content)) {
-                const isSticker = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/);
                 const stickerUrlPrefix = secret.misc.deliverSticker.urlPrefix;
-                const md5 = isSticker[2];
-                const cEPath = `./downloaded/customEmotion/${md5}.gif`;
-                if (secret.misc.deliverSticker === false) {
-                    wxLogger.debug(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
-                    return;
+                const md5 = content.match(/&lt;msg&gt;(.*?)md5="(.*?)"(.*?)cdnurl(.*?)"(.*?)" designer/)[2];
+                let cEPath = `./downloaded/customEmotion/${md5}.gif`;
+                if (secret.misc.deliverSticker === false)
+                    return wxLogger.trace(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
+                // Below: check C2C opt: skipSticker
+                if (!msg.receiver) ctLogger.debug(`#34265 null value for wxMsg.receiver.`);
+                else if (!msg.receiver.opts) ctLogger.debug(`#34266 null value for wxMsg.receiver.opts.`);
+                else if (msg.receiver.opts.skipSticker === 2)
+                    return wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is skipped due to C2C pair config.`);
+                else if (msg.receiver.opts.skipSticker) {
+                    // This variable is null, only when the sticker is rewritten.
+                    cEPath = null;
                 }
                 {   // filter duplicate-in-period sticker
                     let filtered = false;
@@ -628,7 +634,7 @@ async function onWxMessage(msg) {
                     if (filtered) return;
                 }
                 let ahead = true;   // Will the sticker be delivered
-                {
+                if (cEPath) {
                     // skip stickers that already sent and replace them into text
                     const fetched = await stickerLib.get(md5.substring(0, 4));
                     if (fetched === null) {
@@ -648,7 +654,7 @@ async function onWxMessage(msg) {
                         ctLogger.trace(`Found former instance for sticker '${md5}', replacing to Text. (${content})`);
                     }
                 }
-                if (ahead) {
+                if (ahead && cEPath) {
                     if (fs.existsSync(cEPath)) ctLogger.warn(`Overwriting a sticker file with same name: ${cEPath}`);
                     await (await msg.toFileBox()).toFile(cEPath, true);
                     msg.downloadedPath = cEPath;
@@ -661,6 +667,11 @@ async function onWxMessage(msg) {
                     msg.DType = DTypes.Text;
                     msgDef.isSilent = true;
                     content = `<a href="${stickerUrlPrefix}${tgMsg2.message_id}">[Sticker](${msg.md5})</a>`;
+                }
+                if (!cEPath) {
+                    wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is rewritten to TEXT due to C2C pair config.`);
+                    // Rewrite sticker to text
+                    content = secret.c11n.stickerSkipped(msg.md5);
                 }
             } else { // Ended Sticker process, parse as Image
                 wxLogger.trace(`CustomEmotion Check not pass, Maybe identical photo.`);

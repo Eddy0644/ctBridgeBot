@@ -221,6 +221,7 @@ module.exports = {
         // If a sticker with former delivery found, then run this func to get formatted text.
         stickerWithLink: (url_p, flib, md5) => flib.hint ?
           `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
+        stickerSkipped: md5 => `[Sticker](${md5})`,
         // What should display when new topic created automatically.
         newTopicCreated: (name) => `📌Topic Created.\nYour conversation starts here.`,
 
