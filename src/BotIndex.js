@@ -626,8 +626,8 @@ async function onWxMessage(msg) {
                 if (secret.misc.deliverSticker === false)
                     return wxLogger.trace(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
                 // Below: check C2C opt: skipSticker
-                if (!msg.receiver) ctLogger.debug(`#34265 null value for wxMsg.receiver.`);
-                else if (!msg.receiver.opts) ctLogger.debug(`#34266 null value for wxMsg.receiver.opts.`);
+                if (!msg.receiver) ctLogger.debug(`ERR #34265 null value for wxMsg.receiver.`);
+                else if (!msg.receiver.opts) ctLogger.debug(`ERR #34266 null value for wxMsg.receiver.opts.`);
                 else if (msg.receiver.opts.skipSticker === 2)
                     return wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is skipped due to C2C pair config.`);
                 else if (msg.receiver.opts.skipSticker) {
@@ -1175,7 +1175,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     }
     let dname = msg.dname;
     if (!dname) {
-        wxLogger.warn(`#34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
+        wxLogger.warn(`ERR #34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
         dname = name;
     }
     const {tmpl, tmplc, tmplm} = (() => {
@@ -1244,8 +1244,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             if (msg.DType === DTypes.Push) return;
             // below two if-s are the start of merge process
             // disable them by checking msg.receiver.opts.merge
-            if (!msg.receiver) ctLogger.debug(`#34263 null value for wxMsg.receiver.`);
-            else if (!msg.receiver.opts) ctLogger.debug(`#34264 null value for wxMsg.receiver.opts.`);
+            if (!msg.receiver) ctLogger.debug(`ERR #34263 null value for wxMsg.receiver.`);
+            else if (!msg.receiver.opts) ctLogger.debug(`ERR #34264 null value for wxMsg.receiver.opts.`);
             else if (msg.receiver.opts.merge === 0)
                 return ctLogger.trace(`Merge disabled by C2C pair config.`);
 

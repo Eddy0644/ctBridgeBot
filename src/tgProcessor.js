@@ -291,15 +291,15 @@ function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) 
             // Let's continue check for 'onceMergeCapacity'
             const exist = _.stat, limit = secret.misc.onceMergeCapacity;
             if (process.uptime() - exist.tsStarted > limit.timeSpan) {
-                tgLogger.debug(`[Merge] time span reached, resetting...`);
+                tgLogger.debug(`[Merge] time span reached limit, resetting merge...`);
                 return false;
             }
             if (exist.mediaCount >= limit.mediaCount) {
-                tgLogger.debug(`[Merge] mediaCount reached, resetting...`);
+                tgLogger.debug(`[Merge] mediaCount reached limit, resetting merge...`);
                 return false;
             }
             if (exist.messageCount >= limit.messageCount) {
-                tgLogger.debug(`[Merge] messageCount reached, resetting...`);
+                tgLogger.debug(`[Merge] messageCount reached limit, resetting merge...`);
                 return false;
             }
             return true;

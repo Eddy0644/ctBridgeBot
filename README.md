@@ -15,6 +15,6 @@ This is a personal training project, as there may be some problems that I didn't
 Thanks for your support.
 
 And, if you have any question that the online document failed to resolve, you can [join the Q&A group](https://t.me/+AHsMZ9yvKK5lMTRl) 
-OR browse [this channel](https://t.me/rych0814) and find bot link in channel description.
+OR browse [this channel](https://t.me/rych0814) and find bot link in channel description to contact me directly.
 
 However, if the question reveals a bug, or you don't want to join groups, please open an issue, I would reply asap.
