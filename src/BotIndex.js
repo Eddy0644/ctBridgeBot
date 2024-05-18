@@ -705,6 +705,7 @@ async function onWxMessage(msg) {
 
         // 尝试下载语音
         if (msg.type() === wxbot.Message.Type.Audio) try {
+            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
             const fBox = await msg.toFileBox();
             // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
             let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${processor.filterFilename(alias)}).mp3`;
@@ -723,6 +724,7 @@ async function onWxMessage(msg) {
         }
         // 视频消息处理或自动下载
         if (msg.type() === wxbot.Message.Type.Video) {
+            tgBotDo.SendChatAction("record_video", tgMsg.matched).then(tgBotDo.empty);
             msg.videoPresent = 1;
             // await mod.wxMddw.handleVideoMessage(msg, alias);
             content = `🎦(Downloading...)`;
@@ -1020,7 +1022,12 @@ async function tgCommandHandler(tgMsg) {
                         "threadId": res.message_thread_id,
                         "wx": [name, isGroup],
                         "flag": "",
+                        "opts":{},
                     };
+                    for (const propName in secret.chatOptions) if (secret.chatOptions.hasOwnProperty(propName)) {
+                        // copy all in def to opts, a.k.a load defaults
+                        newC2C_Obj.opts[propName] = secret.chatOptions[propName];
+                    }
                     secret.class.C2C.push(newC2C_Obj);
                     // -- completed temporary add to config
                     // Send initial message to thread
@@ -1148,6 +1155,7 @@ async function tgCommandHandler(tgMsg) {
 }
 
 async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
+    // Previous function: onWxMessage()
     const contact = msg.talker();
     const room = msg.room();
     const name = await contact.name();
