@@ -1020,7 +1020,12 @@ async function tgCommandHandler(tgMsg) {
                         "threadId": res.message_thread_id,
                         "wx": [name, isGroup],
                         "flag": "",
+                        "opts":{},
                     };
+                    for (const propName in secret.chatOptions) if (secret.chatOptions.hasOwnProperty(propName)) {
+                        // copy all in def to opts, a.k.a load defaults
+                        newC2C_Obj.opts[propName] = secret.chatOptions[propName];
+                    }
                     secret.class.C2C.push(newC2C_Obj);
                     // -- completed temporary add to config
                     // Send initial message to thread
