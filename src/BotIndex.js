@@ -1190,6 +1190,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
         }
         tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
+        tmplm += msg.media_identifier || "";
         return {tmpl, tmplc, tmplm};
     })();
 

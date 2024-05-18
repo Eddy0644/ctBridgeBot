@@ -23,8 +23,8 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", dname = "", i
         })(msg.DType);
         // Temporary override 'content' to inject into merged msg in this function
         if (secret.misc.add_identifier_to_merged_image && DTypeName === "Image") {
-            content = `[${DTypeName}] #${timed_id}`;
-            defLogger.trace(`[${DTypeName}] #${timed_id} is added to content.`);
+            content = `[${DTypeName}] %${timed_id}`;
+            defLogger.trace(`[${DTypeName}] %${timed_id} is added to content.`);
             msg.media_identifier = timed_id;
         } else if (DTypeName === "File") content = `[${DTypeName}] ${msg.payload.filename}`;
         else content = `[${DTypeName}]`;
