@@ -161,6 +161,9 @@ module.exports = {
         // So we offered a switch here. And, as for now, when sharp is not available, we will fall back to {1}.
         service_type_on_webp_conversion: 2,
 
+        // This option defines whether to add a time-based identifier to media messages inside a merged message.
+        add_identifier_to_merged_image: 1,
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // Interval between each automatic status report [to Console].
