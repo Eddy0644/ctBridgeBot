@@ -1022,7 +1022,7 @@ async function tgCommandHandler(tgMsg) {
                         "threadId": res.message_thread_id,
                         "wx": [name, isGroup],
                         "flag": "",
-                        "opts":{},
+                        "opts": {},
                     };
                     for (const propName in secret.chatOptions) if (secret.chatOptions.hasOwnProperty(propName)) {
                         // copy all in def to opts, a.k.a load defaults
@@ -1396,16 +1396,15 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const rand1 = Math.random();
     // noinspection JSUnresolvedVariable
     let file_path = './downloaded/' + (
-      (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
+      (tgMsg.photo) ? (`photoTG/${tg_media.file_unique_id}.png`) :
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-          (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
-            (`videoTG/${rand1}.mp4`))));
-    // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
-    // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
+          (tgMsg.sticker ? (`stickerTG/${tg_media.file_id}.webp`) :
+            (`videoTG/${tg_media.file_unique_id}.mp4`))));
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
-    await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
+    // if sticker.webp exist, skip download
+    if (!fs.existsSync(file_path) && tgMsg.sticker) await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
