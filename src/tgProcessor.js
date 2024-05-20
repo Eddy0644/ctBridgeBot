@@ -13,13 +13,21 @@ let env;
 
 async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", dname = "", isText) {
     const {state, defLogger, tgBotDo, secret} = env;
+    // Time-based identifier
+    const timed_id = Date.now().toString(16).slice(-5, -1);
     if (!isText) {
         const DTypeName = ((value) => {
             const DTypes = {Image: 2, Audio: 3, File: 5, Push: 6};
             for (const name in DTypes) if (DTypes[name] === value) return name;
             return "Media";
         })(msg.DType);
-        content = `[${DTypeName}]`; // Temporary override in this function
+        // Temporary override 'content' to inject into merged msg in this function
+        if ((secret.misc.add_identifier_to_merged_image - !isGroup) && DTypeName === "Image") {
+            content = `[${DTypeName}] %${timed_id}`;
+            defLogger.trace(`[${DTypeName}] %${timed_id} is added to content.`);
+            msg.media_identifier = timed_id;
+        } else if (DTypeName === "File") content = `[${DTypeName}] ${msg.payload.filename}`;
+        else content = `[${DTypeName}]`;
     }
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
@@ -291,15 +299,15 @@ function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) 
             // Let's continue check for 'onceMergeCapacity'
             const exist = _.stat, limit = secret.misc.onceMergeCapacity;
             if (process.uptime() - exist.tsStarted > limit.timeSpan) {
-                tgLogger.debug(`[Merge] time span reached, resetting...`);
+                tgLogger.debug(`[Merge] time span reached limit, resetting merge...`);
                 return false;
             }
             if (exist.mediaCount >= limit.mediaCount) {
-                tgLogger.debug(`[Merge] mediaCount reached, resetting...`);
+                tgLogger.debug(`[Merge] mediaCount reached limit, resetting merge...`);
                 return false;
             }
             if (exist.messageCount >= limit.messageCount) {
-                tgLogger.debug(`[Merge] messageCount reached, resetting...`);
+                tgLogger.debug(`[Merge] messageCount reached limit, resetting merge...`);
                 return false;
             }
             return true;

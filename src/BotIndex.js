@@ -171,6 +171,11 @@ async function onTGMsg(tgMsg) {
             if (timerLabel) console.timeEnd(timerLabel);
         }
 
+        if (tgMsg.matched.opts.onlyReceive) {
+            // onlyReceive is on, ignoring this message!
+            tgLogger.debug(`A TG message from (${tgMsg.chat.title}) is skipped due to C2C.onlyReceive is active.`);
+            return;
+        }
         { // **Sub:** replaceWXCustomEmojis
             let newText = tgMsg.text;
             if (typeof tgMsg.entities === 'object') for (const entity of tgMsg.entities) {
@@ -626,8 +631,8 @@ async function onWxMessage(msg) {
                 if (secret.misc.deliverSticker === false)
                     return wxLogger.trace(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
                 // Below: check C2C opt: skipSticker
-                if (!msg.receiver) ctLogger.debug(`#34265 null value for wxMsg.receiver.`);
-                else if (!msg.receiver.opts) ctLogger.debug(`#34266 null value for wxMsg.receiver.opts.`);
+                if (!msg.receiver) ctLogger.debug(`ERR #34265 null value for wxMsg.receiver.`);
+                else if (!msg.receiver.opts) ctLogger.debug(`ERR #34266 null value for wxMsg.receiver.opts.`);
                 else if (msg.receiver.opts.skipSticker === 2)
                     return wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is skipped due to C2C pair config.`);
                 else if (msg.receiver.opts.skipSticker) {
@@ -705,7 +710,7 @@ async function onWxMessage(msg) {
 
         // 尝试下载语音
         if (msg.type() === wxbot.Message.Type.Audio) try {
-            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("record_voice", msg.receiver).then(tgBotDo.empty);
             const fBox = await msg.toFileBox();
             // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
             let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${processor.filterFilename(alias)}).mp3`;
@@ -718,13 +723,14 @@ async function onWxMessage(msg) {
             msg.downloadedPath = audioPath;
             msgDef.isSilent = false;
         } catch (e) {
-            wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
+            wxLogger.warn(`Detected as Audio, But download failed.`);
+            wxLogger.debug(`Error: ${e.message}`);
             msg.DType = DTypes.Text;
             content = "🎤(Fail to download)";
         }
         // 视频消息处理或自动下载
         if (msg.type() === wxbot.Message.Type.Video) {
-            tgBotDo.SendChatAction("record_video", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty);
             msg.videoPresent = 1;
             // await mod.wxMddw.handleVideoMessage(msg, alias);
             content = `🎦(Downloading...)`;
@@ -987,9 +993,10 @@ async function tgCommandHandler(tgMsg) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
-            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
+            tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(tgBotDo.empty);
             conLogger.trace("Revoke complete. sending new /help instance...");
-            state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null),
+            const helper = secret.misc.override_help_text || CommonData.TGBotHelpCmdText;
+            state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, helper(state), true, null),
                 // Put tg-matched inside the instance to let it be revoked correctly.
                 tgMsg.matched];
             return;
@@ -1022,7 +1029,7 @@ async function tgCommandHandler(tgMsg) {
                         "threadId": res.message_thread_id,
                         "wx": [name, isGroup],
                         "flag": "",
-                        "opts":{},
+                        "opts": {},
                     };
                     for (const propName in secret.chatOptions) if (secret.chatOptions.hasOwnProperty(propName)) {
                         // copy all in def to opts, a.k.a load defaults
@@ -1143,6 +1150,11 @@ async function tgCommandHandler(tgMsg) {
             await fs.promises.writeFile("data/userTriggerRelogin.flag", "114514");
             process.exit(123);
         }
+        case "/reboot": {
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            ctLogger.info("Reboot request invoked by user!");
+            process.exit(321);
+        }
         case "/eval": {
             //return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
         }
@@ -1175,7 +1187,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     }
     let dname = msg.dname;
     if (!dname) {
-        wxLogger.warn(`#34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
+        wxLogger.warn(`ERR #34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
         dname = name;
     }
     const {tmpl, tmplc, tmplm} = (() => {
@@ -1190,6 +1202,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
         }
         tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
+        tmplm += msg.media_identifier || "";
         return {tmpl, tmplc, tmplm};
     })();
 
@@ -1244,8 +1257,8 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             if (msg.DType === DTypes.Push) return;
             // below two if-s are the start of merge process
             // disable them by checking msg.receiver.opts.merge
-            if (!msg.receiver) ctLogger.debug(`#34263 null value for wxMsg.receiver.`);
-            else if (!msg.receiver.opts) ctLogger.debug(`#34264 null value for wxMsg.receiver.opts.`);
+            if (!msg.receiver) ctLogger.debug(`ERR #34263 null value for wxMsg.receiver.`);
+            else if (!msg.receiver.opts) ctLogger.debug(`ERR #34264 null value for wxMsg.receiver.opts.`);
             else if (msg.receiver.opts.merge === 0)
                 return ctLogger.trace(`Merge disabled by C2C pair config.`);
 
@@ -1396,16 +1409,17 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const rand1 = Math.random();
     // noinspection JSUnresolvedVariable
     let file_path = './downloaded/' + (
-      (tgMsg.photo) ? (`photoTG/${rand1}.png`) :
+      (tgMsg.photo) ? (`photoTG/${tgMsg.photo[tgMsg.photo.length - 1].file_unique_id}.png`) :
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-          (tgMsg.sticker ? (`stickerTG/${rand1}.webp`) :
-            (`videoTG/${rand1}.mp4`))));
-    // (tgMsg.photo)?(``):(tgMsg.document?(``):(``))
-    // const action = (tgMsg.photo) ? (`upload_photo`) : (tgMsg.document ? (`upload_document`) : (`upload_video`));
+          (tgMsg.sticker ? (`stickerTG/${tg_media.file_id}.webp`) :
+            (`videoTG/${tg_media.file_unique_id}.mp4`))));
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
-    await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
+    // if sticker.webp exist, skip download
+    if (fs.existsSync(file_path) && tgMsg.sticker) {
+        // sticker file exist, do nothing
+    } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);

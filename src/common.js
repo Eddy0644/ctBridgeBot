@@ -127,11 +127,11 @@ module.exports = (param) => {
                     // Add more commands as needed
                 ],
                 // Explanation: ein -> on, aus -> off
-                TGBotHelpCmdText: (state) => `Command List for /help
-/drop_on & /drop_off : [msg drop]
+                TGBotHelpCmdText: (state) => `/drop_on & /drop_off : [msg drop]
 /sync_on & /sync_off : [self sync]
 /info ; /placeholder ; /try_edit 
 /reloginWX_2 ; /create_topic ; 
+/reboot ; 
 Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.last.name : "-"}]`,
                 wxPushMsgFilterWord: [
                     ["公众号", "已更改名称为", "查看详情"],

@@ -138,6 +138,10 @@ module.exports = {
         // Currently only 1 or 0 is accepted.
         debug_add_console_timers: 1,
 
+        // If you want to override /help return text, change this to a function like common.js/TGBotHelpCmdText.
+        // Please remind if you do so, then for new commands you must add them manually to /help text.
+        override_help_text: false,
+
         /* ------------ [  ] ------------ */
 
         // If set to <false>, all post message will no longer be copied to log,
@@ -160,6 +164,10 @@ module.exports = {
         // Note that this module requires Node.js(^18.17.0 or >= 20.3.0) and libvips, which may be unavailable for some users.
         // So we offered a switch here. And, as for now, when sharp is not available, we will fall back to {1}.
         service_type_on_webp_conversion: 2,
+
+        // This option defines whether to add a time-based identifier to media messages inside a merged message.
+        // 0 means disable; 1 means only for group chats; 2 means for all chats.
+        add_identifier_to_merged_image: 1,
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
@@ -199,6 +207,8 @@ module.exports = {
         // which name should be used as title of a person in a room chat,
         // 0 means their WeChat name, 1 means your alias for talker, 2 means their group alias.
         "nameType": 0,
+        // should a C2C chat only be a copy of WX-side message, which stops forwarding any TG msg to WX.
+        "onlyReceive": 0,
 
     },
     c11n: {  // customization
@@ -224,9 +234,11 @@ module.exports = {
           `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
         stickerSkipped: md5 => `[Sticker](${md5})`,
         // What should display when new topic created automatically.
-        newTopicCreated: (name) => `📌Topic Created.\nYour conversation starts here.`,
+        newTopicCreated: () => `📌Topic Created.\nYour conversation starts here.`,
 
-        C2C_group_mediaCaption: name => `from [${name}]`,
+        // better keep an extra space at the end, if `add_identifier_to_merged_image` is on.
+        C2C_group_mediaCaption: name => `from [${name}] `,
+
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
         // original text here (wrapped with []), to disable replacement here.
