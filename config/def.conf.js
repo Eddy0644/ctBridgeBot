@@ -229,7 +229,9 @@ module.exports = {
         // What should display when new topic created automatically.
         newTopicCreated: (name) => `📌Topic Created.\nYour conversation starts here.`,
 
-        C2C_group_mediaCaption: name => `from [${name}]`,
+        // better keep an extra space at the end, if `add_identifier_to_merged_image` is on.
+        C2C_group_mediaCaption: name => `from [${name}] `,
+
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
         // original text here (wrapped with []), to disable replacement here.

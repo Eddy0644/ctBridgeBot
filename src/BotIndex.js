@@ -1398,7 +1398,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const rand1 = Math.random();
     // noinspection JSUnresolvedVariable
     let file_path = './downloaded/' + (
-      (tgMsg.photo) ? (`photoTG/${tg_media.file_unique_id}.png`) :
+      (tgMsg.photo) ? (`photoTG/${tgMsg.photo[tgMsg.photo.length - 1].file_unique_id}.png`) :
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
           (tgMsg.sticker ? (`stickerTG/${tg_media.file_id}.webp`) :
             (`videoTG/${tg_media.file_unique_id}.mp4`))));
