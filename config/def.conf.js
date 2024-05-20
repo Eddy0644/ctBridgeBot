@@ -138,6 +138,10 @@ module.exports = {
         // Currently only 1 or 0 is accepted.
         debug_add_console_timers: 1,
 
+        // If you want to override /help return text, change this to a function like common.js/TGBotHelpCmdText.
+        // Please remind if you do so, then for new commands you must add them manually to /help text.
+        override_help_text: false,
+
         /* ------------ [  ] ------------ */
 
         // If set to <false>, all post message will no longer be copied to log,

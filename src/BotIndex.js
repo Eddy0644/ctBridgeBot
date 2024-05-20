@@ -990,7 +990,8 @@ async function tgCommandHandler(tgMsg) {
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
             tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(tgBotDo.empty);
             conLogger.trace("Revoke complete. sending new /help instance...");
-            state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null),
+            const helper = secret.misc.override_help_text || CommonData.TGBotHelpCmdText;
+            state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, helper(state), true, null),
                 // Put tg-matched inside the instance to let it be revoked correctly.
                 tgMsg.matched];
             return;
@@ -1143,6 +1144,11 @@ async function tgCommandHandler(tgMsg) {
             // write a flag to disk, in order to skip graceful timeout before sending QRCode to TG
             await fs.promises.writeFile("data/userTriggerRelogin.flag", "114514");
             process.exit(123);
+        }
+        case "/reboot": {
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            ctLogger.info("Reboot request invoked by user!");
+            process.exit(321);
         }
         case "/eval": {
             //return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
