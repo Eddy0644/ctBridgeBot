@@ -988,7 +988,7 @@ async function tgCommandHandler(tgMsg) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
-            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
+            tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(tgBotDo.empty);
             conLogger.trace("Revoke complete. sending new /help instance...");
             state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, CommonData.TGBotHelpCmdText(state), true, null),
                 // Put tg-matched inside the instance to let it be revoked correctly.
@@ -1406,7 +1406,9 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
     // if sticker.webp exist, skip download
-    if (!fs.existsSync(file_path) && tgMsg.sticker) await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
+    if (fs.existsSync(file_path) && tgMsg.sticker) {
+        // sticker file exist, do nothing
+    } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);

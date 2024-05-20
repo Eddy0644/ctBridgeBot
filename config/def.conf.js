@@ -227,7 +227,7 @@ module.exports = {
           `🌁(<code>${md5}</code>) <i>${flib.hint}</i>` : `<a href="${url_p}${flib.msgId}">🌁(${md5})</a>`,
         stickerSkipped: md5 => `[Sticker](${md5})`,
         // What should display when new topic created automatically.
-        newTopicCreated: (name) => `📌Topic Created.\nYour conversation starts here.`,
+        newTopicCreated: () => `📌Topic Created.\nYour conversation starts here.`,
 
         // better keep an extra space at the end, if `add_identifier_to_merged_image` is on.
         C2C_group_mediaCaption: name => `from [${name}] `,
