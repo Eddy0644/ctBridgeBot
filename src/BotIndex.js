@@ -705,7 +705,7 @@ async function onWxMessage(msg) {
 
         // 尝试下载语音
         if (msg.type() === wxbot.Message.Type.Audio) try {
-            tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("record_voice", msg.receiver).then(tgBotDo.empty);
             const fBox = await msg.toFileBox();
             // let audioPath = `./downloaded/audio/${alias}-${msg.payload.filename}`;
             let audioPath = `./downloaded/audio/${dayjs().format("YYYYMMDD-HHmmss").toString()}-(${processor.filterFilename(alias)}).mp3`;
@@ -718,13 +718,14 @@ async function onWxMessage(msg) {
             msg.downloadedPath = audioPath;
             msgDef.isSilent = false;
         } catch (e) {
-            wxLogger.info(`Detected as Audio, But download failed. Ignoring.`);
+            wxLogger.warn(`Detected as Audio, But download failed.`);
+            wxLogger.debug(`Error: ${e.message}`);
             msg.DType = DTypes.Text;
             content = "🎤(Fail to download)";
         }
         // 视频消息处理或自动下载
         if (msg.type() === wxbot.Message.Type.Video) {
-            tgBotDo.SendChatAction("record_video", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty);
             msg.videoPresent = 1;
             // await mod.wxMddw.handleVideoMessage(msg, alias);
             content = `🎦(Downloading...)`;
