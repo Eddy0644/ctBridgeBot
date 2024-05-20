@@ -162,6 +162,7 @@ module.exports = {
         service_type_on_webp_conversion: 2,
 
         // This option defines whether to add a time-based identifier to media messages inside a merged message.
+        // 0 means disable; 1 means only for group chats; 2 means for all chats.
         add_identifier_to_merged_image: 1,
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
