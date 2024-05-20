@@ -207,6 +207,8 @@ module.exports = {
         // which name should be used as title of a person in a room chat,
         // 0 means their WeChat name, 1 means your alias for talker, 2 means their group alias.
         "nameType": 0,
+        // should a C2C chat only be a copy of WX-side message, which stops forwarding any TG msg to WX.
+        "onlyReceive": 0,
 
     },
     c11n: {  // customization

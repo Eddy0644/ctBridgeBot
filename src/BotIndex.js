@@ -171,6 +171,11 @@ async function onTGMsg(tgMsg) {
             if (timerLabel) console.timeEnd(timerLabel);
         }
 
+        if (tgMsg.matched.opts.onlyReceive) {
+            // onlyReceive is on, ignoring this message!
+            tgLogger.debug(`A TG message from (${tgMsg.chat.title}) is skipped due to C2C.onlyReceive is active.`);
+            return;
+        }
         { // **Sub:** replaceWXCustomEmojis
             let newText = tgMsg.text;
             if (typeof tgMsg.entities === 'object') for (const entity of tgMsg.entities) {
