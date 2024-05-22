@@ -1,17 +1,22 @@
 const secret = require('../config/confLoader');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const {tgLogger} = require('./common')();
+
+// We choose to include another log4js here, as common.js finishes the initialization of log4js before init-tg and init-wx.
+// const {tgLogger} = require('./common')();
+const tgLogger = require('log4js').getLogger("tg");
+// We already give wxLogger during initialization of init-wx, so we don't need to require it again ToT.
+
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 process.env["NTBA_FIX_350"] = "1";
 const {downloader} = require("./common")();
 
-const proxyG = require((require("fs").existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
+const proxy = require((require("fs").existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
 
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secret.tgbot.botToken,
-      {polling: {interval: secret.tgbot.polling.interval}, request: {proxy: proxyG},});
+      {polling: {interval: secret.tgbot.polling.interval}, request: {proxy},});
     tgbot.deleteWebHook().then(() => {
     });
 } else {
@@ -23,7 +28,7 @@ if (isPolling) {
             key: "config/srv.pem",
             cert: "config/cli.pem",
         },
-        request: {proxy: proxyG}
+        request: {proxy}
     });
     tgbot.setWebHook(secret.bundle.getTGBotHookURL(process.argv[3]), {
         drop_pending_updates: true
@@ -70,7 +75,7 @@ const tgBotDo = {
         });
     },
     SendAnimation: async (msg, path, isSilent = false, hasSpoiler = false) => {
-        await delay(100);
+        // await delay(100);
         let form = {
             caption: msg,
             has_spoiler: hasSpoiler,
@@ -88,10 +93,10 @@ const tgBotDo = {
         // Temp. change for classifying stickers
         return await retryWithLogging(async () => {
             return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'})
-        }, 3, 3000);
+        }, 3, 5000);
     },
     SendPhoto: async (receiver = null, msg, path, isSilent = false, hasSpoiler = false) => {
-        await delay(100);
+        // await delay(100);
         let form = {
             caption: msg,
             has_spoiler: hasSpoiler,
@@ -102,7 +107,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'});
-        }, 3, 3000);
+        }, 3, 7000);
     },
     EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {

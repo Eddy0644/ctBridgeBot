@@ -49,10 +49,10 @@ module.exports = (tgBotDo, wxLogger) => {
             }
 
         } else if (status === 3) {
-            console.log(`------[The code is already scanned.\n ${qrcodeImageUrl} ]------`);
+            wxLogger.info(`------[The code is already scanned.]------`);
             needLoginStat = 0;
         } else {
-            console.log(`User may accepted login. Proceeding...`);
+            console.log(`User may accepted login. Continue listening...`);
         }
     });
 

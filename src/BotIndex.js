@@ -411,8 +411,8 @@ async function onTGMsg(tgMsg) {
             if (Object.keys(state.last).length === 0) {
                 // Activate chat & env. set
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
-                const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
-                tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+                // const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
+                tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, but done NOTHING.`); // Update ChatMenuButton:${result ? "OK" : "X"}
                 return;
             }
             if (state.last.s === STypes.FindMode) {
