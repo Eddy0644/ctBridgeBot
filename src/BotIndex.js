@@ -914,7 +914,7 @@ async function onWxMessage(msg) {
                         }
                     } else msg.preRoomNeedUpdate = true;
                 } catch (e) {
-                    wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
+                    wxLogger.warn(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
                     state.v.msgMergeFailCount--;
                     if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
                 }
