@@ -322,8 +322,8 @@ function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) 
             return true;
         } else return false;
     } catch (e) {
-        console.error(`Maybe bug here!`);
-        tgLogger.debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
+        // console.error(`Maybe bug here!`);
+        tgLogger.error(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
         return false;
     }
 }

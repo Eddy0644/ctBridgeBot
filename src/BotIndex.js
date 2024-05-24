@@ -966,7 +966,8 @@ async function onWxMessage(msg) {
     } catch
       (e) {
         tgLogger.error(`{onWxMsg()}: ${e.message}`);
-        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        tgLogger.trace(`wxMsg: ${JSON.stringify(msg)}`);
     }
 }
 
@@ -1263,6 +1264,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 return ctLogger.trace(`Merge disabled by C2C pair config.`);
 
             if (isRoom && msg.preRoomNeedUpdate) {
+                ctLogger.debug(`Merge profile [preRoom] updated: from [${state.preRoom?.topic}] to [${topic}].`);
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {
                     topic, tgMsg,
