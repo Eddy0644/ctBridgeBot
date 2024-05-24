@@ -995,7 +995,7 @@ async function tgCommandHandler(tgMsg) {
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
             tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(tgBotDo.empty);
             conLogger.trace("Revoke complete. sending new /help instance...");
-            const helper = secret.misc.override_help_text || CommonData.TGBotHelpCmdText;
+            const helper = secret.c11n.override_help_text || CommonData.TGBotHelpCmdText;
             state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, helper(state), true, null),
                 // Put tg-matched inside the instance to let it be revoked correctly.
                 tgMsg.matched];
@@ -1195,7 +1195,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         let tmpl, tmplc, tmplm;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            tmpl = isRoom ? `[<u>${name}</u>]` : ``;
+            tmpl = isRoom ? `[<u>${dname}</u>]` : ``;
             tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
         } else {
             tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
@@ -1266,7 +1266,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {
                     topic, tgMsg,
-                    firstWord: `[<u>${name}</u>] ${content}`,
+                    firstWord: `[<u>${dname}</u>] ${content}`,
                     msgText: `${tmpl} ${content}`,
                     receiver: msg.receiver,
                     lastTalker: name,
