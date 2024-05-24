@@ -62,7 +62,7 @@ const tgBotDo = {
         if (parseMode) form.parse_mode = parseMode;
         return await retryWithLogging(async () => {
             return await tgbot.sendMessage(parseRecv(receiver, form), msg, form);
-        }, 3, 3000);
+        }, 3, 2200, `Text [${msg.substring(0, msg.length > 7 ? 7 : msg.length)}]`);
     },
     RevokeMessage: async (msgId, receiver = null) => {
         return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId).catch((e) => {
@@ -93,7 +93,7 @@ const tgBotDo = {
         // Temp. change for classifying stickers
         return await retryWithLogging(async () => {
             return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'})
-        }, 3, 5000);
+        }, 3, 6000, `Animation`);
     },
     SendPhoto: async (receiver = null, msg, path, isSilent = false, hasSpoiler = false) => {
         // await delay(100);
@@ -107,7 +107,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'});
-        }, 3, 7000);
+        }, 3, 5200, `Photo`);
     },
     EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {
@@ -154,7 +154,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'})
-        }, 3, 3000);
+        }, 3, 5000, `Document`);
     },
     SendVideo: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -198,18 +198,18 @@ tgbot.on('polling_error', async (e) => {
 tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
-const retryWithLogging = async (func, maxRetries, retryDelay = 10000) => {
+const retryWithLogging = async (func, maxRetries, retryDelay = 10000, err_suffix = "") => {
     let retries = 0;
-    while (retries <= maxRetries) {
+    while (retries < maxRetries) {
         try {
             const res = await func();
             errorStat = 0;
             return res;
         } catch (error) {
-            let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim();
+            let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim() + `  ${err_suffix}`;
             tgLogger.warn(errorMessage);
             if (error.code === 'ETELEGRAM') {
-                return; // Directly exit if the error code is 'ETELEGRAM'
+                return; // Directly exit if the error code is 'ETELEGRAM', pretend that it is not 'retry after 8' error.
             }
             await delay(retryDelay);
             retries++;
