@@ -166,10 +166,19 @@ async function addSelfReplyTs(name = null) {
             _.tgMsg = await tgBotDo.EditMessageText(newString, _.tgMsg, _.receiver);
             defLogger.debug(`Delivered myself reply stamp into Room:${_.topic} 's former message, and cleared its preRoom.`);
         }
+        // at first this function is used to add reply timestamp on merged msg when user reply, but it became a resetter for merge
+        // after user reply. now because of a neglect, the preRoom have no 'stat', which will cause a bug.
         state.preRoom = {
             firstWord: "",
             tgMsg: null,
             topic: "",
+            msgText: "",
+            lastTalker: "",
+            stat: {
+                "tsStarted": 0,
+                "mediaCount": 0,
+                "messageCount": 0,
+            },
         };
     } else {
         if (secret.misc.addSelfReplyTimestampToRoomMergedMsg) defLogger.debug(`PreRoom not valid, skip delivering myself reply stamp into former message.`);
@@ -313,8 +322,8 @@ function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) 
             return true;
         } else return false;
     } catch (e) {
-        console.error(`Maybe bug here!`);
-        tgLogger.debug(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
+        // console.error(`Maybe bug here!`);
+        tgLogger.error(`Error occurred while validating preRoomState.\n\t${e.toString()}`);
         return false;
     }
 }

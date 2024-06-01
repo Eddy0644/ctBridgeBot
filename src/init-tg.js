@@ -1,17 +1,22 @@
 const secret = require('../config/confLoader');
 const TelegramBot = require("node-telegram-bot-api");
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-const {tgLogger} = require('./common')();
+
+// We choose to include another log4js here, as common.js finishes the initialization of log4js before init-tg and init-wx.
+// const {tgLogger} = require('./common')();
+const tgLogger = require('log4js').getLogger("tg");
+// We already give wxLogger during initialization of init-wx, so we don't need to require it again ToT.
+
 const isPolling = (!(process.argv.length >= 3 && process.argv[2] === "hook"));
 process.env["NTBA_FIX_350"] = "1";
 const {downloader} = require("./common")();
 
-const proxyG = require((require("fs").existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
+const proxy = require((require("fs").existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
 
 let tgbot;
 if (isPolling) {
     tgbot = new TelegramBot(secret.tgbot.botToken,
-      {polling: {interval: secret.tgbot.polling.interval}, request: {proxy: proxyG},});
+      {polling: {interval: secret.tgbot.polling.interval}, request: {proxy},});
     tgbot.deleteWebHook().then(() => {
     });
 } else {
@@ -23,7 +28,7 @@ if (isPolling) {
             key: "config/srv.pem",
             cert: "config/cli.pem",
         },
-        request: {proxy: proxyG}
+        request: {proxy}
     });
     tgbot.setWebHook(secret.bundle.getTGBotHookURL(process.argv[3]), {
         drop_pending_updates: true
@@ -57,7 +62,7 @@ const tgBotDo = {
         if (parseMode) form.parse_mode = parseMode;
         return await retryWithLogging(async () => {
             return await tgbot.sendMessage(parseRecv(receiver, form), msg, form);
-        }, 3, 3000);
+        }, 3, 2200, `Text [${msg.substring(0, msg.length > 7 ? 7 : msg.length)}]`);
     },
     RevokeMessage: async (msgId, receiver = null) => {
         return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId).catch((e) => {
@@ -70,7 +75,7 @@ const tgBotDo = {
         });
     },
     SendAnimation: async (msg, path, isSilent = false, hasSpoiler = false) => {
-        await delay(100);
+        // await delay(100);
         let form = {
             caption: msg,
             has_spoiler: hasSpoiler,
@@ -88,10 +93,10 @@ const tgBotDo = {
         // Temp. change for classifying stickers
         return await retryWithLogging(async () => {
             return await tgbot.sendAnimation(parseRecv(receiver, form), path, form, {contentType: 'image/gif'})
-        }, 3, 3000);
+        }, 3, 6000, `Animation`);
     },
     SendPhoto: async (receiver = null, msg, path, isSilent = false, hasSpoiler = false) => {
-        await delay(100);
+        // await delay(100);
         let form = {
             caption: msg,
             has_spoiler: hasSpoiler,
@@ -102,7 +107,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendPhoto(parseRecv(receiver, form), path, form, {contentType: 'image/jpeg'});
-        }, 3, 3000);
+        }, 3, 5200, `Photo`);
     },
     EditMessageText: async (text, former_tgMsg, receiver = null) => {
         let form = {
@@ -149,7 +154,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendDocument(parseRecv(receiver, form), path, form, {contentType: 'application/octet-stream'})
-        }, 3, 3000);
+        }, 3, 5000, `Document`);
     },
     SendVideo: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -193,18 +198,18 @@ tgbot.on('polling_error', async (e) => {
 tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
-const retryWithLogging = async (func, maxRetries, retryDelay = 10000) => {
+const retryWithLogging = async (func, maxRetries, retryDelay = 10000, err_suffix = "") => {
     let retries = 0;
-    while (retries <= maxRetries) {
+    while (retries < maxRetries) {
         try {
             const res = await func();
             errorStat = 0;
             return res;
         } catch (error) {
-            let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim();
+            let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim() + `  ${err_suffix}`;
             tgLogger.warn(errorMessage);
             if (error.code === 'ETELEGRAM') {
-                return; // Directly exit if the error code is 'ETELEGRAM'
+                return; // Directly exit if the error code is 'ETELEGRAM', pretend that it is not 'retry after 8' error.
             }
             await delay(retryDelay);
             retries++;

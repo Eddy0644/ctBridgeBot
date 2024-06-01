@@ -171,7 +171,7 @@ async function onTGMsg(tgMsg) {
             if (timerLabel) console.timeEnd(timerLabel);
         }
 
-        if (tgMsg.matched.opts.onlyReceive) {
+        if (tgMsg.matched.s === 1 && tgMsg.matched.p.opts.onlyReceive) {
             // onlyReceive is on, ignoring this message!
             tgLogger.debug(`A TG message from (${tgMsg.chat.title}) is skipped due to C2C.onlyReceive is active.`);
             return;
@@ -411,8 +411,8 @@ async function onTGMsg(tgMsg) {
             if (Object.keys(state.last).length === 0) {
                 // Activate chat & env. set
                 await tgbot.sendMessage(tgMsg.chat.id, 'Nothing to do upon your message, ' + tgMsg.chat.id);
-                const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
-                tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, Update ChatMenuButton:${result ? "OK" : "X"}.`);
+                // const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
+                tgLogger.debug(`I received a message from chatId ${tgMsg.chat.id}, but done NOTHING.`); // Update ChatMenuButton:${result ? "OK" : "X"}
                 return;
             }
             if (state.last.s === STypes.FindMode) {
@@ -603,7 +603,7 @@ async function onWxMessage(msg) {
             LogWxMsg(recalledMessage, 2);
             // content = `❌ [ ${recalledMessage} ] was recalled.`;
             // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
-            const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s/;
+            const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s?/;
             const match = `${recalledMessage}`.replace("Message#", "").match(regex);
             if (match) {
                 // TODO refactor this, fetch data from `msg` directly.
@@ -614,7 +614,7 @@ async function onWxMessage(msg) {
                   + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
                   + `: <s>${msgContent}</s>`;
             } else {
-                wxLogger.warn(`[Recalled message] not matching preset regex, content: ${recalledMessage}`);
+                wxLogger.error(`[Recalled message] not matching preset regex, content: ${recalledMessage}`);
                 content = `[${recalledMessage}] was recalled.`;
             }
             // Avoid invalid character in message to cause send failure
@@ -631,8 +631,8 @@ async function onWxMessage(msg) {
                 if (secret.misc.deliverSticker === false)
                     return wxLogger.trace(`A sticker (md5=${md5}) sent by (${contact}) is skipped due to denial config.`);
                 // Below: check C2C opt: skipSticker
-                if (!msg.receiver) ctLogger.debug(`ERR #34265 null value for wxMsg.receiver.`);
-                else if (!msg.receiver.opts) ctLogger.debug(`ERR #34266 null value for wxMsg.receiver.opts.`);
+                if (!msg.receiver) ctLogger.warn(`ERR #34265 null value for wxMsg.receiver.`);
+                else if (!msg.receiver.opts) ctLogger.warn(`ERR #34266 null value for wxMsg.receiver.opts.`);
                 else if (msg.receiver.opts.skipSticker === 2)
                     return wxLogger.trace(`A sticker (md5=${md5}) sent by WX(${contact}) is skipped due to C2C pair config.`);
                 else if (msg.receiver.opts.skipSticker) {
@@ -914,7 +914,7 @@ async function onWxMessage(msg) {
                         }
                     } else msg.preRoomNeedUpdate = true;
                 } catch (e) {
-                    wxLogger.info(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
+                    wxLogger.warn(`Error occurred while merging room msg into older TG msg. Falling back to normal way.\n\t${e.toString()}\n\t${JSON.stringify(state.preRoom)}`);
                     state.v.msgMergeFailCount--;
                     if (state.v.msgMergeFailCount < 0) await softReboot("merging message failure reaches threshold.");
                 }
@@ -966,7 +966,8 @@ async function onWxMessage(msg) {
     } catch
       (e) {
         tgLogger.error(`{onWxMsg()}: ${e.message}`);
-        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        tgLogger.trace(`wxMsg: ${JSON.stringify(msg)}`);
     }
 }
 
@@ -995,7 +996,7 @@ async function tgCommandHandler(tgMsg) {
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
             tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(tgBotDo.empty);
             conLogger.trace("Revoke complete. sending new /help instance...");
-            const helper = secret.misc.override_help_text || CommonData.TGBotHelpCmdText;
+            const helper = secret.c11n.override_help_text || CommonData.TGBotHelpCmdText;
             state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, helper(state), true, null),
                 // Put tg-matched inside the instance to let it be revoked correctly.
                 tgMsg.matched];
@@ -1187,7 +1188,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     }
     let dname = msg.dname;
     if (!dname) {
-        wxLogger.warn(`ERR #34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
+        wxLogger.error(`ERR #34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
         dname = name;
     }
     const {tmpl, tmplc, tmplm} = (() => {
@@ -1195,7 +1196,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         let tmpl, tmplc, tmplm;
         if (msg.receiver.wx || msgDef.suppressTitle) {
             // C2C is present
-            tmpl = isRoom ? `[<u>${name}</u>]` : ``;
+            tmpl = isRoom ? `[<u>${dname}</u>]` : ``;
             tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
         } else {
             tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
@@ -1257,16 +1258,17 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             if (msg.DType === DTypes.Push) return;
             // below two if-s are the start of merge process
             // disable them by checking msg.receiver.opts.merge
-            if (!msg.receiver) ctLogger.debug(`ERR #34263 null value for wxMsg.receiver.`);
-            else if (!msg.receiver.opts) ctLogger.debug(`ERR #34264 null value for wxMsg.receiver.opts.`);
+            if (!msg.receiver) ctLogger.warn(`ERR #34263 null value for wxMsg.receiver.`);
+            else if (!msg.receiver.opts) ctLogger.warn(`ERR #34264 null value for wxMsg.receiver.opts.`);
             else if (msg.receiver.opts.merge === 0)
                 return ctLogger.trace(`Merge disabled by C2C pair config.`);
 
             if (isRoom && msg.preRoomNeedUpdate) {
+                ctLogger.debug(`Merge profile [preRoom] updated: from [${state.preRoom?.topic}] to [${topic}].`);
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {
                     topic, tgMsg,
-                    firstWord: `[<u>${name}</u>] ${content}`,
+                    firstWord: `[<u>${dname}</u>] ${content}`,
                     msgText: `${tmpl} ${content}`,
                     receiver: msg.receiver,
                     lastTalker: name,
