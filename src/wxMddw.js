@@ -2,21 +2,17 @@ const xml2js = require("xml2js");
 const dayjs = require("dayjs");
 const fs = require("fs");
 
-const util = require("util");
-const ffprobe = require("ffprobe");
+
 let env;
 
-async function a() {
-    const {} = env;
-}
+// async function a() {
+//     const {} = env;
+// }
 
 async function handlePushMessage(rawContent, msg, name) {
     const {wxLogger, secret} = env;
-    let filtered = false;
-    for (const one of secret.filtering.wxPostOriginBlackList) {
-        if (name === one) filtered = true;
-    }
-    if (filtered) {
+
+    if (secret.filtering.wxPostOriginBlackList.some(i => name.includes(i))) {
         // wxLogger.debug(`This Post matches BlackList, no delivery!`);
         wxLogger.debug(`[${name}] Posted [${msg.payload.filename.replace(".49", "")}], ❎(BlackList)`);
         return 0;
@@ -139,9 +135,9 @@ async function getVideoFileInfo(videoPath) {
     }
 }
 
-function b() {
-    const {} = env;
-}
+// function b() {
+//     const {} = env;
+// }
 
 function parseXML(xml) {
     const {defLogger} = env;
