@@ -208,6 +208,14 @@ module.exports = {
         "onlyReceive": 0,
 
     },
+    rules: {
+        // Rules are defined here.
+        "example1": {
+            "autoApply": [1, 0],  // Person Chat as [0], Group as [1]
+            "if_wx_msg_contains": /^[,，][?？]$/g,
+            "do_wx_reply_gif": "gif/ct-affirmative.gif",
+        }
+    },
     c11n: {  // customization
 
         // 🖇🧷💬 (Quoted "${content}" of ${from})
