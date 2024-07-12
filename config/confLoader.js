@@ -70,12 +70,13 @@ delete config.class.C2C_generator["-1001888888888"];
 {
     config.class.def.opts = {};
     const def = config.chatOptions;
-    // below: supported boolean or number properties list
+    // below lists ALL supported internal boolean/number properties
     const single_props = ['mixed', 'merge', 'skipSticker', 'nameType', 'onlyReceive'];
+    // apply defaults for default channel first
     for (const propName in def) if (def.hasOwnProperty(propName)) {
-        // apply defaults for default channel first
         config.class.def.opts[propName] = def[propName];
     }
+    // process each C2C
     for (const oneC2C of config.class.C2C) {
         oneC2C.flag = oneC2C.flag || "";  // in case no flag specified
         oneC2C.opts = {};
@@ -83,26 +84,32 @@ delete config.class.C2C_generator["-1001888888888"];
             // copy all in def to opts, a.k.a load defaults
             oneC2C.opts[propName] = def[propName];
         }
+        // [Applying C2C flag settings]
         for (const prop of oneC2C.flag.split(" ")) {
             if (prop === "") continue;  // skip empty string
             const parts = prop.split("=");  // split by "="
-            if (!single_props.includes(parts[0])) {
+            if (single_props.includes(parts[0])) {
+                // -[internal boolean/number properties]--------
+                if (parts.length === 1)
+                    oneC2C.opts[parts[0]] = true;  // just enable that option
+                else if (parts.length === 2) {
+                    // user chose the value of that option
+                    oneC2C.opts[parts[0]] = parseInt(parts[1]);
+                }
+            } else if (parts[0].startsWith("rule_")) {
+                // -[rules override]--------
+// Hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+            } else {
                 console.error(`Unparsed Flags entry: "${prop}", please check!`);
-                continue;
-            }
-            if (parts.length === 1)
-                oneC2C.opts[parts[0]] = true;  // just enable that option
-            else if (parts.length === 2) {
-                // user chose the value of that option
-                oneC2C.opts[parts[0]] = parseInt(parts[1]);
             }
         }
+        // [Applying C2C.chatOptions settings]
         for (const propName in oneC2C.chatOptions) if (oneC2C.chatOptions.hasOwnProperty(propName)) {
             // copy all in chatOptions to opts
             oneC2C.opts[propName] = oneC2C.chatOptions[propName];
         }
     }
-    // Use c2c.opts in later code
+    // Now can use C2C.opts in later code
 }
 
 module.exports = config;
