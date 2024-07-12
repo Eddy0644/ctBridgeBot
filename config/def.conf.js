@@ -244,6 +244,7 @@ module.exports = {
         // better keep an extra space at the end, if `add_identifier_to_merged_image` is on.
         C2C_group_mediaCaption: name => `from [${name}] `,
 
+        tgTextQuoteAddition: (quoted, original) => `(回复「${quoted}」)\n${original}`,
 
         // If you want to override /help return text, change this to a function like common.js/TGBotHelpCmdText.
         // Please remind if you do so, then for new commands you must add them manually to /help text.

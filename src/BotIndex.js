@@ -389,6 +389,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.matched.s === 1) {
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
+            if (tgMsg.quote && tgMsg.quote.is_manual) tgMsg.text = secret.c11n.tgTextQuoteAddition(tgMsg.quote.text, tgMsg.text);
             await wxTarget.say(tgMsg.text);
             tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
             const wx1 = tgMsg.matched.p.wx;
