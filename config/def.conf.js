@@ -188,6 +188,9 @@ module.exports = {
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
+        // This option defines whether to keep the file placeholder message (wait for user action on downloading) after a file is successfully uploaded to TG.
+        remove_file_placeholder_msg_after_success: 1,
+
         // Interval between each automatic status report [to Console].
         status_report_interval: 4 * 3600,
         // How many 5-seconds should system wait before auto cancel /drop_on command.
@@ -195,7 +198,7 @@ module.exports = {
         // This variable is deprecated, therefore not recommended to change.
         addSelfReplyTimestampToRoomMergedMsg: false,
         // This option is also limited by TG bot API, so cannot be much larger.
-        wxAutoDownloadSizeThreshold: 3 * 1048576,
+        wxAutoDownloadSizeThreshold: 30 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
         enableInlineSearchForUnreplaced: true,
