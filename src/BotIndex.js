@@ -980,7 +980,7 @@ async function tgCommandHandler(tgMsg) {
     // return 1 means not processed by this handler, continue to next steps
     if (state.s.helpCmdInstance && !['/sync_on', '/drop_on', '/drop_toggle'].includes(text)) {
         // former /help instance found, try to delete it...
-        await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
+        if (!secret.misc.keep_help_text_after_command_received) await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
         state.s.helpCmdInstance = null;
     }
     if (text.startsWith("/eval ")) {

@@ -171,6 +171,11 @@ module.exports = {
         // By using this, you can create a 'filehelper' group chat manually.
         wechat_synced_group: [],
 
+        // This option defines whether to keep the help text (by /help tg command)
+        // after a command is sucessfully delivered. By default it would be deleted to keep your default channel clean.
+        // (I dunno if you need this, so it's on by default >_< cuz my default channel is mainly used to trigger those tg commands and do not have much chats)
+        keep_help_text_after_command_received: 0,
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // Interval between each automatic status report [to Console].
