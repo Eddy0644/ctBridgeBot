@@ -1,6 +1,12 @@
 // noinspection SpellCheckingInspection
 // -------------
 // Configuration File, updated upon every version update:
+
+// Instruction:
+// The following abbreviation is used:
+// - wx: WeChat; tg: Telegram; tg cmds: Telegram Bot Commands; ct: ctBridgeBot; C2C: 'Chat to Chat'; tgid: Telegram Chat ID;
+// And inside 'user.conf.js', please just copy any part if modified by you, the two config files would be added together.
+
 module.exports = {
     ctToken: 'EnterYourCtTokenHere##############',
     tgbot: {
@@ -9,12 +15,15 @@ module.exports = {
         tgAllowList: [5000000001],
         webHookUrlPrefix: 'https://your.domain/webHook',
         statusReport: {
+            // Status Report Page function, see detail in docs. Not essential for most users.
             switch: "off",
             host: "your.domain",
             path: "/ctBot/rp.php"
         },
         polling: {
             pollFailNoticeThres: 3,
+            // Polling interval, which determines how often the bot checks for new messages on tg.
+            // Set to smaller values (in ms) to get faster response, but it may cause tg API rate limit.
             interval: 2000,
         },
     },
@@ -37,7 +46,7 @@ module.exports = {
             // If you want to use `/create_topic` then remind the order of tgids, and the position of anchor.
             "-1001888888888": [
                 /* |autoCreateTopic Anchor| */
-                [1, "name of group 1", "Group", "flags_here"],
+                [1, "name of group 1 in wechat", "Group", "flags_here_if_you_need_it"],
                 [4, "name of person 1", "Person", ""],
             ],
         },
@@ -137,11 +146,12 @@ module.exports = {
         // The level of debug timers you want to see in console, which are used to measure operation time.
         // Currently only 1 or 0 is accepted.
         debug_add_console_timers: 1,
-
+        // Show additional processing intermediates in logfile. Default off to reduce user disk I/Os.
+        debug_show_additional_log: 0,
 
         /* ------------ [  ] ------------ */
 
-        // If set to <false>, all post message will no longer be copied to log,
+        // If set to <false>, all post message (from subscribed official account) won't be copied to log,
         // as only a single post would take up to 40KB in log file.
         // If you have spare disk space, why not keep these stuff? [lol]
         savePostRawDataInDetailedLog: false,
@@ -152,6 +162,7 @@ module.exports = {
 
         // This option defines how the program behaviors when it encounters unrecognized tg command.
         // 1: will not be recognized as command; send to your chat peer; 0: do nothing and won't be sent to WeChat.
+        // PS: If you always click button or link to use tg commands rather than typing them, then set to 1 to avoid your messages started with '/' not being delivered.
         passUnrecognizedCmdNext: 1,
 
         // This option defined what service should be used to convert tg_sticker.webp to gif
@@ -166,7 +177,20 @@ module.exports = {
         // 0 means disable; 1 means only for group chats; 2 means for all chats.
         add_identifier_to_merged_image: 1,
 
+        // This option defines an array of group names, messages in each of them will be delivered to telegram,
+        // without checking if the message was sent by yourself on other devices.
+        // By using this, you can create a 'filehelper' group chat manually.
+        wechat_synced_group: [],
+
+        // This option defines whether to keep the help text (by /help tg command)
+        // after a command is sucessfully delivered. By default it would be deleted to keep your default channel clean.
+        // (I dunno if you need this, so it's on by default >_< cuz my default channel is mainly used to trigger those tg commands and do not have much chats)
+        keep_help_text_after_command_received: 0,
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
+
+        // This option defines whether to keep the file placeholder message (wait for user action on downloading) after a file is successfully uploaded to TG.
+        remove_file_placeholder_msg_after_success: 1,
 
         // Interval between each automatic status report [to Console].
         status_report_interval: 4 * 3600,
@@ -175,7 +199,7 @@ module.exports = {
         // This variable is deprecated, therefore not recommended to change.
         addSelfReplyTimestampToRoomMergedMsg: false,
         // This option is also limited by TG bot API, so cannot be much larger.
-        wxAutoDownloadSizeThreshold: 3 * 1048576,
+        wxAutoDownloadSizeThreshold: 30 * 1048576,
         tgCmdPlaceholder: `Start---\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nStop----`,
 
         enableInlineSearchForUnreplaced: true,
@@ -208,6 +232,14 @@ module.exports = {
         "onlyReceive": 0,
 
     },
+    rules: {
+        // Rules are defined here.
+        "example1": {
+            "autoApply": [1, 0],  // Person Chat as [0], Group as [1]
+            "if_wx_msg_contains": /^[,，][?？]$/g,
+            "do_wx_reply_gif": "gif/ct-affirmative.gif",
+        }
+    },
     c11n: {  // customization
 
         // 🖇🧷💬 (Quoted "${content}" of ${from})
@@ -236,6 +268,7 @@ module.exports = {
         // better keep an extra space at the end, if `add_identifier_to_merged_image` is on.
         C2C_group_mediaCaption: name => `from [${name}] `,
 
+        tgTextQuoteAddition: (quoted, original) => `(回复「${quoted}」)\n${original}`,
 
         // If you want to override /help return text, change this to a function like common.js/TGBotHelpCmdText.
         // Please remind if you do so, then for new commands you must add them manually to /help text.

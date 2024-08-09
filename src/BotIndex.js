@@ -272,8 +272,15 @@ async function onTGMsg(tgMsg) {
                 if (mapPair.tgMsgId === repl_to.message_id && mod.tgProcessor.isSameTGTarget(mapPair.receiver, tgMsg.matched)) {
                     if ((tgMsg.text === "ok" || tgMsg.text === "OK") && mapPair.wxMsg && mapPair.wxMsg.filesize) {
                         // 对wx文件消息做出了确认
-                        if (await getFileFromWx(mapPair.wxMsg)) wxLogger.debug(`Download request of wx File completed.`);
-                        return tgBotDo.SendChatAction("upload_document");
+                        if ((await continueDeliverFileFromWx(mapPair.wxMsg)) !== "Success") wxLogger.error(`A download request of wx file failed. Please check your log!`);
+                        else if (secret.misc.remove_file_placeholder_msg_after_success) {
+                            // Revoking placeholder message and the user-reply "OK" message.
+                            await tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched);
+                            await tgBotDo.RevokeMessage(repl_to.message_id, tgMsg.matched);
+                            tgLogger.debug(`File delivery successful, revoked placeholder message (${tgMsg.message_id}) and user-reply "OK" message (${repl_to.message_id}).`);
+                            return;
+                        }
+                        return; //tgBotDo.SendChatAction("upload_document");
                     }
                     if (tgMsg.text === "@") {
                         // Trigger special operation: Lock and set as explicit
@@ -389,6 +396,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.matched.s === 1) {
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
+            if (tgMsg.quote && tgMsg.quote.is_manual) tgMsg.text = secret.c11n.tgTextQuoteAddition(tgMsg.quote.text, tgMsg.text);
             await wxTarget.say(tgMsg.text);
             tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
             const wx1 = tgMsg.matched.p.wx;
@@ -439,7 +447,7 @@ async function onTGMsg(tgMsg) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
                     tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
-                    await getFileFromWx(state.last.wxMsg);
+                    await continueDeliverFileFromWx(state.last.wxMsg);
                     ctLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
                 } else {
                     // forward to last talker
@@ -504,8 +512,9 @@ async function onWxMessage(msg) {
 
 
         // 提前drop自己的消息, 避免deliver无用消息
+        // Integrated with misc.wechat_synced_group, check if current group is in the list
         if (state.v.syncSelfState !== 1) if (room) {
-            if (msg.self() && topic !== "CyTest") return;
+            if (msg.self() && secret.misc.wechat_synced_group.includes(topic)) return;
         } else {
             if (msg.self()) return;
         }
@@ -533,7 +542,7 @@ async function onWxMessage(msg) {
             // now only apply to group
             if (isGroup) switch (msg.receiver.opts.nameType) {
                 case 2:
-                    dname = await room.alias(contact);
+                    dname = await room.alias(contact) || alias;
                     break;
                 case 0:
                     dname = name;
@@ -600,6 +609,7 @@ async function onWxMessage(msg) {
             const recalledMessage = await msg.toRecalled();
             wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
             msgDef.isSilent = true;
+            if (!recalledMessage) return wxLogger.warn(`Got invalid 'recalledMessage' from upper API; logging skipped.`);
             LogWxMsg(recalledMessage, 2);
             // content = `❌ [ ${recalledMessage} ] was recalled.`;
             // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
@@ -771,6 +781,7 @@ async function onWxMessage(msg) {
                 // Developer Comment: This is a location message,
                 // but it is not supported by WebWeChat-wechaty now, so cannot provide full support.
                 const res = content.match(/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/);
+                // TODO the first try of wx location only revealed limited info; spare time for next try.
                 content = `🗺️[${res[1]}]`;
                 msg.DType = DTypes.Text;
             } else {
@@ -781,17 +792,17 @@ async function onWxMessage(msg) {
                     msg.filesize = parseInt(regResult[1]);
                     msgDef.isSilent = false;
                     content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                    msg.toDownloadPath = (function () {   // Local Path Generator
+                    msg.toDownloadPath = (function () {   // File Local Path Generator
                         const path1 = `./downloaded/file/`;
                         const filename = msg.payload.filename;
                         let rand = 0;
-                        if (fs.existsSync(path1 + filename)) {
-                            do {
-                                rand = (Math.random() * 122).toFixed();
-                            }
-                            while (fs.existsSync(path1 + `(${rand})` + filename));
-                            wxLogger.debug(`Renamed a duplicate local file [${filename}] with factor ${rand}.`)
-                        } else return path1 + filename;
+                        if (!fs.existsSync(path1 + filename)) return path1 + filename;
+                        do {
+                            rand = (Math.random() * 122).toFixed();
+                        }
+                        while (fs.existsSync(path1 + `(${rand})` + filename));
+                        wxLogger.debug(`Renamed destination filename [${filename}] with factor ${rand} to avoid duplication.`);
+                        return path1 + `(${rand})` + filename;
                     })();
                     if (msg.filesize === 0) {
                         wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
@@ -978,7 +989,7 @@ async function tgCommandHandler(tgMsg) {
     // return 1 means not processed by this handler, continue to next steps
     if (state.s.helpCmdInstance && !['/sync_on', '/drop_on', '/drop_toggle'].includes(text)) {
         // former /help instance found, try to delete it...
-        await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
+        if (!secret.misc.keep_help_text_after_command_received) await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
         state.s.helpCmdInstance = null;
     }
     if (text.startsWith("/eval ")) {
@@ -1191,6 +1202,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         wxLogger.error(`ERR #34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
         dname = name;
     }
+    // TODO refactor and explain on each tmpl* !
     const {tmpl, tmplc, tmplm} = (() => {
         // Template text; template console; template media.
         let tmpl, tmplc, tmplm;
@@ -1229,11 +1241,11 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
 
             // this is directly accept the file transaction
             if (msg.autoDownload) {
-                // const result = await (msg.videoPresent?getFileFromWx)(msg);
+                // const result = await (msg.videoPresent?continueDeliverFileFromWx)(msg);
                 let result;
                 if (msg.videoPresent) {
-                    result = await mod.wxMddw.handleVideoMessage(msg, tmplc);
-                } else result = await getFileFromWx(msg);
+                    result = await mod.wxMddw.handleVideoMessage(msg, tmplm);
+                } else result = await continueDeliverFileFromWx(msg);
                 if (result === "Success") {
                     tgLogger.debug(`Media Delivery Success.`);
                     // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
@@ -1547,7 +1559,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
 }
 
-async function getFileFromWx(msg) {
+async function continueDeliverFileFromWx(msg) {
     try {
         const fBox = await msg.toFileBox();
         const filePath = msg.toDownloadPath;
