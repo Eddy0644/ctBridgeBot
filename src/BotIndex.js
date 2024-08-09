@@ -1202,6 +1202,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         wxLogger.error(`ERR #34501 in deliverWxToTG(), msg.dname is null, using name instead.`);
         dname = name;
     }
+    // TODO refactor and explain on each tmpl* !
     const {tmpl, tmplc, tmplm} = (() => {
         // Template text; template console; template media.
         let tmpl, tmplc, tmplm;
@@ -1243,7 +1244,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 // const result = await (msg.videoPresent?continueDeliverFileFromWx)(msg);
                 let result;
                 if (msg.videoPresent) {
-                    result = await mod.wxMddw.handleVideoMessage(msg, tmplc);
+                    result = await mod.wxMddw.handleVideoMessage(msg, tmplm);
                 } else result = await continueDeliverFileFromWx(msg);
                 if (result === "Success") {
                     tgLogger.debug(`Media Delivery Success.`);
