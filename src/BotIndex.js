@@ -609,6 +609,7 @@ async function onWxMessage(msg) {
             const recalledMessage = await msg.toRecalled();
             wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
             msgDef.isSilent = true;
+            if (!recalledMessage) return wxLogger.warn(`Got invalid 'recalledMessage' from upper API; logging skipped.`);
             LogWxMsg(recalledMessage, 2);
             // content = `❌ [ ${recalledMessage} ] was recalled.`;
             // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
