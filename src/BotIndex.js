@@ -542,7 +542,7 @@ async function onWxMessage(msg) {
             // now only apply to group
             if (isGroup) switch (msg.receiver.opts.nameType) {
                 case 2:
-                    dname = await room.alias(contact);
+                    dname = await room.alias(contact) || alias;
                     break;
                 case 0:
                     dname = name;
