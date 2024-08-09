@@ -166,6 +166,11 @@ module.exports = {
         // 0 means disable; 1 means only for group chats; 2 means for all chats.
         add_identifier_to_merged_image: 1,
 
+        // This option defines an array of group names, messages in each of them will be delivered to telegram,
+        // without checking if the message was sent by yourself on other devices.
+        // By using this, you can create a 'filehelper' group chat manually.
+        wechat_synced_group: [],
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // Interval between each automatic status report [to Console].

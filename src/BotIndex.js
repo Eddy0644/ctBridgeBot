@@ -505,8 +505,9 @@ async function onWxMessage(msg) {
 
 
         // 提前drop自己的消息, 避免deliver无用消息
+        // Integrated with misc.wechat_synced_group, check if current group is in the list
         if (state.v.syncSelfState !== 1) if (room) {
-            if (msg.self() && topic !== "CyTest") return;
+            if (msg.self() && secret.misc.wechat_synced_group.includes(topic)) return;
         } else {
             if (msg.self()) return;
         }
