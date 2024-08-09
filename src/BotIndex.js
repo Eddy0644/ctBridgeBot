@@ -781,6 +781,7 @@ async function onWxMessage(msg) {
                 // Developer Comment: This is a location message,
                 // but it is not supported by WebWeChat-wechaty now, so cannot provide full support.
                 const res = content.match(/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/);
+                // TODO the first try of wx location only revealed limited info; spare time for next try.
                 content = `🗺️[${res[1]}]`;
                 msg.DType = DTypes.Text;
             } else {

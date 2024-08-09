@@ -146,7 +146,8 @@ module.exports = {
         // The level of debug timers you want to see in console, which are used to measure operation time.
         // Currently only 1 or 0 is accepted.
         debug_add_console_timers: 1,
-
+        // Show additional processing intermediates in logfile. Default off to reduce user disk I/Os.
+        debug_show_additional_log: 0,
 
         /* ------------ [  ] ------------ */
 
