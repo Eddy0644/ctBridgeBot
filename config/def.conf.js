@@ -1,6 +1,12 @@
 // noinspection SpellCheckingInspection
 // -------------
 // Configuration File, updated upon every version update:
+
+// Instruction:
+// The following abbreviation is used:
+// - wx: WeChat; tg: Telegram; tg cmds: Telegram Bot Commands; ct: ctBridgeBot; C2C: 'Chat to Chat'; tgid: Telegram Chat ID;
+// And inside 'user.conf.js', please just copy any part if modified by you, the two config files would be added together.
+
 module.exports = {
     ctToken: 'EnterYourCtTokenHere##############',
     tgbot: {
@@ -9,12 +15,15 @@ module.exports = {
         tgAllowList: [5000000001],
         webHookUrlPrefix: 'https://your.domain/webHook',
         statusReport: {
+            // Status Report Page function, see detail in docs. Not essential for most users.
             switch: "off",
             host: "your.domain",
             path: "/ctBot/rp.php"
         },
         polling: {
             pollFailNoticeThres: 3,
+            // Polling interval, which determines how often the bot checks for new messages on tg.
+            // Set to smaller values (in ms) to get faster response, but it may cause tg API rate limit.
             interval: 2000,
         },
     },
@@ -37,7 +46,7 @@ module.exports = {
             // If you want to use `/create_topic` then remind the order of tgids, and the position of anchor.
             "-1001888888888": [
                 /* |autoCreateTopic Anchor| */
-                [1, "name of group 1", "Group", "flags_here"],
+                [1, "name of group 1 in wechat", "Group", "flags_here_if_you_need_it"],
                 [4, "name of person 1", "Person", ""],
             ],
         },
@@ -141,7 +150,7 @@ module.exports = {
 
         /* ------------ [  ] ------------ */
 
-        // If set to <false>, all post message will no longer be copied to log,
+        // If set to <false>, all post message (from subscribed official account) won't be copied to log,
         // as only a single post would take up to 40KB in log file.
         // If you have spare disk space, why not keep these stuff? [lol]
         savePostRawDataInDetailedLog: false,
@@ -152,6 +161,7 @@ module.exports = {
 
         // This option defines how the program behaviors when it encounters unrecognized tg command.
         // 1: will not be recognized as command; send to your chat peer; 0: do nothing and won't be sent to WeChat.
+        // PS: If you always click button or link to use tg commands rather than typing them, then set to 1 to avoid your messages started with '/' not being delivered.
         passUnrecognizedCmdNext: 1,
 
         // This option defined what service should be used to convert tg_sticker.webp to gif
