@@ -791,17 +791,17 @@ async function onWxMessage(msg) {
                     msg.filesize = parseInt(regResult[1]);
                     msgDef.isSilent = false;
                     content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                    msg.toDownloadPath = (function () {   // Local Path Generator
+                    msg.toDownloadPath = (function () {   // File Local Path Generator
                         const path1 = `./downloaded/file/`;
                         const filename = msg.payload.filename;
                         let rand = 0;
-                        if (fs.existsSync(path1 + filename)) {
-                            do {
-                                rand = (Math.random() * 122).toFixed();
-                            }
-                            while (fs.existsSync(path1 + `(${rand})` + filename));
-                            wxLogger.debug(`Renamed a duplicate local file [${filename}] with factor ${rand}.`)
-                        } else return path1 + filename;
+                        if (!fs.existsSync(path1 + filename)) return path1 + filename;
+                        do {
+                            rand = (Math.random() * 122).toFixed();
+                        }
+                        while (fs.existsSync(path1 + `(${rand})` + filename));
+                        wxLogger.debug(`Renamed destination filename [${filename}] with factor ${rand} to avoid duplication.`);
+                        return path1 + `(${rand})` + filename;
                     })();
                     if (msg.filesize === 0) {
                         wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
