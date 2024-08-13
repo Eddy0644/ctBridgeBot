@@ -1206,16 +1206,21 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const {tmpl, tmplc, tmplm} = (() => {
         // Template text; template console; template media.
         let tmpl, tmplc, tmplm;
-        if (msg.receiver.wx || msgDef.suppressTitle) {
-            // C2C is present
-            tmpl = isRoom ? `[<u>${dname}</u>]` : ``;
-            tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
+        if (msg.receiver.opts.hideMemberName) {
+
         } else {
-            tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
-            tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+            if (msg.receiver.wx || msgDef.suppressTitle) {
+                // C2C is present
+                tmpl = isRoom ? `[<u>${dname}</u>]` : ``;
+                tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
+            } else {
+                // No C2C, means in default channel, so name/topic is required.
+                tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+                tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+            }
+            tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
+            tmplm += msg.media_identifier || "";
         }
-        tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
-        tmplm += msg.media_identifier || "";
         return {tmpl, tmplc, tmplm};
     })();
 

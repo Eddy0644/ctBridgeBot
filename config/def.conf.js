@@ -231,6 +231,13 @@ module.exports = {
         // should a C2C chat only be a copy of WX-side message, which stops forwarding any TG msg to WX.
         "onlyReceive": 0,
 
+
+        // # # # # # # [Below are special flags to be used at C2Cs only, which shall not be modified here.]  # # # # # #
+
+
+        // If turned on, member names in messages would be removed when delivering from wx to tg.
+        // Then it will look like all messages are sent from a person rather than a group. (Maybe alike tg's Remain Anonymous?)
+        "hideMemberName": 0,
     },
     rules: {
         // Rules are defined here.
