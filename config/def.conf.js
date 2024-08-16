@@ -187,6 +187,11 @@ module.exports = {
         // (I dunno if you need this, so it's on by default >_< cuz my default channel is mainly used to trigger those tg commands and do not have much chats)
         keep_help_text_after_command_received: 0,
 
+        // This option defines whether to kill the program if detected fatal error - such as WeChat-side page crashed.
+        // Please note that we're not able to restart ourselves, so
+        // [Only if you are using docker, pm2 or similar monitoring tools should you switch this to ON]
+        auto_reboot_after_error_detected: 0,
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // This option defines whether to keep the file placeholder message (wait for user action on downloading) after a file is successfully uploaded to TG.
