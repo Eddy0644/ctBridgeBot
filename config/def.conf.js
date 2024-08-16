@@ -281,6 +281,11 @@ module.exports = {
         // Please remind if you do so, then for new commands you must add them manually to /help text.
         override_help_text: false,
 
+        // System notifications
+
+        // When sending wx login QRCode to tg, this text is used:
+        wxLoginQRCodeHint: "Please scan this QRCode to login WeChat.",
+
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
         // original text here (wrapped with []), to disable replacement here.

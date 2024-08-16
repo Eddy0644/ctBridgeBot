@@ -39,9 +39,9 @@ module.exports = (tgBotDo, wxLogger) => {
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
                         if (secret.notification.send_relogin_via_tg) await tgBotDo.SendMessage(null,
-                            `Your WX credential expired, please log in by scanning this qrcode:\t\n${qrcodeImageUrl}`, false, "HTML");
+                            `${secret.c11n.wxLoginQRCodeHint}\n${qrcodeImageUrl}`, false, "HTML");
                         if (!isUserTriggeredRelogin) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
-                        wxLogger.info(`Already send re-login reminder to user.`);
+                        wxLogger.info(`Login notification has been delivered to user.`);
                     }
                 }, isUserTriggeredRelogin ? 500 : 27000);
                 // delete the flag file after sent notification.
