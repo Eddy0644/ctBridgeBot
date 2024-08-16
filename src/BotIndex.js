@@ -1164,8 +1164,10 @@ async function tgCommandHandler(tgMsg) {
         }
         case "/reboot": {
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
-            ctLogger.info("Reboot request invoked by user!");
-            process.exit(321);
+            ctLogger.info("Reboot request invoked by user! Counting down...");
+            setTimeout(() => {
+                process.exit(321);
+            }, secret.tgbot.polling.interval * 1.5);
         }
         case "/eval": {
             //return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
