@@ -1244,7 +1244,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 文件消息, 需要二次确认
             if (!msg.videoPresent) wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
             else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmplm} ${content}`, msgDef.isSilent, "HTML");
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction

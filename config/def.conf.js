@@ -242,7 +242,7 @@ module.exports = {
 
         // If turned on, member names in messages would be removed when delivering from wx to tg.
         // Then it will look like all messages are sent from a person rather than a group. (Maybe alike tg's Remain Anonymous?)
-        "hideMemberName": 0,
+        "hideMemberName": 0, // Incomplete
     },
     rules: {
         // Rules are defined here.
