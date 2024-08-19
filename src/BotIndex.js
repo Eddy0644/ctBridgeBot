@@ -1168,6 +1168,7 @@ async function tgCommandHandler(tgMsg) {
             setTimeout(() => {
                 process.exit(321);
             }, secret.tgbot.polling.interval * 1.5);
+            return;
         }
         case "/eval": {
             //return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
@@ -1208,7 +1209,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const {tmpl, tmplc, tmplm} = (() => {
         // Template text; template console; template media.
         let tmpl, tmplc, tmplm;
-        if (msg.receiver.opts.hideMemberName) {
+        if (msg.receiver.opts && msg.receiver.opts.hideMemberName) {
 
         } else {
             if (msg.receiver.wx || msgDef.suppressTitle) {

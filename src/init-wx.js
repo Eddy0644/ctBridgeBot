@@ -62,9 +62,15 @@ module.exports = (tgBotDo, wxLogger) => {
     wxbot.on('error', async (e) => {
         // This error handling function should be remastered!
         // TODO add tg reminder; to wxbot.error
+        const conf1 = secret.misc.auto_reboot_after_error_detected;
         let msg = e.toString();
         const isWDogErr = e.toString().includes("WatchdogAgent reset: lastFood:");
-        if (wxBotErrorStat === 0 && isWDogErr) {
+        if (msg.contains("Page crashed") && conf1) {
+            wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
+            setTimeout(() => {
+                process.exit(1);
+            }, 5000);
+        } else if (wxBotErrorStat === 0 && isWDogErr) {
             wxBotErrorStat = 1;
             // No need to output any console log now, full of errors!
             with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
@@ -72,7 +78,7 @@ module.exports = (tgBotDo, wxLogger) => {
             setTimeout(() => {
                 if (wxBotErrorStat > 6) {
                     wxLogger.error(`Due to wx error, initiated self restart procedure! (If activated)\n\n`);
-                    if (secret.misc.auto_reboot_after_error_detected) setTimeout(() => process.exit(1), 2000);
+                    if (conf1) setTimeout(() => process.exit(1), 2000);
                 } else {
                     wxLogger.info("wxBotErrorStat not reaching threshold, not exiting.\t" + wxBotErrorStat);
                 }
