@@ -218,7 +218,8 @@ function filterMsgText(inText, args = {}) {
                 // ####################let regex = new RegExp(key, 'g');
                 const val = nativeEmojiMap[key][0]
                 txt = txt.replaceAll(key, val);
-                defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
+                // This logging below causes many useless logs in logfile! removing.
+                // defLogger.trace(`[Verbose] replaced '${key}' to '${val}' in WX message.`);
             }
             console.timeEnd(timerLabel);
         }

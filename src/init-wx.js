@@ -39,13 +39,13 @@ module.exports = (tgBotDo, wxLogger) => {
                 setTimeout(async () => {
                     if (needLoginStat === 1) {
                         if (secret.notification.send_relogin_via_tg) await tgBotDo.SendMessage(null,
-                            `Your WX credential expired, please log in by scanning this qrcode:\t\n${qrcodeImageUrl}`, false, "HTML");
+                          `${secret.c11n.wxLoginQRCodeHint}\n${qrcodeImageUrl}`, false, "HTML");
                         if (!isUserTriggeredRelogin) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_relogin_required + default_arg);
-                        wxLogger.info(`Already send re-login reminder to user.`);
+                        wxLogger.info(`Login notification has been delivered to user.`);
                     }
                 }, isUserTriggeredRelogin ? 500 : 27000);
                 // delete the flag file after sent notification.
-                if(isUserTriggeredRelogin) fs.unlinkSync("data/userTriggerRelogin.flag");
+                if (isUserTriggeredRelogin) fs.unlinkSync("data/userTriggerRelogin.flag");
             }
 
         } else if (status === 3) {
@@ -61,21 +61,28 @@ module.exports = (tgBotDo, wxLogger) => {
     let wxBotErrorStat = 0;
     wxbot.on('error', async (e) => {
         // This error handling function should be remastered!
+        // TODO add tg reminder; to wxbot.error
+        const conf1 = secret.misc.auto_reboot_after_error_detected;
         let msg = e.toString();
         const isWDogErr = e.toString().includes("WatchdogAgent reset: lastFood:");
-        if (wxBotErrorStat === 0 && isWDogErr) {
+        if (msg.contains("Page crashed") && conf1) {
+            wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
+            setTimeout(() => {
+                process.exit(1);
+            }, 5000);
+        } else if (wxBotErrorStat === 0 && isWDogErr) {
             wxBotErrorStat = 1;
             // No need to output any console log now, full of errors!
             with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
-            wxLogger.error(msg + `\nFirst Time;`);
+            wxLogger.error(msg + `\nFirst Time;\n\n\n\n`);
             setTimeout(() => {
-                if (wxBotErrorStat > 12) {
-                    wxLogger.error(`Due to wx error, initiated self restart procedure!!!\n\n`);
-                    setTimeout(() => process.exit(1), 5000);
+                if (wxBotErrorStat > 6) {
+                    wxLogger.error(`Due to wx error, initiated self restart procedure! (If activated)\n\n`);
+                    if (conf1) setTimeout(() => process.exit(1), 2000);
                 } else {
                     wxLogger.info("wxBotErrorStat not reaching threshold, not exiting.\t" + wxBotErrorStat);
                 }
-            }, 10000);
+            }, 20000);
         } else if (wxBotErrorStat > 0 && isWDogErr) {
             wxBotErrorStat++;
             // following watchdog error, skipped

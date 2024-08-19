@@ -514,7 +514,7 @@ async function onWxMessage(msg) {
         // 提前drop自己的消息, 避免deliver无用消息
         // Integrated with misc.wechat_synced_group, check if current group is in the list
         if (state.v.syncSelfState !== 1) if (room) {
-            if (msg.self() && secret.misc.wechat_synced_group.includes(topic)) return;
+            if (msg.self() && !secret.misc.wechat_synced_group.includes(topic)) return;
         } else {
             if (msg.self()) return;
         }
@@ -1164,8 +1164,11 @@ async function tgCommandHandler(tgMsg) {
         }
         case "/reboot": {
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
-            ctLogger.info("Reboot request invoked by user!");
-            process.exit(321);
+            ctLogger.info("Reboot request invoked by user! Counting down...");
+            setTimeout(() => {
+                process.exit(321);
+            }, secret.tgbot.polling.interval * 1.5);
+            return;
         }
         case "/eval": {
             //return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
@@ -1206,16 +1209,21 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
     const {tmpl, tmplc, tmplm} = (() => {
         // Template text; template console; template media.
         let tmpl, tmplc, tmplm;
-        if (msg.receiver.wx || msgDef.suppressTitle) {
-            // C2C is present
-            tmpl = isRoom ? `[<u>${dname}</u>]` : ``;
-            tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
+        if (msg.receiver.opts && msg.receiver.opts.hideMemberName) {
+
         } else {
-            tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
-            tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+            if (msg.receiver.wx || msgDef.suppressTitle) {
+                // C2C is present
+                tmpl = isRoom ? `[<u>${dname}</u>]` : ``;
+                tmplm = isRoom ? secret.c11n.C2C_group_mediaCaption(dname) : ``;
+            } else {
+                // No C2C, means in default channel, so name/topic is required.
+                tmpl = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+                tmplm = isRoom ? `📬[<b>${dname}</b>/#${topic}]` : `📨[#<b>${dname}</b>]`;
+            }
+            tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
+            tmplm += msg.media_identifier || "";
         }
-        tmplc = isRoom ? `${dname}/${topic}` : `${dname}`;
-        tmplm += msg.media_identifier || "";
         return {tmpl, tmplc, tmplm};
     })();
 
@@ -1236,7 +1244,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // 文件消息, 需要二次确认
             if (!msg.videoPresent) wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
             else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
-            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmplm} ${content}`, msgDef.isSilent, "HTML");
+            tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
 
             // this is directly accept the file transaction

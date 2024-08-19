@@ -71,7 +71,7 @@ delete config.class.C2C_generator["-1001888888888"];
     config.class.def.opts = {};
     const def = config.chatOptions;
     // below lists ALL supported internal boolean/number properties
-    const single_props = ['mixed', 'merge', 'skipSticker', 'nameType', 'onlyReceive'];
+    const single_props = ['mixed', 'merge', 'skipSticker', 'nameType', 'onlyReceive', 'hideMemberName'];
     // apply defaults for default channel first
     for (const propName in def) if (def.hasOwnProperty(propName)) {
         config.class.def.opts[propName] = def[propName];

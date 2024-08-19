@@ -187,6 +187,11 @@ module.exports = {
         // (I dunno if you need this, so it's on by default >_< cuz my default channel is mainly used to trigger those tg commands and do not have much chats)
         keep_help_text_after_command_received: 0,
 
+        // This option defines whether to kill the program if detected fatal error - such as WeChat-side page crashed.
+        // Please note that we're not able to restart ourselves, so
+        // [Only if you are using docker, pm2 or similar monitoring tools should you switch this to ON]
+        auto_reboot_after_error_detected: 0,
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // This option defines whether to keep the file placeholder message (wait for user action on downloading) after a file is successfully uploaded to TG.
@@ -231,6 +236,13 @@ module.exports = {
         // should a C2C chat only be a copy of WX-side message, which stops forwarding any TG msg to WX.
         "onlyReceive": 0,
 
+
+        // # # # # # # [Below are special flags to be used at C2Cs only, which shall not be modified here.]  # # # # # #
+
+
+        // If turned on, member names in messages would be removed when delivering from wx to tg.
+        // Then it will look like all messages are sent from a person rather than a group. (Maybe alike tg's Remain Anonymous?)
+        "hideMemberName": 0, // Incomplete
     },
     rules: {
         // Rules are defined here.
@@ -273,6 +285,11 @@ module.exports = {
         // If you want to override /help return text, change this to a function like common.js/TGBotHelpCmdText.
         // Please remind if you do so, then for new commands you must add them manually to /help text.
         override_help_text: false,
+
+        // System notifications
+
+        // When sending wx login QRCode to tg, this text is used:
+        wxLoginQRCodeHint: "Please scan this QRCode to login WeChat.",
 
         // If you want to disable any of these replacements here,
         // please search for 'secret.misc.titles' in BotIndex.js and put corresponding
