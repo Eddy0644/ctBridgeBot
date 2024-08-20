@@ -65,7 +65,7 @@ module.exports = (tgBotDo, wxLogger) => {
         const conf1 = secret.misc.auto_reboot_after_error_detected;
         let msg = e.toString();
         const isWDogErr = e.toString().includes("WatchdogAgent reset: lastFood:");
-        if (msg.contains("Page crashed") && conf1) {
+        if (msg.includes("Page crashed") && conf1) {
             wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
             setTimeout(() => {
                 process.exit(1);
