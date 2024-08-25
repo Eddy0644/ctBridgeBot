@@ -1662,7 +1662,16 @@ wxbot.start()
   .then(() => {
       state.v.wxStat.puppetDoneInitTime = process.uptime();
       wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
-  }).catch((e) => wxLogger.error(e));
+  }).catch((e) => {
+    const conf1 = secret.misc.auto_reboot_after_error_detected;
+    if (e.toString().includes("Page crashed") && conf1) {
+        wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
+        setTimeout(() => {
+            process.exit(1);
+        }, 5000);
+    } else
+        wxLogger.error(e);
+});
 
 require('./common')("startup");
 

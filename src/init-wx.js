@@ -65,12 +65,7 @@ module.exports = (tgBotDo, wxLogger) => {
         const conf1 = secret.misc.auto_reboot_after_error_detected;
         let msg = e.toString();
         const isWDogErr = e.toString().includes("WatchdogAgent reset: lastFood:");
-        if (msg.contains("Page crashed") && conf1) {
-            wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
-            setTimeout(() => {
-                process.exit(1);
-            }, 5000);
-        } else if (wxBotErrorStat === 0 && isWDogErr) {
+        if (wxBotErrorStat === 0 && isWDogErr) {
             wxBotErrorStat = 1;
             // No need to output any console log now, full of errors!
             with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
