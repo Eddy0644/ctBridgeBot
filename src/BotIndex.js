@@ -18,7 +18,7 @@ const state = {
         msgDropState: 0,
         syncSelfState: 0,
         targetLock: 0,
-        timerDataCount: 6,
+        timerData: [6, 3, 0, 0], // 0~1: fails countdown; 2~3: setInterval ID.
         msgMergeFailCount: 6,
         globalNetworkErrorCount: 3,
         wxStat: {
@@ -1347,7 +1347,6 @@ async function softReboot(reason) {
             "messageCount": 0,
         },
     };
-    state.v.timerDataCount = 6;
     state.v.msgMergeFailCount = 6;
     state.v.globalNetworkErrorCount = 3;
 
@@ -1675,7 +1674,7 @@ wxbot.start()
 
 require('./common')("startup");
 
-async function timerFunc() {
+async function timerFunction_fast() {
     try {
         // Handle state.poolToDelete
         for (const itemId in state.poolToDelete) {
@@ -1697,14 +1696,35 @@ async function timerFunc() {
             }
         }
     } catch (e) {
-        ctLogger.info(`An exception happened within timer function with x${state.v.timerDataCount} reset cycles left:\n\t${e.toString()}`);
-        state.v.timerDataCount--;
-        if (state.v.timerDataCount < 0) clearInterval(timerData);
+        ctLogger.info(`An exception happened within the fast timer function: ${e.toString()}`);
+        state.v.timerData[0]--;
+        if (state.v.timerData[0] < 0) {
+            ctLogger.error(`Due to frequent errors in the fast timer function, it has been disabled. Check and reboot to restore it.`)
+            ctLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+            clearInterval(state.v.timerData[2]);
+        }
+    }
+}
+
+async function timerFunction_slow() {
+    try {
+        // 'keepalive' check
+
+
+    } catch (e) {
+        ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);
+        state.v.timerData[1]--;
+        if (state.v.timerData[1] < 0) {
+            ctLogger.error(`Due to frequent errors in the slow timer function, it has been disabled. Check and reboot to restore it.`)
+            ctLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+            clearInterval(state.v.timerData[3]);
+        }
     }
 }
 
 // General Timer Function
-setInterval(timerFunc, 5000);
+state.v.timerData[2] = setInterval(timerFunction_fast, 5000);
+state.v.timerData[3] = setInterval(timerFunction_slow, 10 * 60 * 1000);
 
 setInterval(() => {
     const str = `Uptime: ${(process.uptime() / 3600).toFixed(2)}hrs | wxMsgTotal: ${state.v.wxStat.MsgTotal}\n`;
