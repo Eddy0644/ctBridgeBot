@@ -28,6 +28,10 @@ const state = {
             puppetDoneInitTime: 0
         },
         extra: 250,
+        keepalive: {
+            msgCounter_prev: 0,
+            idle_start_ts: 0,
+        }
     },
     last: {},
     s: { // session
@@ -1709,7 +1713,36 @@ async function timerFunction_fast() {
 async function timerFunction_slow() {
     try {
         // 'keepalive' check
-
+        if (secret.mods.keepalive.switch === "on") {
+            const t_conf = secret.mods.keepalive;
+            const {start, end} = t_conf.trigger_v1[0];
+            const [startHour, startMinute] = start.split(':').map(Number), [endHour, endMinute] = end.split(':').map(Number);
+            const startTime = dayjs().startOf('minute').hour(startHour).minute(startMinute);
+            const endTime = dayjs().startOf('minute').hour(endHour).minute(endMinute);
+            const isNowBetween = dayjs().isAfter(startTime) && now.isBefore(endTime);
+            if (isNowBetween) {
+                const t_stv = state.v.keepalive;
+                if (t_stv.msgCounter_prev < state.v.wxStat.MsgTotal) {
+                    // There are new messages since last timer run, so update idle timer
+                    t_stv.msgCounter_prev = state.v.wxStat.MsgTotal;
+                    t_stv.idle_start_ts = dayjs().unix();
+                } else {
+                    // No new messages since last timer run, so check if idle timer exceeds
+                    if (t_stv.idle_start_ts !==0 && dayjs().unix() - t_stv.idle_start_ts > t_conf.trigger_v1[0].max_idle_minutes * 60) {
+                        // Idle timer exceeds, so trigger keepalive
+                        ctLogger.info(`Keepalive triggered: last update of idle timer is ${dayjs(t_stv.idle_start_ts).format("HH:mm")}, which exceeds ${t_conf.trigger_v1[0].max_idle_minutes} minutes.`);
+                        // Check functions should be executed here...
+                        if (t_conf.check_byAvatarUrl.switch === "on") {
+                            // First perform avatar-url check
+                            wxbot.userSelf().avatar().then(e => e.toBase64().then(console.log)); // Fallback
+                            const str = (await wxbot.userSelf().avatar()).toBase64();
+                            wxLogger.info(`Avatar base64 length: ${str.length}`);
+                            // TODO compare with default avatar
+                        }
+                    }
+                }
+            }
+        }
 
     } catch (e) {
         ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);

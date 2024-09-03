@@ -244,7 +244,7 @@ module.exports = {
         // Then it will look like all messages are sent from a person rather than a group. (Maybe alike tg's Remain Anonymous?)
         "hideMemberName": 0, // Incomplete
     },
-    plugins: {
+    mods: {
         keepalive: {
             switch: "on",
 
