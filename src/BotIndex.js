@@ -205,7 +205,11 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.sticker) {
             // We want to enable video_sticker.webm full support here, but almost all libraries require ffmpeg,
             // which is difficult to implement now. TODO webm conversion here
-            return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+            const timerLabel1 = (!secret.misc.debug_add_console_timers) ? "" : `Sticker delivery from tg to wx - Debug timer #${process.uptime().toFixed(2)}`;
+            if (timerLabel1) console.time(timerLabel);
+            await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+            if (timerLabel1) console.timeEnd(timerLabel);
+            return true;
         }
         if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
         if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
