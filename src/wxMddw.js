@@ -1,6 +1,7 @@
 const xml2js = require("xml2js");
 const dayjs = require("dayjs");
 const fs = require("fs");
+const secret = require("../config/confLoader");
 
 
 let env;
@@ -35,7 +36,14 @@ async function handlePushMessage(rawContent, msg, name) {
             let itemStr = "";
             const {title, url, digest, is_pay_subscribe} = item;
             itemStr += `→ <a href="${url[0]}">${title[0]}</a>\n`;
-            if (digest[0].length > 1) itemStr += `  <i>${digest[0]}</i>\n`;
+            // if (digest[0].length > 1) itemStr += `  <i>${digest[0]}</i>\n`;
+            // TODO temporary check for digest
+            if (secret.misc.debug_add_console_timers && digest[0].contains("<br/>")) {
+                wxLogger.info("digest contains <br/> and is replaced.");
+                digest[0] = digest[0].replaceAll("<br/>", "\n");
+            }
+            if (digest[0].length > 85) itemStr += `  <blockquote expandable>${digest[0]}</blockquote>\n`;
+            else if (digest[0].length > 1) itemStr += `  <blockquote>${digest[0]}</blockquote>\n`;
             if (is_pay_subscribe[0] !== '0') itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
             out += itemStr;
         }

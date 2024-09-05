@@ -262,7 +262,7 @@ function filterMsgText(inText, args = {}) {
         const tagRegex = /<\/?([\w\u4e00-\u9fff]+)(?:\s+[\w\-.:]+\s*=\s*(?:(?:"[^"]*")|(?:'[^']*')|[^>\s]+))*\s*\/?>/g;
         // Replace all HTML entities with &__; except excluded tags.
         return t.replace(tagRegex, (match, tagName) => {
-            const isExcludedTag = ['a', 'b', 'i', 'u', 's', 'code'].includes(tagName.toLowerCase());
+            const isExcludedTag = ['a', 'b', 'i', 'u', 's', 'code', 'blockquote'].includes(tagName.toLowerCase());
             if (!isExcludedTag) {
                 // Complete tag with non-excluded tag name, encode it.
                 return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
