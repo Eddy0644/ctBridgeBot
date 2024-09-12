@@ -23,7 +23,7 @@ async function handlePushMessage(rawContent, msg, name) {
         // wxLogger.debug(`A Post Collection from (${name}) is skipped by denial config.`);
         return 0;
     }
-    const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", ""));
+    const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", "\n"));
     if (ps === false) return 0;
     // noinspection JSUnresolvedVariable
     try {
@@ -35,16 +35,12 @@ async function handlePushMessage(rawContent, msg, name) {
         for (const item of items) {
             let itemStr = "";
             const {title, url, digest, is_pay_subscribe} = item;
-            itemStr += `→ <a href="${url[0]}">${title[0]}</a>\n`;
+            itemStr += `→ <a href="${url[0]}">${title[0]}</a>`;
+            if (is_pay_subscribe[0] !== '0') itemStr += `\n  <b>[Pay Subscribe Post]</b>`;
             // if (digest[0].length > 1) itemStr += `  <i>${digest[0]}</i>\n`;
-            // TODO temporary check for digest
-            if (secret.misc.debug_add_console_timers && digest[0].contains("<br/>")) {
-                wxLogger.info("digest contains <br/> and is replaced.");
-                digest[0] = digest[0].replaceAll("<br/>", "\n");
-            }
-            if (digest[0].length > 85) itemStr += `  <blockquote expandable>${digest[0]}</blockquote>\n`;
-            else if (digest[0].length > 1) itemStr += `  <blockquote>${digest[0]}</blockquote>\n`;
-            if (is_pay_subscribe[0] !== '0') itemStr += `  <b>[Pay Subscribe Post]</b>\n`;
+            if (digest[0].length > 85) itemStr += `  <blockquote expandable>${digest[0]}</blockquote>`;
+            else if (digest[0].length > 1) itemStr += `  <blockquote>${digest[0]}</blockquote>`;
+            else itemStr += "\n";
             out += itemStr;
         }
         // Success
