@@ -504,7 +504,7 @@ async function onWxMessage(msg) {
         if (room) topic = await room.topic();
         let name = await contact.name();
         let alias = await contact.alias() || await contact.name(); // 发消息人备注
-        let dname = alias;  // Display Name, which will be overwritten with c2c.opts.nameType
+        // let dname = alias;  [msg.dname]  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
             isSilent: false,
             forceMerge: false,
@@ -917,13 +917,13 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     msgDef.forceMerge = true;
                     // Force override {name} to let system message seems better
-                    dname = titles.systemMsgTitleInRoom;
+                    msg.dname = titles.systemMsgTitleInRoom;
                 }
 
                 try {
                     if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
                         const isText = msg.DType === DTypes.Text;
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, dname, isText);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, isText);
                         if (result === true) {
                             // Let's continue on 'onceMergeCapacity'
                             with (state.preRoom) {
@@ -968,7 +968,7 @@ async function onWxMessage(msg) {
                     const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                     const nowDate = dayjs().unix();
                     if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, dname, msg.DType === DTypes.Text);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, msg.DType === DTypes.Text);
                         if (result === true) return;
                     } else
                         msg.prePersonNeedUpdate = true;

@@ -11,7 +11,7 @@ let env;
 //     const {} = env;
 // }
 
-async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", dname = "", isText) {
+async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", isText) {
     const {state, defLogger, tgBotDo, secret} = env;
     // Time-based identifier
     const timed_id = Date.now().toString(16).slice(-5, -1);
@@ -32,7 +32,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", dname = "", i
     const word = isGroup ? "Room" : "Person";
     const _ = isGroup ? state.preRoom : state.prePerson;
     // the 'newFirstTitle' is 0 when inside C2C
-    const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : dname);
+    const newFirstTitle = (msg.receiver.wx) ? 0 : (isGroup ? _.topic : msg.dname);
     const who = isGroup ? `${name}/${_.topic}` : name;
     const newItemTitle = (() => {
         const s = secret.c11n.titleForSameTalkerInMergedRoomMsg;
@@ -40,7 +40,7 @@ async function mergeToPrev_tgMsg(msg, isGroup, content, name = "", dname = "", i
             _.talkerCount = 0;
             _.lastTalker = name;
             const notDropTitle = secret.misc.PutStampBeforeFirstMergedMsg || isGroup;
-            return notDropTitle ? `[<u>${isGroup ? dname : dayjs().format("H:mm:ss")}</u>]` : '';
+            return notDropTitle ? `[<u>${isGroup ? msg.dname : dayjs().format("H:mm:ss")}</u>]` : '';
         }
         _.talkerCount++;
         if (typeof s === "function") return s(_.talkerCount);
