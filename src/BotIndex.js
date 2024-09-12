@@ -1441,7 +1441,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     let file_path = './downloaded/' + (
       (tgMsg.photo) ? (`photoTG/${tgMsg.photo[tgMsg.photo.length - 1].file_unique_id}.png`) :
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-          (tgMsg.sticker ? (`stickerTG/${tg_media.file_id}.webp`) :
+          (tgMsg.sticker ? (`stickerTG/${tg_media.file_unique_id}.webp`) :  // Hope this could reduce duplicate sticker download
             (`videoTG/${tg_media.file_unique_id}.mp4`))));
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
@@ -1449,6 +1449,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // if sticker.webp exist, skip download
     if (fs.existsSync(file_path) && tgMsg.sticker) {
         // sticker file exist, do nothing
+        conLogger.trace(`sticker file exist (${file_path}), no need to download this time.`)
     } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
     if (tgMsg.sticker) {
