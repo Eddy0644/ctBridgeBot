@@ -504,7 +504,7 @@ async function onWxMessage(msg) {
         if (room) topic = await room.topic();
         let name = await contact.name();
         let alias = await contact.alias() || await contact.name(); // 发消息人备注
-        // let dname = alias;  [msg.dname]  // Display Name, which will be overwritten with c2c.opts.nameType
+        let dname = alias; // [msg.dname]  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
             isSilent: false,
             forceMerge: false,
@@ -1443,6 +1443,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
           (tgMsg.sticker ? (`stickerTG/${tg_media.file_unique_id}.webp`) :  // Hope this could reduce duplicate sticker download
             (`videoTG/${tg_media.file_unique_id}.mp4`))));
+    // file_path = `"${file_path}"`;
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
     tgLogger.trace(`file_path is ${file_path}.`);
