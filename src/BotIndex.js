@@ -786,7 +786,7 @@ async function onWxMessage(msg) {
                     wxLogger.warn(`Detected as Link, but error occurred while getting content.`);
                 }
             } else if (/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/.test(content)) {
-                wxLogger.trace(`content matched pattern, recognised as Location.`);
+                wxLogger.debug(`content matched pattern, recognised as Location.`);
                 // Developer Comment: This is a location message,
                 // but it is not supported by WebWeChat-wechaty now, so cannot provide full support.
                 const res = content.match(/(.*?):<br\/>\/cgi-bin\/mmwebwx-bin\/webwxgetpubliclinkimg\?url=xxx&msgid=([0-9]*?)&pictype=location/);
@@ -795,46 +795,47 @@ async function onWxMessage(msg) {
                 msg.DType = DTypes.Text;
             } else {
                 // const result=await deliverWxToTG();
-                const FileRegex = new RegExp(/&lt;totallen&gt;(.*?)&lt;\/totallen&gt;/);
-                try {
-                    let regResult = FileRegex.exec(content);
-                    msg.filesize = parseInt(regResult[1]);
-                    msgDef.isSilent = false;
-                    content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-                    msg.toDownloadPath = (function () {   // File Local Path Generator
-                        const path1 = `./downloaded/file/`;
-                        const filename = msg.payload.filename;
-                        let rand = 0;
-                        if (!fs.existsSync(path1 + filename)) return path1 + filename;
-                        do {
-                            rand = (Math.random() * 122).toFixed();
-                        }
-                        while (fs.existsSync(path1 + `(${rand})` + filename));
-                        wxLogger.debug(`Renamed destination filename [${filename}] with factor ${rand} to avoid duplication.`);
-                        return path1 + `(${rand})` + filename;
-                    })();
-                    if (msg.filesize === 0) {
-                        wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
-                        return;
-                    } else if (msg.filesize < 50) {
-                        // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
-                        // 比如块级链接和服务消息
-                        msg.autoDownload = false;
-                        msgDef.isSilent = true;
-                        content += `Too small, so it maybe not a valid file. Check DT log for detail.`
-                        wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}`);
-                    } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
-                        msg.autoDownload = true;
-                        content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
-                    } else {
-                        msg.autoDownload = false;
-                        content += `Send a single <code>OK</code> to retrieve that.`;
+                const FileRegex = new RegExp(/<totallen>(.*?)<\/totallen>/);
+                // tips: sometimes the content has '<'s rather than '&lt;'s, so replace them all to avoid errors
+                let regResult = FileRegex.exec(content.replaceAll("&lt;", "<").replaceAll("&gt;", ">"));
+                msg.filesize = parseInt(regResult[1]);
+                msgDef.isSilent = false;
+                content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
+                msg.toDownloadPath = (function () {   // File Local Path Generator
+                    const path1 = `./downloaded/file/`;
+                    const filename = msg.payload.filename;
+                    let rand = 0;
+                    if (!fs.existsSync(path1 + filename)) return path1 + filename;
+                    do {
+                        rand = (Math.random() * 122).toFixed();
                     }
-                    msg.DType = DTypes.File;
-                } catch
-                  (e) {
-                    wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
+                    while (fs.existsSync(path1 + `(${rand})` + filename));
+                    wxLogger.debug(`Renamed destination filename [${filename}] with factor ${rand} to avoid duplication.`);
+                    return path1 + `(${rand})` + filename;
+                })();
+                if (msg.filesize === 0) {
+                    wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
+                    return;
+                } else if (msg.filesize < 50) {
+                    // 小于50个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，
+                    // 比如块级链接和服务消息
+                    msg.autoDownload = false;
+                    msgDef.isSilent = true;
+                    content += `Too small, so it maybe not a valid file. Check DT log for detail.`
+                    wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}}, filename=(${msg.payload.filename})`);
+                } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
+                    msg.autoDownload = true;
+                    content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
+                } else {
+                    msg.autoDownload = false;
+                    content += `Send a single <code>OK</code> to retrieve that.`;
                 }
+                msg.DType = DTypes.File;
+                // } catch
+                //   (e) {
+                //     wxLogger.debug(`Detected as File, but error occurred while getting filesize.`);
+                // }
+                // Remove error handling function here to let them go to upper level.
             }
         }
 
@@ -983,11 +984,10 @@ async function onWxMessage(msg) {
 
             // if (haveLock) talkerLocks.pop();
         }
-    } catch
-      (e) {
-        tgLogger.error(`{onWxMsg()}: ${e.message}`);
-        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
-        tgLogger.trace(`wxMsg: ${JSON.stringify(msg)}`);
+    } catch (e) {
+        wxLogger.error(`{onWxMsg()}: ${e.message}`);
+        wxLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        wxLogger.trace(`wxMsg: ${JSON.stringify(msg)}`);
     }
 }
 
