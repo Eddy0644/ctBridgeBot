@@ -1720,7 +1720,16 @@ async function timerFunction_slow() {
     try {
         // 'keepalive' check
         if (secret.mods.keepalive.switch === "on") await mod.keepalive.triggerCheck();
-
+        // Scheduled restart
+        for (const i of secret.misc.scheduled_reboot) {
+            if (dayjs().hour() === i.hour) {
+                // reboot initiated
+                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 30s...`);
+                setTimeout(() => {
+                    process.exit(1);
+                }, 29000);
+            }
+        }
     } catch (e) {
         ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);
         state.v.timerData[1]--;

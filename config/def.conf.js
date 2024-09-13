@@ -192,6 +192,13 @@ module.exports = {
         // [Only if you are using docker, pm2 or similar monitoring tools should you switch this to ON]
         auto_reboot_after_error_detected: 0,
 
+        // This option allows user to schedule a restart for the program in an idle period.
+        // The program will do the same thing as /reboot then.
+        // And as usual, please ensure you have a monitoring tool to take on the start job.
+        scheduled_reboot: [
+            {hour: 3},
+        ],
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // This option defines whether to keep the file placeholder message (wait for user action on downloading) after a file is successfully uploaded to TG.
