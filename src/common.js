@@ -144,8 +144,8 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                     return new Promise((resolve, reject) => {
                         if (!pathName) log4js.getLogger("default").error(`Undefined Download target!`);
                         const file = fs.createWriteStream(pathName);
-                        const agent = new agentEr.HttpsProxyAgent(proxy);
-                        https.get(url, {agent: agent}, (response) => {
+                        const https_opt = proxy === "" ? {} : {agent: new agentEr.HttpsProxyAgent(proxy)};
+                        https.get(url, https_opt, (response) => {
                             response.pipe(file);
                             file.on('finish', () => {
                                 file.close();
