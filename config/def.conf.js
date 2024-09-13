@@ -182,15 +182,22 @@ module.exports = {
         // By using this, you can create a 'filehelper' group chat manually.
         wechat_synced_group: [],
 
-        // This option defines whether to keep the help text (by /help tg command)
-        // after a command is sucessfully delivered. By default it would be deleted to keep your default channel clean.
-        // (I dunno if you need this, so it's on by default >_< cuz my default channel is mainly used to trigger those tg commands and do not have much chats)
+        // This option defines whether to keep the help text (by /help tg command),
+        // after a command is sucessfully delivered. By default, it would be deleted to keep your default channel clean.
+        // (I don't know if you need this, so it's off by default >_< )
         keep_help_text_after_command_received: 0,
 
         // This option defines whether to kill the program if detected fatal error - such as WeChat-side page crashed.
         // Please note that we're not able to restart ourselves, so
         // [Only if you are using docker, pm2 or similar monitoring tools should you switch this to ON]
         auto_reboot_after_error_detected: 0,
+
+        // This option allows user to schedule a restart for the program in an idle period.
+        // The program will do the same thing as /reboot then.
+        // And as usual, please ensure you have a monitoring tool to take on the start job.
+        scheduled_reboot: [
+            {hour: 3},
+        ],
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
@@ -243,6 +250,31 @@ module.exports = {
         // If turned on, member names in messages would be removed when delivering from wx to tg.
         // Then it will look like all messages are sent from a person rather than a group. (Maybe alike tg's Remain Anonymous?)
         "hideMemberName": 0, // Incomplete
+    },
+    mods: {
+        keepalive: {
+            switch: "on",
+
+            // version 1 of trigger rule, which is used to check if the bot is still alive.
+            trigger_v1: [
+                // The timespan boundary should be calculated with your own situation;
+                // just find when your 1st message (any in wx) of a day was received.
+                // If there is no early messages, you could subscribe to a news Official Account, and then you'll have some push messages in the early morning.
+                // During the timespan, if the program didn't receive any message within ${max_idle_minutes} minutes, then some check measures will apply.
+                {start: "7:00", end: "23:00", max_idle_minutes: 40},
+            ],
+            check_byAvatarUrl: {
+                switch: "on",
+                // Wait to retrieve what the bad avatar is.
+            },
+            check_bySendMsg: {
+                switch: "off",
+                send_target: "微信支付",
+                send_contents: ["你好", "今天天气如何"],
+                // Under construction...
+            }
+        },
+
     },
     rules: {
         // Rules are defined here.

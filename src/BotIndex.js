@@ -18,7 +18,7 @@ const state = {
         msgDropState: 0,
         syncSelfState: 0,
         targetLock: 0,
-        timerDataCount: 6,
+        timerData: [6, 3, 0, 0], // 0~1: fails countdown; 2~3: setInterval ID.
         msgMergeFailCount: 6,
         globalNetworkErrorCount: 3,
         wxStat: {
@@ -28,6 +28,10 @@ const state = {
             puppetDoneInitTime: 0
         },
         extra: 250,
+        keepalive: {
+            msgCounter_prev: 0,
+            idle_start_ts: 0,
+        }
     },
     last: {},
     s: { // session
@@ -84,6 +88,7 @@ const mod = {
     audioRecognition: require('./audioRecognition')(env),
     wxMddw: require('./wxMddw')(env),
     tgProcessor: require('./tgProcessor')(env),
+    keepalive: require('./m_keepalive')(env),
 }
 env.mod = mod;
 
@@ -200,7 +205,11 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.sticker) {
             // We want to enable video_sticker.webm full support here, but almost all libraries require ffmpeg,
             // which is difficult to implement now. TODO webm conversion here
-            return await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+            const timerLabel1 = (!secret.misc.debug_add_console_timers) ? "" : `Sticker delivery from tg to wx - Debug timer #${process.uptime().toFixed(2)}`;
+            if (timerLabel1) console.time(timerLabel1);
+            await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
+            if (timerLabel1) console.timeEnd(timerLabel1);
+            return true;
         }
         if (tgMsg.document) return await deliverTGToWx(tgMsg, tgMsg.document, "document");
         if (tgMsg.video) return await deliverTGToWx(tgMsg, tgMsg.video, "video");
@@ -495,7 +504,7 @@ async function onWxMessage(msg) {
         if (room) topic = await room.topic();
         let name = await contact.name();
         let alias = await contact.alias() || await contact.name(); // 发消息人备注
-        let dname = alias;  // Display Name, which will be overwritten with c2c.opts.nameType
+        // let dname = alias;  [msg.dname]  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
             isSilent: false,
             forceMerge: false,
@@ -908,13 +917,13 @@ async function onWxMessage(msg) {
                     msgDef.isSilent = true;
                     msgDef.forceMerge = true;
                     // Force override {name} to let system message seems better
-                    dname = titles.systemMsgTitleInRoom;
+                    msg.dname = titles.systemMsgTitleInRoom;
                 }
 
                 try {
                     if (mod.tgProcessor.isPreRoomValid(state.preRoom, topic, msgDef.forceMerge, secret.misc.mergeResetTimeout.forGroup)) {
                         const isText = msg.DType === DTypes.Text;
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, dname, isText);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, true, content, name, isText);
                         if (result === true) {
                             // Let's continue on 'onceMergeCapacity'
                             with (state.preRoom) {
@@ -959,7 +968,7 @@ async function onWxMessage(msg) {
                     const lastDate = (_.tgMsg) ? (_.tgMsg.edit_date || _.tgMsg.date) : 0;
                     const nowDate = dayjs().unix();
                     if ((_.name === name || _.name === alias) && nowDate - lastDate < secret.misc.mergeResetTimeout.forPerson) {
-                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, dname, msg.DType === DTypes.Text);
+                        const result = await mod.tgProcessor.mergeToPrev_tgMsg(msg, false, content, name, msg.DType === DTypes.Text);
                         if (result === true) return;
                     } else
                         msg.prePersonNeedUpdate = true;
@@ -1347,7 +1356,6 @@ async function softReboot(reason) {
             "messageCount": 0,
         },
     };
-    state.v.timerDataCount = 6;
     state.v.msgMergeFailCount = 6;
     state.v.globalNetworkErrorCount = 3;
 
@@ -1433,7 +1441,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     let file_path = './downloaded/' + (
       (tgMsg.photo) ? (`photoTG/${tgMsg.photo[tgMsg.photo.length - 1].file_unique_id}.png`) :
         (tgMsg.document ? (`fileTG/${tg_media.file_name}`) :
-          (tgMsg.sticker ? (`stickerTG/${tg_media.file_id}.webp`) :
+          (tgMsg.sticker ? (`stickerTG/${tg_media.file_unique_id}.webp`) :  // Hope this could reduce duplicate sticker download
             (`videoTG/${tg_media.file_unique_id}.mp4`))));
     const action = `upload_${media_type}`;
     tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
@@ -1441,6 +1449,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // if sticker.webp exist, skip download
     if (fs.existsSync(file_path) && tgMsg.sticker) {
         // sticker file exist, do nothing
+        conLogger.trace(`sticker file exist (${file_path}), no need to download this time.`)
     } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
     if (tgMsg.sticker) {
@@ -1662,11 +1671,20 @@ wxbot.start()
   .then(() => {
       state.v.wxStat.puppetDoneInitTime = process.uptime();
       wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
-  }).catch((e) => wxLogger.error(e));
+  }).catch((e) => {
+    const conf1 = secret.misc.auto_reboot_after_error_detected;
+    if (e.toString().includes("Page crashed") && conf1) {
+        wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
+        setTimeout(() => {
+            process.exit(1);
+        }, 5000);
+    } else
+        wxLogger.error(e);
+});
 
 require('./common')("startup");
 
-async function timerFunc() {
+async function timerFunction_fast() {
     try {
         // Handle state.poolToDelete
         for (const itemId in state.poolToDelete) {
@@ -1688,14 +1706,44 @@ async function timerFunc() {
             }
         }
     } catch (e) {
-        ctLogger.info(`An exception happened within timer function with x${state.v.timerDataCount} reset cycles left:\n\t${e.toString()}`);
-        state.v.timerDataCount--;
-        if (state.v.timerDataCount < 0) clearInterval(timerData);
+        ctLogger.info(`An exception happened within the fast timer function: ${e.toString()}`);
+        state.v.timerData[0]--;
+        if (state.v.timerData[0] < 0) {
+            ctLogger.error(`Due to frequent errors in the fast timer function, it has been disabled. Check and reboot to restore it.`)
+            ctLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+            clearInterval(state.v.timerData[2]);
+        }
+    }
+}
+
+async function timerFunction_slow() {
+    try {
+        // 'keepalive' check
+        if (secret.mods.keepalive.switch === "on") await mod.keepalive.triggerCheck();
+        // Scheduled restart
+        for (const i of secret.misc.scheduled_reboot) {
+            if (dayjs().hour() === i.hour) {
+                // reboot initiated
+                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 30s...`);
+                setTimeout(() => {
+                    process.exit(1);
+                }, 29000);
+            }
+        }
+    } catch (e) {
+        ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);
+        state.v.timerData[1]--;
+        if (state.v.timerData[1] < 0) {
+            ctLogger.error(`Due to frequent errors in the slow timer function, it has been disabled. Check and reboot to restore it.`)
+            ctLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+            clearInterval(state.v.timerData[3]);
+        }
     }
 }
 
 // General Timer Function
-setInterval(timerFunc, 5000);
+state.v.timerData[2] = setInterval(timerFunction_fast, 5000);
+state.v.timerData[3] = setInterval(timerFunction_slow, 10 * 60 * 1000);
 
 setInterval(() => {
     const str = `Uptime: ${(process.uptime() / 3600).toFixed(2)}hrs | wxMsgTotal: ${state.v.wxStat.MsgTotal}\n`;
