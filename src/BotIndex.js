@@ -1450,7 +1450,13 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // if sticker.webp exist, skip download
     if (fs.existsSync(file_path) && tgMsg.sticker) {
         // sticker file exist, do nothing
-        conLogger.trace(`sticker file exist (${file_path}), no need to download this time.`)
+        if ((await fs.promises.stat()).size === 0) {
+            // This file is corrupt, re-download it.
+            await fs.promises.unlink(file_path);
+            // TODO add empty file check to all categories; explore if TG offer filename specification in API
+            await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
+        } else
+            conLogger.trace(`sticker file exist (${file_path}), no need to download this time.`)
     } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
     if (tgMsg.sticker) {
@@ -1467,7 +1473,8 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
                 packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
             }
         } catch (e) {
-            if (srv_type === 2) ctLogger.debug(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tSwitching to upyun middleware instead.`);
+            if (srv_type === 2) ctLogger.info(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tFalling back to upyun middleware instead. (See logfile for detail)`);
+            ctLogger.trace(`${e.stack.split("\n").slice(0, 5).join("\n")}`)
             if (secret.upyun.switch !== "on") {
                 tgLogger.warn(`TG sticker pre-process interrupted as 'sharp' failed and upyun not enabled. Message not delivered.`);
                 await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
