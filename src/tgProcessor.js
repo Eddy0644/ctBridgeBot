@@ -239,10 +239,10 @@ function filterMsgText(inText, args = {}) {
 
         if (args.peerName && !args.isGroup) {
             // P2P chat, not group, applying quote replacement
-            const sets = secret.c11n.quotedMsgSuffixLineInPersonChat;
+            const conf1 = secret.c11n.quotedMsgSuffixLineInPersonChat;
             if (secret.misc.debug_show_additional_log) defLogger.trace(`#23382 Quoted message name debug: ${match[1]} / ${state.s.selfName} / ${args.peerName}`);
-            if (match[1] === state.s.selfName) match[1] = sets ? sets[0] : match[1];
-            if (match[1] === args.peerName) match[1] = sets ? sets[0] : match[1];
+            if (match[1] === state.s.selfName) match[1] = conf1 ? conf1[0] : match[1];
+            if (match[1] === args.peerName) match[1] = conf1 ? conf1[1] : match[1];
         }
 
         appender += `\n` + secret.c11n.wxQuotedMsgSuffixLine(match[1], origMsgClip2);

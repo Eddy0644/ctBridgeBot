@@ -196,7 +196,7 @@ module.exports = {
         // The program will do the same thing as /reboot then.
         // And as usual, please ensure you have a monitoring tool to take on the start job.
         scheduled_reboot: [
-            {hour: 3},
+            // {hour: 3},
         ],
 
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
