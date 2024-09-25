@@ -662,7 +662,7 @@ async function onWxMessage(msg) {
                     let filtered = false;
                     if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
                         // Got duplicate and continuous Sticker, skipping and CONDEMN that!
-                        wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
+                        wxLogger.debug(`${contact} sent a duplicate emotion, Skipped.`);
                         filtered = true;
                     }
                     // Regardless match or not, update state.lastEmotion

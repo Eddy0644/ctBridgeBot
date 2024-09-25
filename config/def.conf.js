@@ -161,7 +161,7 @@ module.exports = {
         addHashCtLinkToMsg: 0,
 
         // This option defines how the program behaviors when it encounters unrecognized tg command.
-        // 1: will not be recognized as command; send to your chat peer; 0: do nothing and won't be sent to WeChat.
+        // 1: will be sent to your chat peer directly; 0: do nothing and won't be sent to WeChat.
         // PS: If you always click button or link to use tg commands rather than typing them, then set to 1 to avoid your messages started with '/' not being delivered.
         passUnrecognizedCmdNext: 1,
 
