@@ -473,8 +473,16 @@ async function onTGMsg(tgMsg) {
 
         }
     } catch (e) {
-        tgLogger.error(`{onTGMsg()}: ${e.message}`);
-        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        const err = e.message;
+        // try matching with existing error cases, replace with user-friendly message
+        if (err.includes("uploadMedia err") && err.includes("reading 'name'")) {
+            tgLogger.error(`An internal error occurred when uploading your media from tg to wx. Please relogin and start a new session, or this function may remain unavailable.`);
+            // TODO notify_once(need_relogin_limited)
+        } else {
+            // not matching
+            tgLogger.error(`{onTGMsg()}: ${err}`);
+        }
+        tgLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
 
 }
@@ -662,7 +670,7 @@ async function onWxMessage(msg) {
                     let filtered = false;
                     if (processor.isTimeValid(state.lastEmotion.ts, 18) && md5 === state.lastEmotion.md5) {
                         // Got duplicate and continuous Sticker, skipping and CONDEMN that!
-                        wxLogger.debug(`${contact} sent a duplicate emotion. Skipped and CONDEMN that !!!`);
+                        wxLogger.debug(`${contact} sent a duplicate emotion, Skipped.`);
                         filtered = true;
                     }
                     // Regardless match or not, update state.lastEmotion
@@ -986,8 +994,8 @@ async function onWxMessage(msg) {
         }
     } catch (e) {
         wxLogger.error(`{onWxMsg()}: ${e.message}`);
-        wxLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
-        wxLogger.trace(`wxMsg: ${JSON.stringify(msg)}`);
+        wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        wxLogger.trace(`[wxMsg] ${JSON.stringify(msg)}`);
     }
 }
 
@@ -1450,7 +1458,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // if sticker.webp exist, skip download
     if (fs.existsSync(file_path) && tgMsg.sticker) {
         // sticker file exist, do nothing
-        if ((await fs.promises.stat()).size === 0) {
+        if ((await fs.promises.stat(file_path)).size === 0) {
             // This file is corrupt, re-download it.
             await fs.promises.unlink(file_path);
             // TODO add empty file check to all categories; explore if TG offer filename specification in API
