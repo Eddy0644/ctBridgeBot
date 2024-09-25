@@ -473,8 +473,16 @@ async function onTGMsg(tgMsg) {
 
         }
     } catch (e) {
-        tgLogger.error(`{onTGMsg()}: ${e.message}`);
-        tgLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        const err = e.message;
+        // try matching with existing error cases, replace with user-friendly message
+        if (err.includes("uploadMedia err") && err.includes("reading 'name'")) {
+            tgLogger.error(`An internal error occurred when uploading your media from tg to wx. Please relogin and start a new session, or this function may remain unavailable.`);
+            // TODO notify_once(need_relogin_limited)
+        } else {
+            // not matching
+            tgLogger.error(`{onTGMsg()}: ${err}`);
+        }
+        tgLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}`);
     }
 
 }
@@ -986,8 +994,8 @@ async function onWxMessage(msg) {
         }
     } catch (e) {
         wxLogger.error(`{onWxMsg()}: ${e.message}`);
-        wxLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
-        wxLogger.trace(`wxMsg: ${JSON.stringify(msg)}`);
+        wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        wxLogger.trace(`[wxMsg] ${JSON.stringify(msg)}`);
     }
 }
 
