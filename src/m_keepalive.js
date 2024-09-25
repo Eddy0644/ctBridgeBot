@@ -38,8 +38,8 @@ async function triggerCheck() {
 async function check_byAvatarUrl() {
     const {wxLogger, wxbot, secret} = env;
     const t_conf2 = secret.mods.keepalive.check_byAvatarUrl;
-    wxbot.userSelf().avatar().then(e => e.toBase64().then(console.log)); // Fallback
-    const str = await (await wxbot.userSelf().avatar()).toBase64();
+    wxbot.currentUser.avatar().then(e => e.toBase64().then(console.log)); // Fallback
+    const str = await (await wxbot.currentUser.avatar()).toBase64();
     wxLogger.info(`Avatar base64 length: ${str.length}`);
     wxLogger.trace(str);
     // TODO (compare with default avatar) continue development after collecting data

@@ -1450,7 +1450,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     // if sticker.webp exist, skip download
     if (fs.existsSync(file_path) && tgMsg.sticker) {
         // sticker file exist, do nothing
-        if ((await fs.promises.stat()).size === 0) {
+        if ((await fs.promises.stat(file_path)).size === 0) {
             // This file is corrupt, re-download it.
             await fs.promises.unlink(file_path);
             // TODO add empty file check to all categories; explore if TG offer filename specification in API
