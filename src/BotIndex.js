@@ -1738,12 +1738,12 @@ async function timerFunction_slow() {
         if (secret.mods.keepalive.switch === "on") await mod.keepalive.triggerCheck();
         // Scheduled restart
         for (const i of secret.misc.scheduled_reboot) {
-            if (dayjs().hour() === i.hour) {
+            if (dayjs().hour() === i.hour && process.uptime() > 7200) {
                 // reboot initiated
-                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 30s...`);
+                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 60s...`);
                 setTimeout(() => {
                     process.exit(1);
-                }, 29000);
+                }, 59000);
             }
         }
     } catch (e) {
