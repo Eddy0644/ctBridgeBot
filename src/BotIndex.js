@@ -1726,6 +1726,7 @@ async function timerFunction_fast() {
         }
     } catch (e) {
         ctLogger.info(`An exception happened within the fast timer function: ${e.toString()}`);
+        ctLogger.trace(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
         state.v.timerData[0]--;
         if (state.v.timerData[0] < 0) {
             ctLogger.error(`Due to frequent errors in the fast timer function, it has been disabled. Check and reboot to restore it.`)
@@ -1751,6 +1752,7 @@ async function timerFunction_slow() {
         }
     } catch (e) {
         ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);
+        ctLogger.trace(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
         state.v.timerData[1]--;
         if (state.v.timerData[1] < 0) {
             ctLogger.error(`Due to frequent errors in the slow timer function, it has been disabled. Check and reboot to restore it.`)
