@@ -25,12 +25,15 @@ const state = {
             MsgTotal: 0,
             // Add counter on wx Message Total number, and reflect when encounter wx error;
             // because every time boot will load history messages, so no need for persistence
-            puppetDoneInitTime: 0
+            puppetDoneInitTime: 0,
+            notSelfTotal: 0,
+            // wx Message count that excluded self messages.
         },
         extra: 250,
         keepalive: {
             msgCounter_prev: 0,
             idle_start_ts: 0,
+            state: 0,
         }
     },
     last: {},
@@ -535,7 +538,7 @@ async function onWxMessage(msg) {
         } else {
             if (msg.self()) return;
         }
-
+        state.v.wxStat.notSelfTotal++;
         // Start deliver process, start fetching from config
         msg.receiver = null;
         with (secret.class) {

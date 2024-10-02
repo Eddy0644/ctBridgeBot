@@ -29,7 +29,19 @@ async function triggerCheck() {
                 wxLogger.info(`Keepalive triggered: last update of idle timer is ${dayjs(t_state.idle_start_ts).format("HH:mm")}, which exceeds ${t_conf.trigger_v1[0].max_idle_minutes} minutes from now.`);
                 // Check functions should be executed here...
                 // First perform avatar-url check
-                if (t_conf.check_byAvatarUrl.switch === "on") await check_byAvatarUrl();
+                if (t_conf.check_byAvatarUrl.switch === "on") await check_byAvatarUrl();    // skip his response
+                // Then perform send-msg check
+                let ok = 0;
+                if (t_conf.check_bySendMsg.switch === "on") ok = await check_bySendMsg();
+                if (ok === 1) {
+                    // "False positive", Reset idle timer...
+                    wxLogger.info(`[Keepalive check] Received response, discarding "false positive".`);
+                    t_state.msgCounter_prev = state.v.wxStat.MsgTotal;
+                    t_state.idle_start_ts = dayjs().unix();
+                } else if (ok === 0) {
+                    // Notify user
+                    wxLogger.warn(`[Keepalive check] failed, no response received.`);
+                }
             }
         }
     }
@@ -38,18 +50,41 @@ async function triggerCheck() {
 async function check_byAvatarUrl() {
     const {wxLogger, wxbot, secret} = env;
     const t_conf2 = secret.mods.keepalive.check_byAvatarUrl;
-    wxbot.currentUser.avatar().then(e => e.toBase64().then(console.log)); // Fallback
+    // wxbot.currentUser.avatar().then(e => e.toBase64().then(console.log)); // Fallback
     const str = await (await wxbot.currentUser.avatar()).toBase64();
-    wxLogger.info(`Avatar base64 length: ${str.length}`);
+    wxLogger.info(`Current avatar base64 length: ${str.length}`);
     wxLogger.trace(str);
-    // TODO (compare with default avatar) continue development after collecting data
+    // TO-DO (compare with default avatar) continue development after collecting data
+    // This check method is not feasible, maybe because it's hard to bypass the cache, so we cannot get real statuses with wechaty api.
+    return -1;   // refer to other check methods
 }
 
 async function check_bySendMsg() {
-    const {} = env;
+    const {wxLogger, state, secret} = env;
     const t_conf2 = secret.mods.keepalive.check_bySendMsg;
-    // TO-DO I decide to continue developing this function only if the check_byAvatarUrl is not feasible.
+    const originalCounter = state.v.wxStat.notSelfTotal;
+    state.v.keepalive.state = 1;    // Mark the process of this check.
+    // Preparing variables
+    let msgTarget = await wxbot.Contact.find({name: t_conf2.send_target});
+    msgTarget = msgTarget || await wxbot.Contact.find({alias: t_conf2.send_target});
+    const msgText = t_conf2.send_contents[Math.floor(Math.random() * t_conf2.send_contents.length)];
+    wxLogger.debug(`[Keepalive check] sending {${msgText} to {${msgTarget}...`);
+    await msgTarget.say(msgText);
+    // Check in 50s period
+    for (let i = 0; i < 10; i++) {
+        await new Promise(resolve => setTimeout(resolve, t_conf2.watch_period_timespan * 100));
+        console.trace(`[Keepalive check] waiting for response... ${i + 1}/10`);
+        if (state.v.wxStat.notSelfTotal > originalCounter) {
+            state.v.keepalive.state = 0;
+            return 1;
+        }
+    }
+    // No response received, should notify user now.
+    return 0;
+}
 
+async function util_resetState() {
+    const {} = env;
 }
 
 async function a() {

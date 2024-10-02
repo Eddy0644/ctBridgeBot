@@ -271,6 +271,7 @@ module.exports = {
                 switch: "off",
                 send_target: "微信支付",
                 send_contents: ["你好", "今天天气如何"],
+                watch_period_timespan: 40,
                 // Under construction...
             }
         },
