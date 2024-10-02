@@ -1,4 +1,5 @@
 const dayjs = require("dayjs");
+const {downloader} = require('./common')();
 let env;
 
 async function triggerCheck() {
@@ -42,7 +43,7 @@ async function triggerCheck() {
                 if (t_conf.check_bySendMsg.switch === "on") ok = await check_bySendMsg();
                 if (ok === 1) {
                     // "False positive", Reset idle timer...
-                    wxLogger.info(`[Keepalive check] Received response, discarding "false positive".`);
+                    wxLogger.info(`[Keepalive check] Not in suspended status, discarding "false positive".`);
                     t_state.msgCounter_prev = state.v.wxStat.MsgTotal;
                     t_state.idle_start_ts = dayjs().unix();
                 } else if (ok === 0) {
@@ -51,7 +52,7 @@ async function triggerCheck() {
                     t_state.msgCounter_prev++;
                     // Notify user
                     wxLogger.warn(`[Keepalive check] failed, no response received.`);
-
+                    with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_suspended + default_arg);
                 }
             }
         }
@@ -71,7 +72,7 @@ async function check_byAvatarUrl() {
 }
 
 async function check_bySendMsg() {
-    const {wxLogger, state, secret} = env;
+    const {wxLogger, state, secret, wxbot} = env;
     const t_conf2 = secret.mods.keepalive.check_bySendMsg;
     const originalCounter = state.v.wxStat.notSelfTotal;
     state.v.keepalive.state = 1;    // Mark the process of this check.
@@ -87,6 +88,7 @@ async function check_bySendMsg() {
         console.trace(`[Keepalive check] waiting for response... ${i + 1}/10`);
         if (state.v.wxStat.notSelfTotal > originalCounter) {
             state.v.keepalive.state = 0;
+            wxLogger.debug(`[Keepalive check] Received Response, check completed.`);
             return 1;
         }
     }
@@ -108,5 +110,5 @@ function b() {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {triggerCheck, check_byAvatarUrl};
+    return {triggerCheck, check_byAvatarUrl, check_bySendMsg};
 };
