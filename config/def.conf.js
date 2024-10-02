@@ -93,7 +93,7 @@ module.exports = {
         prompt_network_problematic: "Several network connectivity problems appeared. Please settle that immediately.",
         prompt_relogin_required: "Your previous login credential have already expired. Please re-login soon!",
         prompt_wx_stuck: "The WX puppet seems stuck, please check console or start program soon!",
-        prompt_wx_suspended: "The WX puppet seems to be disconnected by Tencent server, please open your phone WeChat!",
+        prompt_wx_suspended: "The WX puppet was probably disconnected by Tencent server, please open your phone WeChat!",
         prompt_network_issue_happened: "ctBridgeBot is facing network issue, that causing message delay!",
         incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBot_Call/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge&icon=https://ccdn.ryancc.top/call.jpg`,
         send_relogin_via_tg: 1,
@@ -269,11 +269,10 @@ module.exports = {
                 // Wait to retrieve what the bad avatar is.
             },
             check_bySendMsg: {
-                switch: "off",
+                switch: "on",
                 send_target: "微信支付",
                 send_contents: ["你好", "今天天气如何"],
                 watch_period_timespan: 40,
-                // Under construction...
             }
         },
 
