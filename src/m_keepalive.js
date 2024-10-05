@@ -65,7 +65,7 @@ async function check_byAvatarUrl() {
     // wxbot.currentUser.avatar().then(e => e.toBase64().then(console.log)); // Fallback
     const str = await (await wxbot.currentUser.avatar()).toBase64();
     wxLogger.info(`Current avatar base64 length: ${str.length}`);
-    wxLogger.trace(str);
+    wxLogger.trace(str.substring(0, str.length > 200 ? 200 : str.length));
     // TO-DO (compare with default avatar) continue development after collecting data
     // This check method is not feasible, maybe because it's hard to bypass the cache, so we cannot get real statuses with wechaty api.
     return -1;   // refer to other check methods
@@ -80,12 +80,12 @@ async function check_bySendMsg() {
     let msgTarget = await wxbot.Contact.find({name: t_conf2.send_target});
     msgTarget = msgTarget || await wxbot.Contact.find({alias: t_conf2.send_target});
     const msgText = t_conf2.send_contents[Math.floor(Math.random() * t_conf2.send_contents.length)];
-    wxLogger.debug(`[Keepalive check] sending {${msgText}} to {${msgTarget}...`);
+    wxLogger.debug(`[Keepalive check] sending {${msgText}} to {${msgTarget}}...`);
     await msgTarget.say(msgText);
-    // Check in 50s period
-    for (let i = 0; i < 10; i++) {
-        await new Promise(resolve => setTimeout(resolve, t_conf2.watch_period_timespan * 100));
-        console.log(`\t[Keepalive check] waiting for response... ${i + 1}/10`);
+    // Check in 20s period
+    for (let i = 0; i < 5; i++) {
+        await new Promise(resolve => setTimeout(resolve, t_conf2.watch_period_timespan * 200));
+        console.log(`\t[Keepalive check] waiting for response... ${i + 1}/5`);
         if (state.v.wxStat.notSelfTotal > originalCounter) {
             state.v.keepalive.state = 0;
             wxLogger.debug(`[Keepalive check] Received Response, check completed.`);
