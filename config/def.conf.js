@@ -262,7 +262,7 @@ module.exports = {
                 // just find when your 1st message (any in wx) of a day was received.
                 // If there is no early messages, you could subscribe to a news Official Account, and then you'll have some push messages in the early morning.
                 // During the timespan, if the program didn't receive any message within ${max_idle_minutes} minutes, then some check measures will apply.
-                {start: "7:00", end: "23:00", max_idle_minutes: 40},
+                {start: "7:00", end: "17:00", max_idle_minutes: 70},
             ],
             check_byAvatarUrl: {
                 switch: "on",
@@ -272,6 +272,7 @@ module.exports = {
                 switch: "on",
                 sendTarget: "微信支付",
                 sendContents: ["你好", "今天天气如何", "hello"], // Welcome to contribute here!
+                // wait 20 seconds to check if there is a response from ${sendTarget}.
                 watchTimeRange_sec: 20,
             },
             // This option defines how many hours should the program pauses the keepalive check,
