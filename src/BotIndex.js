@@ -34,6 +34,7 @@ const state = {
             msgCounter_prev: 0,
             idle_start_ts: 0,
             state: 0,
+            last_resume_ts: 0,
         }
     },
     last: {},

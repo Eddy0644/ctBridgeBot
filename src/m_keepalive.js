@@ -6,6 +6,11 @@ async function triggerCheck() {
     const {secret, state, wxLogger} = env;
     const t_conf = secret.mods.keepalive;
     const t_state = state.v.keepalive;
+    // If now is within the pauseCheckAfterResume_hr, skip the check
+    if (t_state.last_resume_ts !== 0 && dayjs().unix() - t_state.last_resume_ts < t_conf.pauseCheckAfterResume_hr * 3600) {
+        if (secret.misc.debug_show_additional_log) console.log(`[Keepalive check] Skipped. `);
+        return;
+    }
     // Parse trigger timespan
     const {start, end} = t_conf.trigger_v1[0];
     const [startHour, startMinute] = start.split(':').map(Number), [endHour, endMinute] = end.split(':').map(Number);
@@ -23,6 +28,11 @@ async function triggerCheck() {
             if (t_state.state === -1) {
                 // The bot is operational again! Reset state.
                 t_state.state = 0;
+                if (t_conf.pauseCheckAfterResume_hr) {
+                    t_state.last_resume_ts = dayjs().unix();
+                    wxLogger.info(`[Keepalive check] The bot is operational again! Pausing check for ${t_conf.pauseCheckAfterResume_hr} hours.`);
+                    // TODO write this to a persistent data file.
+                }
             }
         } else {
             // No new messages since last timer run, so check if idle timer exceeds
