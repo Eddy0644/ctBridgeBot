@@ -92,8 +92,8 @@ module.exports = {
         default_arg: "?group=ctBridge&icon=https://ccdn.ryancc.top/bot.jpg",
         prompt_network_problematic: "Several network connectivity problems appeared. Please settle that immediately.",
         prompt_relogin_required: "Your previous login credential have already expired. Please re-login soon!",
-        prompt_wx_stuck: "The WX puppet seems stuck, please check console or start program soon!",
-        prompt_wx_suspended: "The WX puppet was probably disconnected by Tencent server, please open your phone WeChat!",
+        prompt_wx_stuck: "The WX puppet seems stuck, please check console and restart program soon!",
+        prompt_wx_suspended: "The WX puppet was probably disconnected by Tencent server, please launch your mobile WeChat!",
         prompt_network_issue_happened: "ctBridgeBot is facing network issue, that causing message delay!",
         incoming_call_webhook: name => `https://(YourBarkAddress)/BridgeBot_Call/You have a incoming call from ${encodeURIComponent(name)} In WeChat.?sound=minuet&level=timeSensitive&group=ctBridge&icon=https://ccdn.ryancc.top/call.jpg`,
         send_relogin_via_tg: 1,
@@ -270,11 +270,14 @@ module.exports = {
             },
             check_bySendMsg: {
                 switch: "on",
-                send_target: "微信支付",
-                send_contents: ["你好", "今天天气如何", "hello"], // Welcome contribute here!
-                watch_period_timespan: 20,
+                sendTarget: "微信支付",
+                sendContents: ["你好", "今天天气如何", "hello"], // Welcome to contribute here!
+                watchTimeRange_sec: 20,
             },
-
+            // This option defines how many hours should the program pauses the keepalive check,
+            // after a user interference letting the bot online again. Just keep recommended value is probably ok.
+            // Normally if you did not use mobile WeChat for 24-48 hours, then disconnection would happen.
+            pauseCheckAfterResume_hr: 20,
         },
 
     },

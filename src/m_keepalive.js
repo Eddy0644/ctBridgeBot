@@ -77,14 +77,14 @@ async function check_bySendMsg() {
     const originalCounter = state.v.wxStat.notSelfTotal;
     state.v.keepalive.state = 1;    // Mark the process of this check.
     // Preparing variables
-    let msgTarget = await wxbot.Contact.find({name: t_conf2.send_target});
-    msgTarget = msgTarget || await wxbot.Contact.find({alias: t_conf2.send_target});
-    const msgText = t_conf2.send_contents[Math.floor(Math.random() * t_conf2.send_contents.length)];
+    let msgTarget = await wxbot.Contact.find({name: t_conf2.sendTarget});
+    msgTarget = msgTarget || await wxbot.Contact.find({alias: t_conf2.sendTarget});
+    const msgText = t_conf2.sendContents[Math.floor(Math.random() * t_conf2.sendContents.length)];
     wxLogger.debug(`[Keepalive check] sending {${msgText}} to {${msgTarget}}...`);
     await msgTarget.say(msgText);
     // Check in 20s period
     for (let i = 0; i < 5; i++) {
-        await new Promise(resolve => setTimeout(resolve, t_conf2.watch_period_timespan * 200));
+        await new Promise(resolve => setTimeout(resolve, t_conf2.watchTimeRange_sec * 200));
         console.log(`\t[Keepalive check] waiting for response... ${i + 1}/5`);
         if (state.v.wxStat.notSelfTotal > originalCounter) {
             state.v.keepalive.state = 0;
