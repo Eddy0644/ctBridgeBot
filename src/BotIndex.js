@@ -25,12 +25,16 @@ const state = {
             MsgTotal: 0,
             // Add counter on wx Message Total number, and reflect when encounter wx error;
             // because every time boot will load history messages, so no need for persistence
-            puppetDoneInitTime: 0
+            puppetDoneInitTime: 0,
+            notSelfTotal: 0,
+            // wx Message count that excluded self messages.
         },
         extra: 250,
         keepalive: {
             msgCounter_prev: 0,
             idle_start_ts: 0,
+            state: 0,
+            last_resume_ts: 0,
         }
     },
     last: {},
@@ -535,7 +539,7 @@ async function onWxMessage(msg) {
         } else {
             if (msg.self()) return;
         }
-
+        state.v.wxStat.notSelfTotal++;
         // Start deliver process, start fetching from config
         msg.receiver = null;
         with (secret.class) {
@@ -1723,6 +1727,7 @@ async function timerFunction_fast() {
         }
     } catch (e) {
         ctLogger.info(`An exception happened within the fast timer function: ${e.toString()}`);
+        ctLogger.trace(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
         state.v.timerData[0]--;
         if (state.v.timerData[0] < 0) {
             ctLogger.error(`Due to frequent errors in the fast timer function, it has been disabled. Check and reboot to restore it.`)
@@ -1738,16 +1743,17 @@ async function timerFunction_slow() {
         if (secret.mods.keepalive.switch === "on") await mod.keepalive.triggerCheck();
         // Scheduled restart
         for (const i of secret.misc.scheduled_reboot) {
-            if (dayjs().hour() === i.hour) {
+            if (dayjs().hour() === i.hour && process.uptime() > 7200) {
                 // reboot initiated
-                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 30s...`);
+                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 60s...`);
                 setTimeout(() => {
                     process.exit(1);
-                }, 29000);
+                }, 59000);
             }
         }
     } catch (e) {
         ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);
+        ctLogger.trace(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
         state.v.timerData[1]--;
         if (state.v.timerData[1] < 0) {
             ctLogger.error(`Due to frequent errors in the slow timer function, it has been disabled. Check and reboot to restore it.`)
