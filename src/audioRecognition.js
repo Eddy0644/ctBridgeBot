@@ -45,10 +45,17 @@ async function VTT_by_tx(audioPath, voiceFormat = "mp3") {
 }
 
 async function wx_audio_VTT(saveTarget, audioPath, voiceFormat = "mp3") {
+    const {secret} = env;
+    let timerLabel;
+    if (secret.misc.debug_add_console_timers) {
+        timerLabel = `wx_audio_VTT by tencent cloud | #${process.uptime().toFixed(2)} used`;
+        console.time(timerLabel);
+    }
     const result = await VTT_by_tx(audioPath, "mp3");
     if (result !== "ERR!.") {
         saveTarget.audioParsed = ` :\n"${result}"`;
     } else saveTarget.audioParsed = "";
+    if (timerLabel) console.timeEnd(timerLabel);
 }
 
 async function tg_audio_VTT(audioPath) {

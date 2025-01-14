@@ -210,7 +210,7 @@ function filterMsgText(inText, args = {}) {
 
         // Iterate over nativeEmojiMap and replace bracketed emojis
         if (flag) {
-            const timerLabel = `Emoji processor - timer #${process.uptime().toFixed(2)}`;
+            const timerLabel = `wx Emoji processor | #${process.uptime().toFixed(2)} used`;
             console.time(timerLabel);
             for (let key in nativeEmojiMap) {
                 // Regexp is much slower than regular replacement!
