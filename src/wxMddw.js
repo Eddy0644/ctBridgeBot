@@ -14,13 +14,11 @@ async function handlePushMessage(rawContent, msg, name) {
     const {wxLogger, secret} = env;
 
     if (secret.filtering.wxPostOriginBlackList.some(i => name.includes(i))) {
-        // wxLogger.debug(`This Post matches BlackList, no delivery!`);
-        wxLogger.debug(`[${name}] Posted [${msg.payload.filename.replace(".49", "")}], ❎(BlackList)`);
+        wxLogger.debug(`New Posts from [${name}] --> ❎(BlackList)`);
         return 0;
     }
     if (secret.misc.deliverPushMessage === false) {
-        wxLogger.debug(`[${name}] Posted [${msg.payload.filename.replace(".49", "")}], ❎(denial config)`);
-        // wxLogger.debug(`A Post Collection from (${name}) is skipped by denial config.`);
+        wxLogger.debug(`New Posts from [${name}] --> ❎(denial config)`);
         return 0;
     }
     const ps = await parseXML(rawContent.replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("<br/>", "\n"));
@@ -37,7 +35,6 @@ async function handlePushMessage(rawContent, msg, name) {
             const {title, url, digest, is_pay_subscribe} = item;
             itemStr += `→ <a href="${url[0]}">${title[0]}</a>`;
             if (is_pay_subscribe[0] !== '0') itemStr += `\n  <b>[Pay Subscribe Post]</b>`;
-            // if (digest[0].length > 1) itemStr += `  <i>${digest[0]}</i>\n`;
             if (digest[0].length > 85) itemStr += `  <blockquote expandable>${digest[0]}</blockquote>`;
             else if (digest[0].length > 1) itemStr += `  <blockquote>${digest[0]}</blockquote>`;
             else itemStr += "\n";
@@ -51,7 +48,7 @@ async function handlePushMessage(rawContent, msg, name) {
         }
         return out.replaceAll("&amp;", "&");
     } catch (e) {
-        wxLogger.info(`Error occurred when reading xml detail. Skipping...`);
+        wxLogger.warn(`Error occurred when reading xml detail from posts.`);
         return 0;
     }
 }
@@ -159,5 +156,5 @@ function parseXML(xml) {
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {handlePushMessage, handleVideoMessage, parseCardMsg};
+    return {handlePushMessage, handleVideoMessage, parseCardMsg, parseXML};
 };

@@ -227,9 +227,9 @@ function filterMsgText(inText, args = {}) {
 
 
     // process quoted message
-    if (/"(.{1,20}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/.test(txt)) {
+    if (/「(.{1,20})：\n?([\s\S]*)」\n- - - - - - - - - - - - - - -\n/.test(txt)) {
         // Filter Wx ReplyTo / Quote      Parameter: (quote-ee name must within [1,10])
-        const match = txt.match(/"(.{1,20}): \n?([\s\S]*)"\n- - - - - - - - - - - - - - -\n/);
+        const match = txt.match(/「(.{1,20})：\n?([\s\S]*)」\n- - - - - - - - - - - - - - -\n/);
         // 0 is all match, 1 is orig-msg sender, 2 is orig-msg
         const origMsgClip = (match[2].length > 8) ? match[2].substring(0, 8) : match[2];
         // In clip, we do not need <br/> to be revealed

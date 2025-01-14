@@ -1,6 +1,6 @@
 {
   "name": "ctbridgebot",
-  "version": "3.3.0",
+  "version": "4.0.0",
   "description": "Bridge messages between WeChat and Telegram. maximized customization.",
   "superagent": "src/BotIndex.js",
   "scripts": {
@@ -11,6 +11,7 @@
     "h2": "node src/BotIndex.js hook 2",
     "h0": "node src/BotIndex.js hook 0",
     "start": "node src/BotIndex.js poll",
+    "dbg": "node --inspect src/BotIndex.js poll",
     "puppet-install": "node node_modules/.bin/wechaty-puppet-install"
   },
   "keywords": [
@@ -20,9 +21,9 @@
   "author": "Eddy0644",
   "license": "ISC",
   "dependencies": {
+    "@wechatferry/puppet": "^0.0.24",
     "cheerio": "^1.0.0-rc.12",
     "dayjs": "^1.11.10",
-    "ffprobe": "^1.1.2",
     "file-box": "^1.5.5",
     "https-proxy-agent": "^7.0.4",
     "log4js": "^6.9.1",
@@ -35,7 +36,6 @@
     "superagent": "^8.1.2",
     "tencentcloud-sdk-nodejs-asr": "^4.0.837",
     "wechaty": "^1.20.2",
-    "wechaty-puppet-wechat": "^1.18.4",
     "xml2js": "^0.6.2"
   },
   "repository": "https://github.com/Eddy0644/ctBridgeBot"

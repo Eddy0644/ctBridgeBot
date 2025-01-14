@@ -161,10 +161,13 @@ module.exports = {
         // -1: no addition; 0: only add to wx Link; 1: add to wx Link and text link
         addHashCtLinkToMsg: 0,
 
+        // This option defines whether to display the description of a card URL message(set from sender phone) after the URL.
+        showCardDescAfterUrl: 1,
+
         // This option defines how the program behaviors when it encounters unrecognized tg command.
         // 1: will be sent to your chat peer directly; 0: do nothing and won't be sent to WeChat.
         // PS: If you always click button or link to use tg commands rather than typing them, then set to 1 to avoid your messages started with '/' not being delivered.
-        passUnrecognizedCmdNext: 1,
+        passUnrecognizedCmdNext: 0,
 
         // This option defined what service should be used to convert tg_sticker.webp to gif
         // 0 means bypass and will send .webp directly to WeChat;

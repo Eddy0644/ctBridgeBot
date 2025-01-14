@@ -1,4 +1,5 @@
 const {WechatyBuilder} = require('wechaty');
+const {WechatferryPuppet} = require('@wechatferry/puppet');
 const qrcodeTerminal = require("qrcode-terminal");
 // const config = require("../config/secret");
 const secret = require("../config/confLoader");
@@ -6,9 +7,10 @@ const {downloader} = require("./common")();
 const fs = require("fs");
 
 const wxbot = WechatyBuilder.build({
-    name: 'data/ctbridgebot',
-    puppet: 'wechaty-puppet-wechat',
-    puppetOptions: {uos: true}
+    puppet: new WechatferryPuppet()
+    // name: 'data/ctbridgebot',
+    // puppet: 'wechaty-puppet-wechat',
+    // puppetOptions: {uos: true}
 });
 const DTypes = {
     Default: -1,
@@ -82,7 +84,9 @@ module.exports = (tgBotDo, wxLogger) => {
             wxBotErrorStat++;
             // following watchdog error, skipped
         } else {
-            wxLogger.warn(msg);
+            wxLogger.warn(`[From Puppet] ` + msg);
+            wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+
         }
     });
 
