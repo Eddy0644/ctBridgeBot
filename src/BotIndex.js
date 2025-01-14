@@ -209,7 +209,7 @@ async function onTGMsg(tgMsg) {
         if (tgMsg.sticker) {
             // We want to enable video_sticker.webm full support here, but almost all libraries require ffmpeg,
             // which is difficult to implement now. TODO webm conversion here
-            const timerLabel1 = (!secret.misc.debug_add_console_timers) ? "" : `Sticker delivery from tg to wx - Debug timer #${process.uptime().toFixed(2)}`;
+            const timerLabel1 = (!secret.misc.debug_add_console_timers) ? "" : `Sticker delivery from tg to wx | #${process.uptime().toFixed(2)} used`;
             if (timerLabel1) console.time(timerLabel1);
             await deliverTGToWx(tgMsg, tgMsg.sticker.thumbnail, "photo");
             if (timerLabel1) console.timeEnd(timerLabel1);
@@ -324,7 +324,7 @@ async function onTGMsg(tgMsg) {
                             ctLogger.debug(`TG[Default] DirectReply--> WX(${mapPair.name}): ${tgMsg.text}`);
                             return;
                         } else {
-                            ctLogger.info(`In C2C chat found a message with reply flag which is not 'OK' or '@'. Sending...`);
+                            ctLogger.debug(`In C2C chat found a message with reply flag which is not 'OK' or '@'. Sending...`);
                             success = 1;
                         }
                     }
@@ -1305,7 +1305,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 return ctLogger.trace(`Merge disabled by C2C pair config.`);
 
             if (isRoom && msg.preRoomNeedUpdate) {
-                ctLogger.debug(`Merge profile [preRoom] updated: from [${state.preRoom?.topic}] to [${topic}].`);
+                if (secret.misc.debug_show_additional_log) ctLogger.debug(`Merge profile [preRoom] updated: from [${state.preRoom?.topic}] to [${topic}].`);
                 // Here should keep same as tgProcessor.js:newItemTitle:<u> | below as same.
                 state.preRoom = {
                     topic, tgMsg,
@@ -1562,7 +1562,7 @@ async function getC2CPeer(pair) {
         // Below is used to track WeChat contact find time
         let timerLabel;
         if (secret.misc.debug_add_console_timers) {
-            timerLabel = `C2C peer finder - Debug timer #${process.uptime().toFixed(2)}`;
+            timerLabel = `C2C peer finder | #${process.uptime().toFixed(2)} used`;
             console.time(timerLabel);
         }
         if (p.wx[1] === true) {
