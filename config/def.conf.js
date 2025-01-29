@@ -203,6 +203,10 @@ module.exports = {
             // {hour: 3},
         ],
 
+        // If it is 1, then these voice messages sent by you via your mobile WeChat will not be skipped.
+        do_not_skip_voice_from_mobile_wx: 1,
+
+
         /////////--------[  Advanced or deprecated Setting, less need to edit  ]--------//////////
 
         // This option defines whether to keep the file placeholder message (wait for user action on downloading) after a file is successfully uploaded to TG.

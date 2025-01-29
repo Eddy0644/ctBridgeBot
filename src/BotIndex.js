@@ -519,11 +519,13 @@ async function onWxMessage(msg) {
 
         // 提前drop自己的消息
         // Integrated with misc.wechat_synced_group, check if current group is in the list
-        if (state.v.syncSelfState !== 1) if (room) {
-            if (msg.self() && !secret.misc.wechat_synced_group.includes(topic)) return;
-        } else {
-            if (msg.self()) return;
-        }
+        if ((() => {
+            let S = msg.self() ? 1 : 0;
+            if (state.v.syncSelfState === 1) return 0;
+            if (room && secret.misc.wechat_synced_group.includes(topic)) S = 0;
+            if (msg.type() === wxbot.Message.Type.Audio && secret.misc.do_not_skip_voice_from_mobile_wx) S = 0;
+            return S;
+        })()) return;
         state.v.wxStat.notSelfTotal++;
         // Start deliver process, start fetching from config
         msg.receiver = null;
@@ -634,7 +636,7 @@ async function onWxMessage(msg) {
             msg.DType = DTypes.Text;
         }
 
-        // Process Image as identical photo or Sticker
+        // Process Image as Sticker
         if (msg.type() === wxbot.Message.Type.Emoticon) {
             const ps = await mod.wxMddw.parseXML(content);
             if (ps !== false) {
@@ -707,8 +709,9 @@ async function onWxMessage(msg) {
         // Real Images
         if (msg.type() === wxbot.Message.Type.Image) try {
             const fBox = await msg.toFileBox();
-            const fname = processor.filterFilename(`${dayjs().format("YYMMDD-HHmmssSS")}-${alias}.jpg`);
+            const fname = processor.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}-${alias}.jpg`);
             let photoPath = `./downloaded/photo/${fname}`;
+            if (fs.existsSync(photoPath)) photoPath = photoPath.replace(".jpg", `_${(Math.random() * 100).toFixed(0)}.jpg`);
             await fBox.toFile(photoPath);
             if (fs.existsSync(photoPath)) {
                 wxLogger.debug(`Detected as Image, Downloaded as: ${fname}`);
@@ -718,6 +721,7 @@ async function onWxMessage(msg) {
         } catch (e) {
             wxLogger.warn(`Detected as Image, But download failed.`);
             wxLogger.debug(`Error: ${e.message}`);
+            if(e.message.includes("Recv rpc failed: Timed out"))with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             msg.DType = DTypes.Text;
             content = "🖼(Fail to download)";
         }   // End of Image process
@@ -726,7 +730,8 @@ async function onWxMessage(msg) {
         if (msg.type() === wxbot.Message.Type.Audio) try {
             tgBotDo.SendChatAction("record_voice", msg.receiver).then(tgBotDo.empty);
             const fBox = await msg.toFileBox();
-            let audioPath = `./downloaded/audio/${processor.filterFilename(`${dayjs().format("YYMMDD-HHmmssSS")}`)}-${alias}.mp3`;
+            let audioPath = `./downloaded/audio/${processor.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}`)}-${alias}.mp3`;
+            if (fs.existsSync(audioPath)) audioPath = audioPath.replace(".mp3", `_${(Math.random() * 100).toFixed(0)}.mp3`);
             await fBox.toFile(audioPath);
             if (!fs.existsSync(audioPath)) throw new Error("save file error");
             // await recogniseAudio(msg, audioPath);
@@ -737,6 +742,7 @@ async function onWxMessage(msg) {
         } catch (e) {
             wxLogger.warn(`Detected as Audio, But download failed.`);
             wxLogger.debug(`Error: ${e.message}`);
+            if(e.message.includes("Recv rpc failed: Timed out"))with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             msg.DType = DTypes.Text;
             content = "🎤(Fail to download)";
         }
@@ -1581,7 +1587,7 @@ async function continueDeliverFileFromWx(msg) {
         wxLogger.error(`{continueDeliverFileFromWx()}: ${e.message}`);
         wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
     }
-    wxLogger.info(`Detected as File, But download failed.`); // TODO fix video and file download! #upstream
+    wxLogger.info(`Detected as File, But download failed.`); // TODO fix video and file download!
 
 }
 
