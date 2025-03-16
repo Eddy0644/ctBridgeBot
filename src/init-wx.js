@@ -1,5 +1,6 @@
 const {WechatyBuilder} = require('wechaty');
-const {WechatferryPuppet} = require('@wechatferry/puppet');
+const {WechatferryPuppet} = require('../wcferry-puppet-c');
+// const {WechatferryPuppet} = require('@wechatferry/puppet');
 const qrcodeTerminal = require("qrcode-terminal");
 // const config = require("../config/secret");
 const secret = require("../config/confLoader");
