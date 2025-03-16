@@ -159,7 +159,7 @@ module.exports = {
 
         // This option is designed to separate authentic links from fake links like Sticker Pointer.
         // -1: no addition; 0: only add to wx Link; 1: add to wx Link and text link
-        addHashCtLinkToMsg: 0,
+        addHashCtLinkToMsg: -1,
 
         // This option defines whether to display the description of a card URL message(set from sender phone) after the URL.
         showCardDescAfterUrl: 1,
@@ -261,7 +261,7 @@ module.exports = {
     },
     mods: {
         keepalive: {
-            switch: "on",
+            switch: "off",
 
             // version 1 of trigger rule, which is used to check if the bot is still alive.
             trigger_v1: [

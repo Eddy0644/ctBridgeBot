@@ -1,18 +1,14 @@
 const log4js = require('log4js');
 const fs = require("fs");
-// const proxy = require("../proxy");
 const proxy = require((fs.existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
-
 const dayjs = require("dayjs");
 const https = require("https");
 const http = require("http");
 const agentEr = require("https-proxy-agent");
-
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "%[[%d{dd/hh:mm:ss}] %1.1p/%c%] %m";
 
 process.env.TZ = 'Asia/Shanghai';
-
 log4js.configure({
     appenders: {
         "console": {
