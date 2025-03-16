@@ -145,7 +145,7 @@ function parseXML(xml) {
     return new Promise((resolve) => {
         xml2js.parseString(xml, (err, result) => {
             if (err) {
-                defLogger.debug(`XML parse to dot notation failed.`);
+                defLogger.warn(`XML parse to dot notation failed.`);
                 resolve(false);
             } else {
                 resolve(result);

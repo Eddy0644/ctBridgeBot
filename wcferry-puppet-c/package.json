@@ -10,8 +10,8 @@
         "import": "./index.mjs"
       }
     },
-    "main": "./index.mjs",
-    "module": "./index.mjs",
+    "main": "./wcfpuppet.mjs",
+    "module": "./wcfpuppet.mjs",
     "types": "./index.d.ts",
     "dependencies": {
       "file-box": "^1.4.15",
