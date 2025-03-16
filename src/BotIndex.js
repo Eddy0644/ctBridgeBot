@@ -81,6 +81,7 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
 };
 const {tgbot, tgBotDo} = require('./init-tg');
 const {FileBox} = require("file-box");
+const {basename} = require("node:path");
 const {wxbot, DTypes} = require('./init-wx')(tgBotDo, wxLogger);
 
 // Loading instance modules...
@@ -562,8 +563,8 @@ async function onWxMessage(msg) {
             msg.dname = dname;
         }
 
-
-        {   // do exclude or include according to Config
+        // do exclude or include according to Config
+        {
             const strategy = secret.filtering.wxNameFilterStrategy;
             let ahead;
             const originName = room ? topic : alias,
@@ -752,10 +753,22 @@ async function onWxMessage(msg) {
             const ps = await mod.wxMddw.parseXML(content);
             if (ps !== false) {
                 const $1 = ps.msg.videomsg[0].$;
-                content = `🎦[${$1.playlength}s, ${($1.length / 1024 / 1024).toFixed(3)}MB]`;
-                msg.DType = DTypes.Text;
+                msg.filesize = $1.length;
+                content = `🎦[${$1.playlength}s, ${(msg.filesize / 1024 / 1024).toFixed(3)}MB]`;
+                msg.DType = DTypes.File;
+                msg.nowPath = msg.payload.wcfraw.thumb.replace(/\.jpg$/, ".mp4");
+                msg.vd = 1;
+                if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
+                    msg.autoDownload = true;
+                    content += `⬇️🔄, ⏰️`;
+                } else {
+                    msg.autoDownload = false;
+                    content += `Send an <code>OK</code> to retrieve.`;
+                }
             } else {
+                wxLogger.warn(`Video Download failed! (Parse XML failure)`);
                 content = "[Video]";
+                msg.DType = DTypes.Text;
             }
             // tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty);
             // msg.videoPresent = 1;
@@ -812,7 +825,7 @@ async function onWxMessage(msg) {
                 msg.filesize = ps.msg.appmsg[0].appattach[0].totallen[0];
                 content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
                 msg.autoDownload = true;
-
+                msg.nowPath = msg.payload.wcfraw.extra;
                 if (msg.filesize === 0) {
                     wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
                     return;
@@ -827,11 +840,11 @@ async function onWxMessage(msg) {
                     content += `⬇️🔄, ⏰️`;
                 } else {
                     msg.autoDownload = false;
-                    content += `Send a single <code>OK</code> to retrieve that.`;
+                    content += `Send an <code>OK</code> to retrieve.`;
                 }
                 msg.DType = DTypes.File;
             } else {
-                wxLogger.warn(`File Download failed! (${e.message})`);
+                wxLogger.warn(`File Download failed! (Parse XML failure)`);
                 content = content || "[File]";
                 msg.DType = DTypes.Text;
             }
@@ -840,7 +853,7 @@ async function onWxMessage(msg) {
             // if (0) {
             //     msg.filesize = parseInt(ps.msg.appmsg[0].appattach[0].totallen[0]);
             //     content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-            //     msg.toDownloadPath = (function () {   // File Local Path Generator
+            //     msg.nowPath = (function () {   // File Local Path Generator
             //         const path1 = `./downloaded/file/`;
             //         const filename = msg.payload.filename;
             //         let rand = 0;
@@ -1574,16 +1587,15 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
 
 async function continueDeliverFileFromWx(msg) {
     try {
-        const filePath = msg.payload.wcfraw.extra;
+        const filePath = msg.nowPath;
         await delay(1500);
-        // const filePath = msg.toDownloadPath;
         tgBotDo.SendChatAction("record_video").then(tgBotDo.empty);
         const fBox = await msg.toFileBox(), dname = msg.dname || msg.payload.wcfraw.sender;
         // await fBox.toFile(filePath);
 
-        wxLogger.debug(`Downloaded previous file as: ${msg.payload.filename}`);
+        wxLogger.debug(`Downloaded previous file as: ${basename(filePath)}`);
         tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty);
-        let tgMsg = await tgBotDo.SendDocument(msg.receiver, `from [${dname}]`, fs.createReadStream(filePath), true);
+        let tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, `from [${dname}]`, fs.createReadStream(filePath), true);
         if (!tgMsg) {
             tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
             return "sendFailure";
@@ -1594,7 +1606,7 @@ async function continueDeliverFileFromWx(msg) {
             // do retry download
             msg.isRetry = true;
             continueDeliverFileFromWx(msg);
-        }, 5000);
+        }, 4000);
         // otherwise display error message
         wxLogger.error(`{continueDeliverFileFromWx()}: ${e.message}`);
         wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
