@@ -146,6 +146,12 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'}).catch(e => logErrorDuringTGSend(e));
     },
+    SendLocation: async (receiver = null, latitude, longitude) => {
+        let form = {
+            disable_notification: true
+        };
+        return await tgbot.sendLocation(parseRecv(receiver, form), latitude, longitude, form).catch(e => logErrorDuringTGSend(e));
+    },
     SendDocument: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
             caption: msg,

@@ -80,6 +80,7 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
     }
 };
 const {tgbot, tgBotDo} = require('./init-tg');
+const {FileBox} = require("file-box");
 const {wxbot, DTypes} = require('./init-wx')(tgBotDo, wxLogger);
 
 // Loading instance modules...
@@ -155,10 +156,10 @@ async function onTGMsg(tgMsg) {
             if (tgMsg.chat.id === def.tgid) tgMsg.matched = {s: 0};
             if ((secret.misc.deliverSticker !== false) && tgMsg.chat.id === secret.misc.deliverSticker.tgid) {
                 const repl = tgMsg.reply_to_message;
-                if (repl && (repl.animation || repl.document) && /#sticker ([0-9,a-f]{3})/.test(repl.caption)) {
+                if (repl && (repl.animation || repl.document) && /#sticker ([0-9,a-f]{4})/.test(repl.caption)) {
                     // Is almost same origin as sticker channel and is reply to a sticker
                     // Ready to modify sticker's hint
-                    const matched = repl.caption.match(/#sticker ([0-9,a-f]{3})/), md5 = matched[1];
+                    const matched = repl.caption.match(/#sticker ([0-9,a-f]{4})/), md5 = matched[1];
                     const flib = await stickerLib.get(md5);
                     flib.hint = tgMsg.text;
                     await stickerLib.set(md5, flib);
@@ -503,7 +504,7 @@ async function onWxMessage(msg) {
         let content = msg.text().trim(); // 消息内容
         const room = msg.room(), isGroup = room !== undefined; // 是否是群消息
         let topic = room ? await room.topic() : "";
-        if (msg.payload.talkerId?.includes("@openim")) return wxLogger.debug("Dropped a WXWork message (not implemented).");
+        // if (msg.payload.talkerId?.includes("@openim")) return wxLogger.debug("Dropped a WXWork message (not implemented).");
         let name = await contact.name(), alias = await contact.alias() || name;
         let dname = alias; // [msg.dname]  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
@@ -721,7 +722,7 @@ async function onWxMessage(msg) {
         } catch (e) {
             wxLogger.warn(`Detected as Image, But download failed.`);
             wxLogger.debug(`Error: ${e.message}`);
-            if(e.message.includes("Recv rpc failed: Timed out"))with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
+            if (e.message.includes("Recv rpc failed: Timed out")) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             msg.DType = DTypes.Text;
             content = "🖼(Fail to download)";
         }   // End of Image process
@@ -742,7 +743,7 @@ async function onWxMessage(msg) {
         } catch (e) {
             wxLogger.warn(`Detected as Audio, But download failed.`);
             wxLogger.debug(`Error: ${e.message}`);
-            if(e.message.includes("Recv rpc failed: Timed out"))with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
+            if (e.message.includes("Recv rpc failed: Timed out")) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             msg.DType = DTypes.Text;
             content = "🎤(Fail to download)";
         }
@@ -798,6 +799,8 @@ async function onWxMessage(msg) {
                 const loc = ps.msg.location[0].$;
                 content = `<a href="http://www.amap.com/?q=${loc.x},${loc.y}">🗺️[${loc.poiname}/${loc.label}]</a>`;
                 msg.DType = DTypes.Text;
+                await tgBotDo.SendLocation(msg.receiver, parseFloat(loc.x), parseFloat(loc.y));
+                msgDef.noPreview = 1;
             } else {
                 content = "[Location]";
             }
@@ -807,6 +810,7 @@ async function onWxMessage(msg) {
             const ps = await mod.wxMddw.parseXML(content);
             if (ps !== false) {
                 content = `📎[${msg.payload.filename}], ${(ps.msg.appmsg[0].appattach[0].totallen[0] / 1024 / 1024).toFixed(3)}MB.\n`;
+                msg.DType = DTypes.Text;
                 // below disabled
                 if (0) {
                     msg.filesize = parseInt(ps.msg.appmsg[0].appattach[0].totallen[0]);
@@ -1268,7 +1272,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 tgLogger.trace(`wxStat.MsgTotal: ${state.v.wxStat.MsgTotal}; sent with msgDef: ${JSON.stringify(msgDef)}`);
             }
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML", {
-                disable_web_page_preview: (msg.DType === DTypes.Push)
+                disable_web_page_preview: (msg.DType === DTypes.Push || msgDef.noPreview)
             });
             // Push messages do not need 'state.pre__'
             if (msg.DType === DTypes.Push) return;
@@ -1444,36 +1448,29 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
             conLogger.trace(`sticker file exist (${file_path}), no need to download this time.`)
     } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
     let packed = null;
+    if (!packed) packed = await FileBox.fromFile(file_path);
+
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
         const srv_type = secret.misc.service_type_on_webp_conversion;
         try {
-            if (srv_type === 0) {
-                // If you want to bypass conversion, here you are.
-            } else {
-                // Try to use sharp as image processor
-                const sharp = require('sharp');
-                const buffer = await sharp(file_path).gif().toBuffer();
-                // We used telegram-side file_unique_id here as filename, because WeChat keeps image name in their servers.
-                packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
-            }
+            const sharp = require('sharp');
+            const buffer = await sharp(file_path).gif().toBuffer();
+            // We used telegram-side file_unique_id here as filename, because WeChat keeps image name in their servers.
+            packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);
         } catch (e) {
-            if (srv_type === 2) ctLogger.info(`Failed to use 'sharp' to convert tg sticker to jpg.\n\t${e.toString()}\n\tFalling back to upyun middleware instead. (See logfile for detail)`);
-            ctLogger.trace(`${e.stack.split("\n").slice(0, 5).join("\n")}`)
-            if (secret.upyun.switch !== "on") {
-                tgLogger.warn(`TG sticker pre-process interrupted as 'sharp' failed and upyun not enabled. Message not delivered.`);
-                await mod.tgProcessor.replyWithTips("notEnabledInConfig", tgMsg.matched);
-                return;
-            } else {
-                file_path = await mod.upyunMiddleware.webpToJpg(file_path, rand1);
-            }
+            tgLogger.warn(`TG sticker pre-process interrupted as 'sharp' failed. Message not delivered.`);
+            await mod.tgProcessor.replyWithTips("genericFail", tgMsg.matched);
+            return;
         }
     }
-    if (!packed) packed = await FileBox.fromFile(file_path);
+
 
     tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
     if (s === 0) {
-        await state.last.target.say(packed);
+        if (tgMsg.sticker) await wxbot.__options.puppet.agent.wcf.sendEmotion(packed, state.last.target.id);
+        else await state.last.target.say(packed);
+
         //ctLogger.debug(`Handled a (${action}) message send-back to speculative talker:${state.last.name}.`);
         ctLogger.debug(`📤~~~[${media_type}]~~~>WX(${state.last.name}).`);
     } else {
@@ -1481,7 +1478,8 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
         with (tgMsg.matched) {
             const wxTarget = await getC2CPeer(tgMsg.matched);
             if (!wxTarget) return;
-            await wxTarget.say(packed);
+            if (tgMsg.sticker) await wxbot.__options.puppet.agent.wcf.sendEmotion(packed, wxTarget.id);
+            else await wxTarget.say(packed);
             ctLogger.debug(`TG(${tgMsg.chat.title}) 📤[${media_type}]--> WX(${tgMsg.matched.p.wx[0]}).`);
             // ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         }
