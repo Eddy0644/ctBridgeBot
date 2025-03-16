@@ -80,7 +80,7 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
     }
 };
 const {tgbot, tgBotDo} = require('./init-tg');
-const {FileBox} = require("file-box");
+// const {FileBox} = require("file-box");
 const {basename} = require("node:path");
 const {wxbot, DTypes} = require('./init-wx')(tgBotDo, wxLogger);
 
@@ -610,34 +610,6 @@ async function onWxMessage(msg) {
             if (!ahead) return;
         }
 
-        // 已撤回的消息单独处理
-        if (msg.type() === wxbot.Message.Type.Recalled) {
-            const recalledMessage = await msg.toRecalled();
-            wxLogger.debug(`This message was a recaller, original is [ ${recalledMessage} ]`);
-            msgDef.isSilent = true;
-            if (!recalledMessage) return wxLogger.warn(`Got invalid 'recalledMessage' from upper API; logging skipped.`);
-            LogWxMsg(recalledMessage, 2);
-            // content = `❌ [ ${recalledMessage} ] was recalled.`;
-            // 匹配消息类型、联系人名称、群名称和消息内容的正则表达式
-            const regex = /(\w+)\[🗣Contact<([^>]+)>(?:@👥Room<([^>]+)>)?]\s?/;
-            const match = `${recalledMessage}`.replace("Message#", "").match(regex);
-            if (match) {
-                // TODO refactor this, fetch data from `msg` directly.
-                const type = match[1], contactName = match[2], groupName = match[3] || '',
-                  msgContent = match.input.replace(match[0], '');
-                // Use match-and-replace strategy to get original msg content
-                content = `[Recalled ${type}]`
-                  + (contactName === name ? "" : contactName) + (groupName === topic ? "" : `@${groupName}`)
-                  + `: <s>${msgContent}</s>`;
-            } else {
-                wxLogger.error(`[Recalled message] not matching preset regex, content: ${recalledMessage}`);
-                content = `[${recalledMessage}] was recalled.`;
-            }
-            // Avoid invalid character in message to cause send failure
-            content = mod.tgProcessor.filterMsgText(content);
-            msg.DType = DTypes.Text;
-        }
-
         // Process Image as Sticker
         if (msg.type() === wxbot.Message.Type.Emoticon) {
             const ps = await mod.wxMddw.parseXML(content);
@@ -806,11 +778,11 @@ async function onWxMessage(msg) {
         }
 
         if (msg.type() === wxbot.Message.Type.Location) {
-            // Thanks to amap, http://www.amap.com/?q=
+            // Thanks to amap, https://www.amap.com/?q=
             const ps = await mod.wxMddw.parseXML(content);
             if (ps !== false) {
                 const loc = ps.msg.location[0].$;
-                content = `<a href="http://www.amap.com/?q=${loc.x},${loc.y}">🗺️[${loc.poiname}/${loc.label}]</a>`;
+                content = `<a href="https://www.amap.com/?q=${loc.x},${loc.y}">🗺️[${loc.poiname}/${loc.label}]</a>`;
                 msg.DType = DTypes.Text;
                 await tgBotDo.SendLocation(msg.receiver, parseFloat(loc.x), parseFloat(loc.y));
                 msgDef.noPreview = 1;
@@ -904,18 +876,10 @@ async function onWxMessage(msg) {
             { // **Sub:** Bulk Text Replacement
                 if (secret.misc.addHashCtLinkToMsg === 1) content = content.replace(/(?!href=")(https?:\/\/)/g, '(#ctLink)$1');
 
-                if (/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/.test(content)) {
-                    msgDef.isSilent = true;
-                    // Emoji support test: 💠🔖⚗️🧱💿🌁🌠🧩🧊  🔧🕳❎❌ 🗣👥
-                    content = content.replace(/\[收到了一个表情，请在手机上查看]|\[Send an emoji, view it on mobile]/, titles.unsupportedSticker);
-                    wxLogger.trace(`Updated msgDef to Silent by keyword '收到了表情'.`);
-                }
-
                 // Weixin, WeChat, MicroMsg: how incredible multiple name! micro-message!!!
                 content = content.replace(/\[收到一条微信转账消息，请在手机上查看]|\[Received a micro-message transfer message, please view on the phone]|\[向他人发起了一笔转账，当前微信版本不支持展示该内容。]|向他人发起了一笔转账，当前微信版本不支持展示该内容。|确认了一笔转账，当前微信版本不支持展示该内容。/, titles.recvTransfer);
                 content = content.replace(/\[确认了一笔转账，当前微信版本不支持展示该内容。]/, titles.acceptTransfer);
                 content = content.replace(/\[Message from Split Bill. View on phone.]/, titles.recvSplitBill);
-                content = content.replace(/\[收到一条暂不支持的消息类型，请在手机上查看]|\[收到一条网页版微信暂不支持的消息类型，请在手机上查看]/, titles.msgTypeNotSupported);
 
                 content = mod.tgProcessor.filterMsgText(content, {isGroup, peerName: name});
 
@@ -1271,7 +1235,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
                 let result;
                 if (msg.videoPresent) {
                     result = await mod.wxMddw.handleVideoMessage(msg, tmplm);
-                } else result = await continueDeliverFileFromWx(msg);
+                } else result = await continueDeliverFileFromWx(msg, tmplc);
                 if (result === "Success") {
                     tgLogger.debug(`Media Delivery Success.`);
                     // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
@@ -1443,7 +1407,6 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const file_id = (tgMsg.photo) ? tgMsg.photo[tgMsg.photo.length - 1].file_id : tg_media.file_id;
     // noinspection JSUnresolvedVariable
     const fileCloudPath = (await tgbot.getFile(file_id)).file_path;
-    const rand1 = Math.random();
     // noinspection JSUnresolvedVariable
     let file_path = './downloaded/' + (
       (tgMsg.photo) ? (`photoTG/${tgMsg.photo[tgMsg.photo.length - 1].file_unique_id}.png`) :
@@ -1465,8 +1428,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
         } else
             conLogger.trace(`sticker file exist (${file_path}), no need to download this time.`)
     } else await downloader.httpsWithProxy(secret.bundle.getTGFileURL(fileCloudPath), file_path);
-    let packed = null;
-    if (!packed) packed = await FileBox.fromFile(file_path);
+    let packed = await FileBox.fromFile(file_path);
 
     if (tgMsg.sticker) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
@@ -1585,7 +1547,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
 }
 
-async function continueDeliverFileFromWx(msg) {
+async function continueDeliverFileFromWx(msg, tmplc) {
     try {
         const filePath = msg.nowPath;
         await delay(1500);
@@ -1595,7 +1557,7 @@ async function continueDeliverFileFromWx(msg) {
 
         wxLogger.debug(`Downloaded previous file as: ${basename(filePath)}`);
         tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty);
-        let tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, `from [${dname}]`, fs.createReadStream(filePath), true);
+        let tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, `from [${tmplc || dname}]`, fs.createReadStream(filePath), true);
         if (!tgMsg) {
             tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
             return "sendFailure";
