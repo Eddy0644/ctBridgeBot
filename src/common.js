@@ -89,7 +89,7 @@ module.exports = (param) => {
                 part2.wxMsgLogger.info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
             [🗣talkerId=${msg.payload.talkerId}][👥roomId=${msg.payload.roomId}]
             [filename=${msg.payload.filename}]
-            ${msg.payload.text}${type === 0 ? '\n\t' + msg.log_payload : ''}
+            ${JSON.stringify(msg.payload.wcfraw)}${type === 0 ? '\n\t' + msg.log_payload : ''}
             ---------------------`);
                 if (msg.log_payload) delete msg.log_payload;
             },

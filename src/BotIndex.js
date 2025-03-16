@@ -806,36 +806,35 @@ async function onWxMessage(msg) {
             }
         }
         // 聊天文件
-        if (msg.type() === wxbot.Message.Type.Attachment) try {
+        if (msg.type() === wxbot.Message.Type.Attachment) {
             const ps = await mod.wxMddw.parseXML(content);
-            if (ps === false) throw new Error("XML Parse error");
-            msg.filesize = ps.msg.appmsg[0].appattach[0].totallen[0];
-            content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-            msg.autoDownload = true;
-
-            if (msg.filesize === 0) {
-                wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
-                return;
-            } else if (msg.filesize < 10) {
-                // 小于10个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，比如块级链接和服务消息
-                msg.autoDownload = false;
-                msgDef.isSilent = true;
-                content += `Too small, so it maybe not a valid file. Check DT log for detail.`
-                wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}}, filename=(${msg.payload.filename})`);
-            } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
+            if (ps !== false) {
+                msg.filesize = ps.msg.appmsg[0].appattach[0].totallen[0];
+                content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
                 msg.autoDownload = true;
-                content += `Trying download as size is smaller than threshold.`/*Remember to change the prompt in two locations!*/;
+
+                if (msg.filesize === 0) {
+                    wxLogger.warn(`Got a zero-size wx file here, no delivery would present and please check DT log manually.\nSender:{${alias}}, filename=(${msg.payload.filename})`);
+                    return;
+                } else if (msg.filesize < 10) {
+                    // 小于10个字节的文件不应被下载，但是仍会提供下载方式：因为大概率是新的消息类型，比如块级链接和服务消息
+                    msg.autoDownload = false;
+                    msgDef.isSilent = true;
+                    content += `⚠️ size too small, check log.`
+                    wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}}, filename=(${msg.payload.filename})`);
+                } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
+                    msg.autoDownload = true;
+                    content += `⬇️🔄, ⏰️`;
+                } else {
+                    msg.autoDownload = false;
+                    content += `Send a single <code>OK</code> to retrieve that.`;
+                }
+                msg.DType = DTypes.File;
             } else {
-                msg.autoDownload = false;
-                content += `Send a single <code>OK</code> to retrieve that.`;
+                wxLogger.warn(`File Download failed! (${e.message})`);
+                content = content || "[File]";
+                msg.DType = DTypes.Text;
             }
-            msg.DType = DTypes.File;
-
-            // tgBotDo.SendChatAction("upload_document", msg.receiver).then(tgBotDo.empty);
-            // const fbox = await msg.toFileBox();
-            // wxLogger.debug(`#3e1f debug ${fbox}`);
-
-
             // below disabled, because MicroMsg will handle filename corruptions.
 
             // if (0) {
@@ -852,10 +851,6 @@ async function onWxMessage(msg) {
             //         return path1 + `(${rand})` + filename;
             //     })();
             // }
-        } catch (e) {
-            wxLogger.warn(`File Download failed! (${e.message})`);
-            content = content || "[File]";
-            msg.DType = DTypes.Text;
         }
 
 
@@ -1579,23 +1574,32 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
 
 async function continueDeliverFileFromWx(msg) {
     try {
-        const filePath = msg.toDownloadPath;
-        const fBox = await msg.toFileBox();
-        await fBox.toFile(filePath);
-        if (fs.existsSync(filePath)) {
-            wxLogger.debug(`Downloaded previous file as: ${filePath}`);
-            tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty)
-            let tgMsg = await tgBotDo.SendDocument(msg.receiver, "", fs.createReadStream(filePath), true);
-            if (!tgMsg) {
-                tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
-                return "sendFailure";
-            } else return "Success";
-        }
+        const filePath = msg.payload.wcfraw.extra;
+        await delay(1500);
+        // const filePath = msg.toDownloadPath;
+        tgBotDo.SendChatAction("record_video").then(tgBotDo.empty);
+        const fBox = await msg.toFileBox(), dname = msg.dname || msg.payload.wcfraw.sender;
+        // await fBox.toFile(filePath);
+
+        wxLogger.debug(`Downloaded previous file as: ${msg.payload.filename}`);
+        tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty);
+        let tgMsg = await tgBotDo.SendDocument(msg.receiver, `from [${dname}]`, fs.createReadStream(filePath), true);
+        if (!tgMsg) {
+            tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
+            return "sendFailure";
+        } else return "Success";
+
     } catch (e) {
+        if (!msg.isRetry) return setTimeout(() => {
+            // do retry download
+            msg.isRetry = true;
+            continueDeliverFileFromWx(msg);
+        }, 5000);
+        // otherwise display error message
         wxLogger.error(`{continueDeliverFileFromWx()}: ${e.message}`);
         wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
     }
-    wxLogger.info(`Detected as File, But download failed.`); // TODO fix video and file download!
+    wxLogger.info(`Detected as File, But download failed.`);
 
 }
 
