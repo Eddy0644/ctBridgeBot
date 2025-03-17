@@ -1,10 +1,6 @@
-const log4js = require('log4js');
-const fs = require("fs");
+const log4js = require('log4js'), fs = require("fs"), dayjs = require("dayjs"), https = require("https"),
+  agentEr = require("https-proxy-agent");
 const proxy = require((fs.existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
-const dayjs = require("dayjs");
-const https = require("https");
-const http = require("http");
-const agentEr = require("https-proxy-agent");
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "%[[%d{dd/hh:mm:ss}] %1.1p/%c%] %m";
 
@@ -83,7 +79,7 @@ module.exports = (param, ext = null) => {
         const part2 = {
             LogWxMsg: (msg, type) => {
                 const isMessageDropped = type === 1;
-                if (type === 2) log4js.getLogger("wxMsg").info(`--------A recalled message is below: -------------`);
+                // if (type === 2) log4js.getLogger("wxMsg").info(`--------A recalled message is below: -------------`);
                 let msgToStr = `${msg}`;
                 // fixed here to avoid contamination of <img of HTML.
                 part1.wxLogger.trace(`${isMessageDropped ? '❌[Dropped] ' : ""}---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\t   ` +
@@ -181,19 +177,13 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                     return new Promise((resolve) => {
                         https.get(url, (res) => {
                             let data = '';
-
-                            // A chunk of data has been received.
                             res.on('data', (chunk) => {
                                 data += chunk;
                             });
-
-                            // The whole response has been received.
                             res.on('end', () => {
                                 resolve([res.statusCode, data]);
                             });
-
                         }).on('error', (err) => {
-                            // An error occurred, set opcode to 0 and return the error message.
                             resolve([0, err.message]);
                         });
                     });
@@ -205,7 +195,7 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                     const nowDate = dayjs().unix();
                     return (nowDate - targetTS < maxDelay);
                 },
-                parseUnknown_tgMsg: function (tgMsg, logger) {
+                parseUnknown_tgMsg: function (tgMsg) {
                     const propList = Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ');
                     const info1 = `Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title}) `;
                     for (let prop of ['message_id', 'from', 'chat', 'date']) {

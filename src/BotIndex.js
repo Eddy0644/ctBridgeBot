@@ -721,7 +721,7 @@ async function onWxMessage(msg) {
                 msg.vd = 1;
                 if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
                     msg.autoDownload = true;
-                    content += `⬇️🔄, ⏰️`;
+                    content += `⬇️🔄`;
                 } else {
                     msg.autoDownload = false;
                     content += `Send an <code>OK</code> to retrieve.`;
@@ -798,7 +798,7 @@ async function onWxMessage(msg) {
                     wxLogger.info(`Got a very-small wx file here, please check manually. Sender:{${alias}}, filename=(${msg.payload.filename})`);
                 } else if (msg.filesize < secret.misc.wxAutoDownloadSizeThreshold) {
                     msg.autoDownload = true;
-                    content += `⬇️🔄, ⏰️`;
+                    content += `⬇️🔄`;
                 } else {
                     msg.autoDownload = false;
                     content += `Send an <code>OK</code> to retrieve.`;
@@ -1121,17 +1121,6 @@ async function tgCommandHandler(tgMsg) {
             await tgBotDo.SendMessage(tgMsg.matched, secret.misc.tgCmdPlaceholder, true);
             return;
         }
-        case "/reloginWX": {
-            return await mod.tgProcessor.replyWithTips("aboutToReLoginWX", tgMsg.matched, 0);
-        }
-        case "/reloginWX_2": {
-            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
-            await fs.promises.unlink("data/ctbridgebot.memory-card.json");
-            ctLogger.warn("Re-login request invoked by user, memory-card deletion successful, attempting reboot!");
-            // write a flag to disk, in order to skip graceful timeout before sending QRCode to TG
-            await fs.promises.writeFile("data/userTriggerRelogin.flag", "114514");
-            process.exit(123);
-        }
         case "/reboot": {
             tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
             ctLogger.info("Reboot request invoked by user! Counting down...");
@@ -1212,7 +1201,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认
-            if (!msg.videoPresent) wxLogger.debug(`Received New File from ${tmplc} : ${content}.`);
+            if (!msg.vd) wxLogger.debug(`Received New File from ${tmplc} : ${content.replace(/\n⬇️🔄$/,"")}.`);
             else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
@@ -1220,10 +1209,10 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // this is directly accept the file transaction
             if (msg.autoDownload) {
                 // const result = await (msg.videoPresent?continueDeliverFileFromWx)(msg);
-                let result;
-                if (msg.videoPresent) {
-                    result = await mod.wxMddw.handleVideoMessage(msg, tmplm);
-                } else result = await continueDeliverFileFromWx(msg, tmplc);
+                let result= await continueDeliverFileFromWx(msg, tmplc);
+                // if (msg.videoPresent) {
+                //     result = await mod.wxMddw.handleVideoMessage(msg, tmplm);
+                // } else
                 if (result === "Success") {
                     tgLogger.debug(`Media Delivery Success.`);
                     // tgMsg = await tgBotDo.EditMessageText(tgMsg.text.replace("Trying download as size is smaller than threshold.", "Auto Downloaded Already."), tgMsg, msg.receiver);
@@ -1536,9 +1525,9 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
 }
 
 async function continueDeliverFileFromWx(msg, tmplc) {
+    const filePath = msg.nowPath;
     try {
-        const filePath = msg.nowPath;
-        await delay(1500);
+        await delay(500);
         tgBotDo.SendChatAction("record_video").then(tgBotDo.empty);
         const fBox = await msg.toFileBox(), dname = msg.dname || msg.payload.wcfraw.sender;
         // await fBox.toFile(filePath);
@@ -1643,7 +1632,7 @@ wxbot.start()
 require('./common')("startup", {
     tgNotifier: (text, level = 1) => {
         if (secret.misc.deliverLogToTG < level) return;
-        tgBotDo.SendMessage(null, `ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(tgBotDo.empty);
+        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(tgBotDo.empty);
     },
 });
 

@@ -151,7 +151,7 @@ module.exports = {
         debug_show_additional_log: 0,
 
         // Deliver logger-produced error to tg default channel. 0=disable, 1=only errors, 2=error+warn
-        deliverLogToTG: 1,
+        deliverLogToTG: 0,
 
         /* ------------ [  ] ------------ */
 
