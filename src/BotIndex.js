@@ -1201,7 +1201,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}`, stream, true, false);
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认
-            if (!msg.vd) wxLogger.debug(`Received New File from ${tmplc} : ${content.replace(/\n⬇️🔄$/,"")}.`);
+            if (!msg.vd) wxLogger.debug(`Received New File from ${tmplc} : ${content.replace(/\n⬇️🔄$/, "")}.`);
             else wxLogger.debug(`Retrieving New Video from ${tmplc}.`);
             tgMsg = await tgBotDo.SendMessage(msg.receiver, `${tmpl} ${content}`, msgDef.isSilent, "HTML");
             // TODO: consider to merge it into normal text
@@ -1209,7 +1209,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             // this is directly accept the file transaction
             if (msg.autoDownload) {
                 // const result = await (msg.videoPresent?continueDeliverFileFromWx)(msg);
-                let result= await continueDeliverFileFromWx(msg, tmplc);
+                let result = await continueDeliverFileFromWx(msg, tmplc);
                 // if (msg.videoPresent) {
                 //     result = await mod.wxMddw.handleVideoMessage(msg, tmplm);
                 // } else
@@ -1525,12 +1525,25 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
 }
 
 async function continueDeliverFileFromWx(msg, tmplc) {
-    const filePath = msg.nowPath;
+    const filePath = msg.nowPath, dname = msg.dname || msg.payload.wcfraw.sender;
     try {
         await delay(500);
         tgBotDo.SendChatAction("record_video").then(tgBotDo.empty);
-        const fBox = await msg.toFileBox(), dname = msg.dname || msg.payload.wcfraw.sender;
-        // await fBox.toFile(filePath);
+        let timeout = 15;
+        try {
+            await msg.toFileBox();
+        } catch (e) {
+            // wcf returns fail, skipping
+            if (e.message.includes("download file timeout")) timeout = 10;
+            wxLogger.info(`wcf reported a file download failure. Wait...`);
+        }
+        await (async () => {
+            for (let cnt = 0; cnt * 2 < timeout; cnt++) {
+                if (fs.existsSync(filePath)) return;
+                await delay(2000);
+            }
+            throw new Error(`download file timeout.`);
+        })();
 
         wxLogger.debug(`Downloaded previous file as: ${basename(filePath)}`);
         tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty);
@@ -1541,11 +1554,11 @@ async function continueDeliverFileFromWx(msg, tmplc) {
         } else return "Success";
 
     } catch (e) {
-        if (!msg.isRetry) return setTimeout(() => {
-            wxLogger.debug(`Retrying file download...`);
-            msg.isRetry = true;
-            continueDeliverFileFromWx(msg);
-        }, 4000);
+        // if (!msg.isRetry) return setTimeout(() => {
+        //     wxLogger.debug(`Retrying file download...`);
+        //     msg.isRetry = true;
+        //     continueDeliverFileFromWx(msg);
+        // }, 4000);
         // otherwise display error message
         errorLog(wxLogger, `{continueDeliverFileFromWx()}: ${e.message}`, e);
     }
