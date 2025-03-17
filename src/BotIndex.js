@@ -502,6 +502,7 @@ async function onWxMessage(msg) {
             forceMerge: false,
         }
 
+        msg.startTime = process.uptime();
         msg.DType = DTypes.Default;
         {   // Sub: prepare data for LogWxMsg
             msg.log_payload = `Type(${isGroup ? ('G,"' + topic + '"') : 'P)'} from talker [${alias}].`;
@@ -1528,26 +1529,24 @@ async function continueDeliverFileFromWx(msg, tmplc) {
     const filePath = msg.nowPath, dname = msg.dname || msg.payload.wcfraw.sender;
     try {
         await delay(500);
-        tgBotDo.SendChatAction("record_video").then(tgBotDo.empty);
-        let timeout = 15;
-        try {
-            await msg.toFileBox();
-        } catch (e) {
-            // wcf returns fail, skipping
-            if (e.message.includes("download file timeout")) timeout = 10;
-            wxLogger.info(`wcf reported a file download failure. Wait...`);
-        }
+        if (msg.vd) await msg.toFileBox().catch(() => wxLogger.info(`wcf reported a video download failure.`));
         await (async () => {
-            for (let cnt = 0; cnt * 2 < timeout; cnt++) {
+            for (let cnt = 0; cnt * 2 < 18; cnt++) {
                 if (fs.existsSync(filePath)) return;
+                if (cnt === 3) {
+                    wxLogger.info(`File not exist after 6000ms, invoking wcf downloadAttach().`);
+                    msg.toFileBox().catch(() => wxLogger.debug(`wcf reported a file download failure. Just skip...`));
+                }
                 await delay(2000);
             }
+            //TODO edit to add timeout hint on message itself
             throw new Error(`download file timeout.`);
         })();
 
         wxLogger.debug(`Downloaded previous file as: ${basename(filePath)}`);
         tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty);
-        let tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, `from [${tmplc || dname}]`, fs.createReadStream(filePath), true);
+        const txt_template = `from [${tmplc || dname}], used ${(process.uptime() - msg.startTime).toFixed(1)}s`,
+          tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, txt_template, fs.createReadStream(filePath), true);
         if (!tgMsg) {
             tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
             return "sendFailure";
