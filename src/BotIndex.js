@@ -8,7 +8,7 @@ const DataStorage = require('./dataStorage.api');
 const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./data/sticker_l4.json");
 const {
-    wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger,
+    wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger, errorLog,
     CommonData, STypes, downloader, processor, delay
 } = require('./common')();
 //
@@ -479,22 +479,11 @@ async function onTGMsg(tgMsg) {
 
         }
     } catch (e) {
-        const err = e.message;
-        // try matching with existing error cases, replace with user-friendly message
-        if (err.includes("uploadMedia err") && err.includes("reading 'name'")) {
-            tgLogger.error(`An internal error occurred when uploading your media from tg to wx. Please relogin and start a new session, or this function may remain unavailable.`);
-            // TODO notify_once(need_relogin_limited)
-        } else {
-            // not matching
-            tgLogger.error(`{onTGMsg()}: ${err}`);
-        }
-        tgLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        errorLog(tgLogger, `{onTGMsg()}: ${e.message}`, e);
     }
-
 }
 
 tgbot.on('message', onTGMsg);
-
 
 async function onWxMessage(msg) {
     state.v.wxStat.MsgTotal++;
@@ -505,7 +494,7 @@ async function onWxMessage(msg) {
         let content = msg.text().trim(); // 消息内容
         const room = msg.room(), isGroup = room !== undefined; // 是否是群消息
         let topic = room ? await room.topic() : "";
-        // if (msg.payload.talkerId?.includes("@openim")) return wxLogger.debug("Dropped a WXWork message (not implemented).");
+        if (msg.payload.talkerId?.includes("@openim")) return wxLogger.debug("Dropped a WXWork message (not implemented).");
         let name = await contact.name(), alias = await contact.alias() || name;
         let dname = alias; // [msg.dname]  // Display Name, which will be overwritten with c2c.opts.nameType
         let msgDef = {
@@ -958,8 +947,7 @@ async function onWxMessage(msg) {
             // if (haveLock) talkerLocks.pop();
         }
     } catch (e) {
-        wxLogger.error(`{onWxMsg()}: ${e.message}`);
-        wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        errorLog(wxLogger, `{onWxMsg()}: ${e.message}`, e);
         wxLogger.trace(`[wxMsg] ${JSON.stringify(msg)}`);
     }
 }
@@ -1565,15 +1553,14 @@ async function continueDeliverFileFromWx(msg, tmplc) {
 
     } catch (e) {
         if (!msg.isRetry) return setTimeout(() => {
-            // do retry download
+            wxLogger.debug(`Retrying file download...`);
             msg.isRetry = true;
             continueDeliverFileFromWx(msg);
         }, 4000);
         // otherwise display error message
-        wxLogger.error(`{continueDeliverFileFromWx()}: ${e.message}`);
-        wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
+        errorLog(wxLogger, `{continueDeliverFileFromWx()}: ${e.message}`, e);
     }
-    wxLogger.info(`Detected as File, But download failed.`);
+    wxLogger.info(`File [${basename(filePath)}] download not successful.`);
 
 }
 
@@ -1653,7 +1640,12 @@ wxbot.start()
         wxLogger.error(e);
 });
 
-require('./common')("startup");
+require('./common')("startup", {
+    tgNotifier: (text, level = 1) => {
+        if (secret.misc.deliverLogToTG < level) return;
+        tgBotDo.SendMessage(null, `ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(tgBotDo.empty);
+    },
+});
 
 async function timerFunction_fast() {
     try {
@@ -1677,12 +1669,10 @@ async function timerFunction_fast() {
             }
         }
     } catch (e) {
-        ctLogger.info(`An exception happened within the fast timer function: ${e.toString()}`);
-        ctLogger.trace(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        errorLog(ctLogger, `{fast timer function}: ${e.message}`, e);
         state.v.timerData[0]--;
         if (state.v.timerData[0] < 0) {
             ctLogger.error(`Due to frequent errors in the fast timer function, it has been disabled. Check and reboot to restore it.`)
-            ctLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
             clearInterval(state.v.timerData[2]);
         }
     }
@@ -1703,12 +1693,10 @@ async function timerFunction_slow() {
             }
         }
     } catch (e) {
-        ctLogger.info(`An exception happened within the slow timer function: ${e.toString()}`);
-        ctLogger.trace(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
+        errorLog(ctLogger, `{slow timer function}: ${e.message}`, e);
         state.v.timerData[1]--;
         if (state.v.timerData[1] < 0) {
             ctLogger.error(`Due to frequent errors in the slow timer function, it has been disabled. Check and reboot to restore it.`)
-            ctLogger.debug(`Stack: ${e.stack.split("\n").slice(0, 5).join("\n")}`);
             clearInterval(state.v.timerData[3]);
         }
     }

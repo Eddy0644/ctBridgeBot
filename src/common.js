@@ -54,8 +54,11 @@ log4js.configure({
     }
 });
 
-module.exports = (param) => {
-    if (param === "startup") log4js.getLogger("default").debug(`Program Starting...
+const commonEnv = {};
+
+module.exports = (param, ext = null) => {
+    if (param === "startup") {
+        log4js.getLogger("default").debug(`Program Starting...
    ________  ____        __ 
   / ____/ /_/ __ )____  / /_
  / /   / __/ __  / __ \\/ __/
@@ -63,6 +66,8 @@ module.exports = (param) => {
 \\____/\\__/_____/\\____/\\__/  
                                                                             
 `);
+        commonEnv.tgNotifier = ext.tgNotifier || null;
+    }
     // else return log4js.getLogger(param);
     else { // noinspection JSUnresolvedVariable
         const part1 = {
@@ -76,17 +81,15 @@ module.exports = (param) => {
         //// End Lite Version ---------------
 
         const part2 = {
-            wxMsgLogger: log4js.getLogger("wxMsg"),
-
             LogWxMsg: (msg, type) => {
                 const isMessageDropped = type === 1;
-                if (type === 2) part2.wxMsgLogger.info(`--------A recalled message is below: -------------`);
+                if (type === 2) log4js.getLogger("wxMsg").info(`--------A recalled message is below: -------------`);
                 let msgToStr = `${msg}`;
                 // fixed here to avoid contamination of <img of HTML.
                 part1.wxLogger.trace(`${isMessageDropped ? '❌[Dropped] ' : ""}---Raw ${msgToStr.replaceAll("<img class=\"emoji", "[img class=\"emoji")}\t   ` +
                   `[age:${msg.age()},uptime:${process.uptime().toFixed(2)}][type:${msg.type()}][ID: ${msg.id} ]`);
                 //+ (isMessageDropped ? '\n' : ''));
-                part2.wxMsgLogger.info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
+                log4js.getLogger("wxMsg").info(`[ID:${msg.id}][ts=${msg.payload.timestamp}][type:${msg.type()}]
             [🗣talkerId=${msg.payload.talkerId}][👥roomId=${msg.payload.roomId}]
             [filename=${msg.payload.filename}]
             ${JSON.stringify(msg.payload.wcfraw)}${type === 0 ? '\n\t' + msg.log_payload : ''}
@@ -94,6 +97,11 @@ module.exports = (param) => {
                 if (msg.log_payload) delete msg.log_payload;
             },
 
+            errorLog: (logger, text, e, stackMax = 7) => {
+                logger.error(text);
+                logger.debug(`[Stack] ${e.stack.split("\n").slice(0, stackMax).join("\n")}`);
+                if (commonEnv.tgNotifier) commonEnv.tgNotifier(text, 1);
+            },
             //////-----------Above is mostly of logger ---------------------//////
             delay: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
             _T: {},
@@ -190,31 +198,6 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                         });
                     });
                 },
-
-                httpsWithWx: async function (url, pathName, cookieStr) {
-                    return new Promise((resolve, reject) => {
-                        const file = fs.createWriteStream(pathName);
-                        const options = {
-                            headers: {
-                                'Cookie': cookieStr
-                            },
-                            rejectUnauthorized: false
-                        };
-                        https.get(url, options, (response) => {
-                            if (response.statusCode !== 200) {
-                                reject(new Error(`Failed to download file: ${response.statusCode} ${response.statusMessage}`));
-                                return;
-                            }
-                            response.pipe(file);
-                            file.on('finish', () => {
-                                file.close();
-                                resolve("SUCCESS");
-                            });
-                        }).on('error', (error) => {
-                            fs.unlink(pathName, () => reject(error));
-                        }).end();
-                    });
-                }
             },
 
             processor: {

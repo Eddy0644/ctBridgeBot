@@ -150,6 +150,9 @@ module.exports = {
         // Show additional processing intermediates in logfile. Default off to reduce user disk I/Os.
         debug_show_additional_log: 0,
 
+        // Deliver logger-produced error to tg default channel. 0=disable, 1=only errors, 2=error+warn
+        deliverLogToTG: 1,
+
         /* ------------ [  ] ------------ */
 
         // If set to <false>, all post message (from subscribed official account) won't be copied to log,
