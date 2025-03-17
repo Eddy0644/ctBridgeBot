@@ -9,7 +9,7 @@ const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./data/sticker_l4.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger, errorLog,
-    CommonData, STypes, downloader, processor, delay
+    CommonData, STypes, downloader, processor, delay, nil
 } = require('./common')();
 //
 const msgMappings = [];
@@ -108,7 +108,7 @@ async function onTGMsg(tgMsg) {
         tgLogger.info("tg Msg drop lock is now OFF.");
         if (state.s.helpCmdInstance) {
             // former /help instance found, try to delete it...
-            await tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]);
+            tgBotDo.RevokeMessage(state.s.helpCmdInstance[0].message_id, state.s.helpCmdInstance[1]).then(nil);
             state.s.helpCmdInstance = null;
         }
         return;
@@ -322,7 +322,7 @@ async function onTGMsg(tgMsg) {
                                 // the explicit talker - Room matches preRoom
                                 await mod.tgProcessor.addSelfReplyTs();
                             }
-                            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
+                            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(nil)
                             ctLogger.debug(`TG[Default] DirectReply--> WX(${mapPair.name}): ${tgMsg.text}`);
                             return;
                         } else {
@@ -413,7 +413,7 @@ async function onTGMsg(tgMsg) {
             if (!wxTarget) return;
             if (tgMsg.quote?.is_manual) tgMsg.text = secret.c11n.tgTextQuoteAddition(tgMsg.quote.text, tgMsg.text);
             await wxTarget.say(tgMsg.text);
-            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty)
+            tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(nil)
             const wx1 = tgMsg.matched.p.wx;
             if (wx1[1] === true && wx1[0] === state.preRoom.topic) {
                 // the C2C Room matches preRoom
@@ -461,7 +461,7 @@ async function onTGMsg(tgMsg) {
             if (state.last.s === STypes.Chat) {
                 if ((tgMsg.text === "ok" || tgMsg.text === "OK") && state.last.isFile) {
                     // 对wx文件消息做出了确认
-                    tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+                    tgBotDo.SendChatAction("typing", tgMsg.matched).then(nil);
                     await continueDeliverFileFromWx(state.last.wxMsg);
                     ctLogger.debug(`Handled a file reDownload from ${state.last.name}.`);
                 } else {
@@ -472,7 +472,7 @@ async function onTGMsg(tgMsg) {
                         await mod.tgProcessor.addSelfReplyTs();
                     }
                     ctLogger.debug(`Handled a message send-back to speculative talker:(${state.last.name}).`);
-                    tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(tgBotDo.empty);
+                    tgBotDo.SendChatAction("choose_sticker", tgMsg.matched).then(nil);
                 }
             }
             // Empty here.
@@ -685,14 +685,15 @@ async function onWxMessage(msg) {
         } catch (e) {
             wxLogger.warn(`Detected as Image, But download failed.`);
             wxLogger.debug(`Error: ${e.message}`);
+            //TODO add care for image rpc timeout
             if (e.message.includes("Recv rpc failed: Timed out")) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             msg.DType = DTypes.Text;
-            content = "🖼(Fail to download)";
+            content = "🖼(⬇️❎️)";
         }   // End of Image process
 
         // 尝试下载语音
         if (msg.type() === wxbot.Message.Type.Audio) try {
-            tgBotDo.SendChatAction("record_voice", msg.receiver).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("record_voice", msg.receiver).then(nil);
             const fBox = await msg.toFileBox();
             let audioPath = `./downloaded/audio/${processor.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}`)}-${alias}.mp3`;
             if (fs.existsSync(audioPath)) audioPath = audioPath.replace(".mp3", `_${(Math.random() * 100).toFixed(0)}.mp3`);
@@ -708,7 +709,7 @@ async function onWxMessage(msg) {
             wxLogger.debug(`Error: ${e.message}`);
             if (e.message.includes("Recv rpc failed: Timed out")) with (secret.notification) await downloader.httpsCurl(baseUrl + prompt_wx_stuck + default_arg);
             msg.DType = DTypes.Text;
-            content = "🎤(Fail to download)";
+            content = "🎤(⬇️❎️)";
         }
         // 视频消息处理或自动下载
         if (msg.type() === wxbot.Message.Type.Video) {
@@ -732,7 +733,7 @@ async function onWxMessage(msg) {
                 content = "[Video]";
                 msg.DType = DTypes.Text;
             }
-            // tgBotDo.SendChatAction("record_video", msg.receiver).then(tgBotDo.empty);
+            // tgBotDo.SendChatAction("record_video", msg.receiver).then(nil);
             // msg.videoPresent = 1;
             // await mod.wxMddw.handleVideoMessage(msg, alias);
             // content = `🎦(Downloading...)`;
@@ -976,7 +977,7 @@ async function tgCommandHandler(tgMsg) {
         case "/help": {
             tgLogger.debug("Received /help request, now revoking user command...\n"
               + `Temporary Status Output:(TotalMsgCount:${state.v.wxStat.MsgTotal})`);
-            tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.RevokeMessage(tgMsg.message_id, tgMsg.matched).then(nil);
             conLogger.trace("Revoke complete. sending new /help instance...");
             const helper = secret.c11n.override_help_text || CommonData.TGBotHelpCmdText;
             state.s.helpCmdInstance = [await tgBotDo.SendMessage(tgMsg.matched, helper(state), true, null),
@@ -1069,19 +1070,19 @@ async function tgCommandHandler(tgMsg) {
             state.v.msgDropState = secret.misc.keep_drop_on_x5s;
             tgLogger.info("tg Msg drop lock is now ON!");
             // add feedback here to let user notice
-            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(nil);
             return;
         }
         case "/sync_on": {
             state.v.syncSelfState = 1;
             tgLogger.info("Self-message sync lock is now ON!");
-            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(nil);
             return;
         }
         case "/sync_off": {
             state.v.syncSelfState = 0;
             tgLogger.info("Self-message sync lock is now OFF.");
-            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(nil);
             return;
         }
         case "/spoiler": {
@@ -1111,7 +1112,7 @@ async function tgCommandHandler(tgMsg) {
         case "/info": {
             tgLogger.debug(`Generating tgBot status by user operation...`);
             // const statusReport = `---state.lastOpt: <code>${JSON.stringify(state.lastOpt)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(nil);
             const statusReport = await generateInfo();
             await tgBotDo.SendMessage(tgMsg.matched, statusReport, true, null);
             const result = await tgbot.setMyCommands(CommonData.TGBotCommands);
@@ -1123,7 +1124,7 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/reboot": {
-            tgBotDo.SendChatAction("typing", tgMsg.matched).then(tgBotDo.empty);
+            tgBotDo.SendChatAction("typing", tgMsg.matched).then(nil);
             ctLogger.info("Reboot request invoked by user! Counting down...");
             setTimeout(() => {
                 process.exit(321);
@@ -1363,7 +1364,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     const FileBox = require("file-box").FileBox;
     if (media_type === "voice!") {
         let file_path = './downloaded/' + `voiceTG/${Math.random()}.oga`;
-        tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(tgBotDo.empty);
+        tgBotDo.SendChatAction("record_voice", tgMsg.matched).then(nil);
         // noinspection JSUnresolvedVariable
         await downloader.httpsWithProxy(secret.bundle.getTGFileURL((await tgbot.getFile(tgMsg.voice.file_id)).file_path), file_path);
         try {
@@ -1393,7 +1394,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
             (`videoTG/${tg_media.file_unique_id}.mp4`))));
     // file_path = `"${file_path}"`;
     const action = `upload_${media_type}`;
-    tgBotDo.SendChatAction(action, receiver).then(tgBotDo.empty)
+    tgBotDo.SendChatAction(action, receiver).then(nil)
     tgLogger.trace(`file_path is ${file_path}.`);
     // if sticker.webp exist, skip download
     if (fs.existsSync(file_path) && tgMsg.sticker) {
@@ -1424,7 +1425,7 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
     }
 
 
-    tgBotDo.SendChatAction("record_video", receiver).then(tgBotDo.empty)
+    tgBotDo.SendChatAction("record_video", receiver).then(nil)
     if (s === 0) {
         if (tgMsg.sticker) await wxbot.__options.puppet.agent.wcf.sendEmotion(packed, state.last.target.id);
         else await state.last.target.say(packed);
@@ -1442,14 +1443,14 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
             // ctLogger.debug(`Handled a (${action}) send-back to C2C talker:(${tgMsg.matched.p.wx[0]}) on TG (${tgMsg.chat.title}).`);
         }
     }
-    tgBotDo.SendChatAction("choose_sticker", receiver).then(tgBotDo.empty)
+    tgBotDo.SendChatAction("choose_sticker", receiver).then(nil)
     return true;
 }
 
 async function findSbInWechat(token, alterMsgId = 0, receiver) {
     wxLogger.debug(`Got an attempt to find [${token}] in WeChat.`);
     const s = alterMsgId === 0;
-    tgBotDo.SendChatAction("typing", receiver).then(tgBotDo.empty)
+    tgBotDo.SendChatAction("typing", receiver).then(nil)
     // Find below as: 1.name of Person 2.name of topic 3.alias of person
     let wxFinded1 = await wxbot.Contact.find({name: token});
     const wxFinded2 = wxFinded1 || await wxbot.Room.find({topic: token});
@@ -1544,7 +1545,7 @@ async function continueDeliverFileFromWx(msg, tmplc) {
         })();
 
         wxLogger.debug(`Downloaded previous file as: ${basename(filePath)}`);
-        tgBotDo.SendChatAction("upload_document").then(tgBotDo.empty);
+        tgBotDo.SendChatAction("upload_document").then(nil);
         const txt_template = `from [${tmplc || dname}], used ${(process.uptime() - msg.startTime).toFixed(1)}s`,
           tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, txt_template, fs.createReadStream(filePath), true);
         if (!tgMsg) {
@@ -1644,7 +1645,7 @@ wxbot.start()
 require('./common')("startup", {
     tgNotifier: (text, level = 1) => {
         if (secret.misc.deliverLogToTG < level) return;
-        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(tgBotDo.empty);
+        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(nil);
     },
 });
 

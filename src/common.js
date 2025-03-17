@@ -100,6 +100,8 @@ module.exports = (param, ext = null) => {
             },
             //////-----------Above is mostly of logger ---------------------//////
             delay: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            nil: () => {
+            },
             _T: {},
             STypes: {
                 Chat: 1,
