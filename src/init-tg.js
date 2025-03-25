@@ -62,17 +62,17 @@ const tgBotDo = {
         if (parseMode) form.parse_mode = parseMode;
         return await retryWithLogging(async () => {
             return await tgbot.sendMessage(parseRecv(receiver, form), msg, form);
-        }, 3, 2200, `Text [${msg.substring(0, msg.length > 7 ? 7 : msg.length)}]`);
+        }, `Text [${msg.substring(0, msg.length > 7 ? 7 : msg.length)}]`);
     },
     RevokeMessage: async (msgId, receiver = null) => {
         return await retryWithLogging(async () => {
             return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId);
-        }, 3, 2200, `RevokeMessage`);
+        }, `RevokeMessage`);
     },
     SendChatAction: async (action, receiver = null) => {
         return await retryWithLogging(async () => {
             return await tgbot.sendChatAction(parseRecv(receiver, {}), action);
-        }, 3, 2200, `SendChatAction`);
+        }, `SendChatAction`);
     },
     SendAnimation: async (msg, path, isSilent = false, hasSpoiler = false) => {
         // await delay(100);
@@ -117,7 +117,7 @@ const tgBotDo = {
         };
         return await retryWithLogging(async () => {
             return await tgbot.editMessageText(text, form);
-        }, 3, 2200, `EditMessageText`);
+        }, `EditMessageText`);
     },
     EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false, receiver = null) => {
         let form = {
@@ -135,7 +135,7 @@ const tgBotDo = {
             }, form);
             if (res) return true;
             return "Unknown Error.";
-        }, 3, 2200, `EditMessageMedia`);
+        }, `EditMessageMedia`);
     },
     SendAudio: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -145,7 +145,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'});
-        }, 3, 2200, `SendAudio`);
+        }, `SendAudio`);
     },
     SendLocation: async (receiver = null, latitude, longitude) => {
         let form = {
@@ -153,7 +153,7 @@ const tgBotDo = {
         };
         return await retryWithLogging(async () => {
             return await tgbot.sendLocation(parseRecv(receiver, form), latitude, longitude, form);
-        }, 3, 2200, `SendLocation`);
+        }, `SendLocation`);
     },
     SendDocument: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -173,7 +173,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendVideo(parseRecv(receiver, form), path, form, {contentType: 'video/mp4'});
-        }, 3, 2200, `SendVideo`);
+        }, `SendVideo`);
     },
     empty: () => {
     }
@@ -209,8 +209,13 @@ tgbot.on('polling_error', async (e) => {
 tgbot.on('webhook_error', async (e) => {
     tgLogger.warn("Webhook - " + e.message.replace("Error: ", ""));
 });
-const retryWithLogging = async (func, maxRetries, retryDelay = 10000, err_suffix = "") => {
+const retryWithLogging = async (func, maxRetries = 2, retryDelay = 4200, err_suffix = "") => {
     let retries = 0;
+    const doWarn = (text) => {
+        tgLogger.warn(text);
+        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(() => {
+        });
+    };
     while (retries < maxRetries) {
         try {
             const res = await func();
@@ -219,8 +224,8 @@ const retryWithLogging = async (func, maxRetries, retryDelay = 10000, err_suffix
         } catch (error) {
             const noNeedRetry = (error.code === 'ETELEGRAM') && !(error.message.includes("retry after"));
             let errorMessage = `MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim() + `  ${err_suffix}`;
-            if (noNeedRetry) return tgLogger.warn(errorMessage); // no more retries!
-            else tgLogger.warn(`(${retries + 1}/${maxRetries})` + errorMessage);
+            if (noNeedRetry) return doWarn(errorMessage); // no more retries!
+            else doWarn(`(${retries + 1}/${maxRetries})` + errorMessage);
             await delay(retryDelay);
             retries++;
         }
@@ -229,10 +234,10 @@ const retryWithLogging = async (func, maxRetries, retryDelay = 10000, err_suffix
     tgLogger.warn("Retry failed. Could not complete the Telegram operation.");
 };
 
-function logErrorDuringTGSend(err) {
-    let err2 = err.toString().replaceAll("Error:", "");
-    tgLogger.warn(`MsgSendFail: ${err2}`);
-}
+// function logErrorDuringTGSend(err) {
+//     let err2 = err.toString().replaceAll("Error:", "");
+//     tgLogger.warn(`tgMsgSendFail: ${err2}`);
+// }
 
 module.exports = {
     tgbot,
