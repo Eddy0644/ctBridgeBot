@@ -65,14 +65,14 @@ const tgBotDo = {
         }, 3, 2200, `Text [${msg.substring(0, msg.length > 7 ? 7 : msg.length)}]`);
     },
     RevokeMessage: async (msgId, receiver = null) => {
-        return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId).catch((e) => {
-            logErrorDuringTGSend(e);
-        });
+        return await retryWithLogging(async () => {
+            return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId);
+        }, 3, 2200, `RevokeMessage`);
     },
     SendChatAction: async (action, receiver = null) => {
-        return await tgbot.sendChatAction(parseRecv(receiver, {}), action).catch((e) => {
-            logErrorDuringTGSend(e);
-        });
+        return await retryWithLogging(async () => {
+            return await tgbot.sendChatAction(parseRecv(receiver, {}), action);
+        }, 3, 2200, `SendChatAction`);
     },
     SendAnimation: async (msg, path, isSilent = false, hasSpoiler = false) => {
         // await delay(100);
@@ -115,7 +115,9 @@ const tgBotDo = {
             message_id: former_tgMsg.message_id,
             parse_mode: "HTML"
         };
-        return await tgbot.editMessageText(text, form).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.editMessageText(text, form);
+        }, 3, 2200, `EditMessageText`);
     },
     EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false, receiver = null) => {
         let form = {
@@ -123,7 +125,7 @@ const tgBotDo = {
             message_id: formerMsg.message_id,
             parse_mode: "HTML",
         };
-        try {
+        return await retryWithLogging(async () => {
             const res = await tgbot.editMessageMedia({
                 type: "photo",
                 media: file_id,
@@ -132,11 +134,8 @@ const tgBotDo = {
                 caption: formerMsg.caption
             }, form);
             if (res) return true;
-        } catch (e) {
-            logErrorDuringTGSend(e);
-            return e.toString();
-        }
-        return "Unknown Error.";
+            return "Unknown Error.";
+        }, 3, 2200, `EditMessageMedia`);
     },
     SendAudio: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -144,13 +143,17 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'}).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'});
+        }, 3, 2200, `SendAudio`);
     },
     SendLocation: async (receiver = null, latitude, longitude) => {
         let form = {
             disable_notification: true
         };
-        return await tgbot.sendLocation(parseRecv(receiver, form), latitude, longitude, form).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendLocation(parseRecv(receiver, form), latitude, longitude, form);
+        }, 3, 2200, `SendLocation`);
     },
     SendDocument: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -168,7 +171,9 @@ const tgBotDo = {
             parse_mode: "HTML",
         };
         if (isSilent) form.disable_notification = true;
-        return await tgbot.sendVideo(parseRecv(receiver, form), path, form, {contentType: 'video/mp4'}).catch(e => logErrorDuringTGSend(e));
+        return await retryWithLogging(async () => {
+            return await tgbot.sendVideo(parseRecv(receiver, form), path, form, {contentType: 'video/mp4'});
+        }, 3, 2200, `SendVideo`);
     },
     empty: () => {
     }
