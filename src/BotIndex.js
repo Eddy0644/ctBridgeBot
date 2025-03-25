@@ -1203,7 +1203,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             if (res.stat === 2) {
                 tgMsg = await tgBotDo.SendDocument(msg.receiver, `${tmplm} ℹ️[Full-Size]`, res.stream, true);
             } else {
-                tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}${res.stat === 1 ? '  ⚠[Shrunk]' : ''}`, res.stream, true, false);
+                tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}${res.stat === 1 ? '  ℹ️[Shrunk]' : ''}`, res.stream, true, false);
             }
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认

@@ -212,17 +212,16 @@ const retryWithLogging = async (func, maxRetries, retryDelay = 10000, err_suffix
             errorStat = 0;
             return res;
         } catch (error) {
-            let errorMessage = `(${retries + 1}/${maxRetries}) MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim() + `  ${err_suffix}`;
-            tgLogger.warn(errorMessage);
-            if (error.code === 'ETELEGRAM') {
-                return; // Directly exit if the error code is 'ETELEGRAM', pretend that it is not 'retry after 8' error.
-            }
+            const noNeedRetry = (error.code === 'ETELEGRAM') && !(error.message.includes("retry after"));
+            let errorMessage = `MsgSendFail:` + error.message.replace(/(Error:)/g, '').trim() + `  ${err_suffix}`;
+            if (noNeedRetry) return tgLogger.warn(errorMessage); // no more retries!
+            else tgLogger.warn(`(${retries + 1}/${maxRetries})` + errorMessage);
             await delay(retryDelay);
             retries++;
         }
     }
     // If the maximum number of retries is reached, you can handle it here if needed.
-    tgLogger.warn("Maximum retries reached. Could not complete the operation.");
+    tgLogger.warn("Retry failed. Could not complete the Telegram operation.");
 };
 
 function logErrorDuringTGSend(err) {
