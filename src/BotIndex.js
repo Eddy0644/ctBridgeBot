@@ -1646,9 +1646,10 @@ wxbot.start()
 });
 
 require('./common')("startup", {
-    tgNotifier: (text, level = 1) => {
+    tgNotifier: (text, level = 1, verbose = "") => {
         if (secret.misc.deliverLogToTG < level) return;
-        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>`, true, "HTML").then(nil);
+        const added = verbose ? `<blockquote expandable>${verbose}</blockquote>` : '';
+        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>` + added, true, "HTML").then(nil);
     },
 });
 

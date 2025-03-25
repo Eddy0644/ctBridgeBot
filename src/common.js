@@ -14,9 +14,9 @@ log4js.configure({
                 pattern: logger_pattern_console
             },
         },
-        "dateLog": {
+        "dated": {
             type: "dateFile",
-            filename: "log/day",
+            filename: "log/day/d",
             pattern: "yy-MM-dd.log",
             alwaysIncludePattern: true,
             layout: {
@@ -24,7 +24,18 @@ log4js.configure({
                 pattern: logger_pattern
             },
         },
-        "wxMsgDetail_dateLog": {
+        "dated_warn": {
+            type: "dateFile",
+            filename: "log/warn",
+            pattern: "yy-MM-dd.log",
+            alwaysIncludePattern: true,
+            layout: {
+                type: "pattern",
+                pattern: logger_pattern
+            },
+            level: "warn",
+        },
+        "wxMsgDetail_dated": {
             type: "dateFile",
             filename: "log/msgDT/wx",
             pattern: "yy-MM-dd.log",
@@ -41,12 +52,12 @@ log4js.configure({
         }
     },
     categories: {
-        "default": {appenders: ["dateLog"], level: "debug"},
+        "default": {appenders: ["dated"], level: "debug"},
         "con": {appenders: ["console"], level: "trace"},
-        "ct": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
-        "wx": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
-        "wxMsg": {appenders: ["wxMsgDetail_dateLog"], level: "info"},
-        "tg": {appenders: ["dateLog", "debug_to_con"], level: "trace"},
+        "ct": {appenders: ["dated", "debug_to_con"], level: "trace"},
+        "wx": {appenders: ["dated", "debug_to_con"], level: "trace"},
+        "wxMsg": {appenders: ["wxMsgDetail_dated"], level: "info"},
+        "tg": {appenders: ["dated", "debug_to_con"], level: "trace"},
     }
 });
 
@@ -95,8 +106,9 @@ module.exports = (param, ext = null) => {
 
             errorLog: (logger, text, e, stackMax = 7) => {
                 logger.error(text);
-                logger.debug(`[Stack] ${e.stack.split("\n").slice(0, stackMax).join("\n")}`);
-                if (commonEnv.tgNotifier) commonEnv.tgNotifier(text, 1);
+                const stacks = `[Stack] ${e.stack.split("\n").slice(0, stackMax).join("\n")}`;
+                logger.debug(stacks);
+                if (commonEnv.tgNotifier) commonEnv.tgNotifier(text, 1, stacks);
             },
             //////-----------Above is mostly of logger ---------------------//////
             delay: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
@@ -197,15 +209,15 @@ Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.l
                     const nowDate = dayjs().unix();
                     return (nowDate - targetTS < maxDelay);
                 },
-                parseUnknown_tgMsg: function (tgMsg) {
-                    const propList = Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ');
-                    const info1 = `Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title}) `;
-                    for (let prop of ['message_id', 'from', 'chat', 'date']) {
-                        if (tgMsg.hasOwnProperty(prop)) {
-                            delete tgMsg[prop];
-                        }
-                    }
-                },
+                // parseUnknown_tgMsg: function (tgMsg) {
+                //     const propList = Object.getOwnPropertyNames(tgMsg).filter(e => !['message_id', 'from', 'chat', 'date'].includes(e)).join(', ');
+                //     const info1 = `Chat_id: (${tgMsg.chat.id}) Title:(${tgMsg.chat.title}) `;
+                //     for (let prop of ['message_id', 'from', 'chat', 'date']) {
+                //         if (tgMsg.hasOwnProperty(prop)) {
+                //             delete tgMsg[prop];
+                //         }
+                //     }
+                // },
                 filterFilename: function (orig) {
                     return orig.replaceAll(/[\/\\]/g, ",");
                 },
