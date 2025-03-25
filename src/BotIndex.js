@@ -2,8 +2,7 @@
 // noinspection DuplicatedCode
 
 const secret = require('../config/confLoader');
-const fs = require("fs");
-const dayjs = require('dayjs');
+const fs = require("fs"), dayjs = require('dayjs'), sharp = require('sharp');
 const DataStorage = require('./dataStorage.api');
 const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./data/sticker_l4.json");
@@ -1167,7 +1166,7 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
         dname = name;
     }
     // TODO refactor and explain on each tmpl* !
-    const {tmpl, tmplc, tmplm} = (() => {
+    let {tmpl, tmplc, tmplm} = (() => {
         // Template text; template console; template media.
         let tmpl, tmplc, tmplm;
         if (msg.receiver.opts && msg.receiver.opts.hideMemberName) {
@@ -1199,8 +1198,13 @@ async function deliverWxToTG(isRoom = false, msg, contentO, msgDef) {
             tgMsg = await tgBotDo.SendAudio(msg.receiver, `${tmplm}` + msg.audioParsed, stream, false);
         } else if (msg.DType === DTypes.Image) {
             // 正常图片消息
-            const stream = fs.createReadStream(msg.downloadedPath);
-            tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}`, stream, true, false);
+            // const stream = fs.createReadStream(msg.downloadedPath);
+            const res = await mod.tgProcessor.filterPhoto(msg.downloadedPath);
+            if (res.stat === 2) {
+                tgMsg = await tgBotDo.SendDocument(msg.receiver, `${tmplm} ℹ️[Full-Size]`, res.stream, true);
+            } else {
+                tgMsg = await tgBotDo.SendPhoto(msg.receiver, `${tmplm}${res.stat === 1 ? '  ⚠[Shrunk]' : ''}`, res.stream, true, false);
+            }
         } else if (msg.DType === DTypes.File) {
             // 文件消息, 需要二次确认
             if (!msg.vd) wxLogger.debug(`Received New File from ${tmplc} : ${content.replace(/\n⬇️🔄$/, "")}.`);
@@ -1413,7 +1417,6 @@ async function deliverTGToWx(tgMsg, tg_media, media_type) {
         tgLogger.trace(`Invoking TG sticker pre-process...`);
         const srv_type = secret.misc.service_type_on_webp_conversion;
         try {
-            const sharp = require('sharp');
             const buffer = await sharp(file_path).gif().toBuffer();
             // We used telegram-side file_unique_id here as filename, because WeChat keeps image name in their servers.
             packed = await FileBox.fromBuffer(buffer, `T_sticker_${tgMsg.sticker.file_unique_id}.gif`);

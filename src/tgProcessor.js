@@ -4,6 +4,9 @@ const dayjs = require("dayjs");
 const {tgBotDo} = require("./init-tg");
 const secret = require("../config/confLoader");
 const nativeEmojiMap = require('../config/native_emoji_map.js');
+const sharp = require("sharp");
+const {PassThrough} = require("node:stream");
+const fs = require("node:fs");
 
 let env;
 
@@ -184,6 +187,42 @@ async function addSelfReplyTs(name = null) {
     }
 }
 
+async function filterPhoto(path) {
+    const {defLogger} = env;
+    const metadata = await sharp(path).metadata();
+    let {width, height} = metadata;
+    let resizeOptions = null;
+
+    // Check aspect ratio --- stat 2
+    const ratio = width / height;
+    if (ratio > 3 || ratio < 1 / 3) {
+
+        defLogger.debug(`Photo [${width}x${height}, ${ratio.toFixed(2)}] exceeds ratio limit 3. Sending as file instead.`);
+        return {stat: 2, stream: fs.createReadStream(path)};
+    }
+
+    // Check if width + height exceeds 8000px --- stat 1
+    if (width + height > 8000) {
+        const scale = 8000 / (width + height);
+        resizeOptions = {
+            width: Math.round(width * scale),
+            height: Math.round(height * scale),
+            fit: "inside",
+        };
+
+        defLogger.debug(`Shrinking photo [${width}x${height}] to [${resizeOptions.width}x${resizeOptions.height}]`);
+        const passThrough = new PassThrough();
+        const pipeline = sharp(path);
+        if (resizeOptions) {
+            pipeline.resize(resizeOptions);
+        }
+        pipeline.pipe(passThrough);
+        return {stat: 1, stream: passThrough};
+    }
+
+    return {stat: 0, stream: fs.createReadStream(path)};
+}
+
 function filterMsgText(inText, args = {}) {
     const {state, defLogger} = env;
     let txt = inText;
@@ -331,5 +370,13 @@ function isPreRoomValid(preRoomState, targetTopic, forceMerge = false, timeout) 
 
 module.exports = (incomingEnv) => {
     env = incomingEnv;
-    return {addSelfReplyTs, replyWithTips, mergeToPrev_tgMsg, isSameTGTarget, filterMsgText, isPreRoomValid};
+    return {
+        addSelfReplyTs,
+        replyWithTips,
+        mergeToPrev_tgMsg,
+        isSameTGTarget,
+        filterMsgText,
+        isPreRoomValid,
+        filterPhoto
+    };
 };
