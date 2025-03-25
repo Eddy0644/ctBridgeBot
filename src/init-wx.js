@@ -85,7 +85,8 @@ module.exports = (tgBotDo, wxLogger) => {
             wxBotErrorStat++;
             // following watchdog error, skipped
         } else {
-            if (msg.includes("TypeError: Cannot read properties of null (reading 'userName')")) return wxLogger.debug("Dropped an error produced by a WXWork message (not implemented).")
+            if (msg.includes("TypeError: Cannot read properties of null (reading 'userName')")) return wxLogger.debug("Dropped an error produced by a WXWork message (not implemented).");
+            if (msg.includes("SIGINT")) return; // means that user stopped the program.
             wxLogger.warn(`[From Puppet] ` + msg);
             wxLogger.debug(`[Stack] ${e.stack.split("\n").slice(0, 5).join("\n")}\nSee log file for detail.`);
 
