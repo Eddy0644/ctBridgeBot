@@ -772,7 +772,7 @@ async function onWxMessage(msg) {
             const ps = await mod.wxMddw.parseXML(content);
             if (ps !== false) {
                 const loc = ps.msg.location[0].$;
-                content = `<a href="https://www.amap.com/?q=${loc.x},${loc.y}">🗺️[${loc.poiname}/${loc.label}]</a>`;
+                content = `<a href="https://uri.amap.com/marker?position=${loc.y},${loc.x}&name=${loc.poiname}">🗺️[${loc.poiname}/${loc.label}]</a>`;
                 msg.DType = DTypes.Text;
                 await tgBotDo.SendLocation(msg.receiver, parseFloat(loc.x), parseFloat(loc.y));
                 msgDef.noPreview = 1;
