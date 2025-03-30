@@ -62,17 +62,17 @@ const tgBotDo = {
         if (parseMode) form.parse_mode = parseMode;
         return await retryWithLogging(async () => {
             return await tgbot.sendMessage(parseRecv(receiver, form), msg, form);
-        }, `Text [${msg.substring(0, msg.length > 7 ? 7 : msg.length)}]`);
+        }, 2, 3800, `Text [${msg.substring(0, msg.length > 17 ? 17 : msg.length)}]`);
     },
     RevokeMessage: async (msgId, receiver = null) => {
         return await retryWithLogging(async () => {
             return await tgbot.deleteMessage(parseRecv(receiver, {}), msgId);
-        }, `RevokeMessage`);
+        }, 2, 3800, `RevokeMessage`);
     },
     SendChatAction: async (action, receiver = null) => {
         return await retryWithLogging(async () => {
             return await tgbot.sendChatAction(parseRecv(receiver, {}), action);
-        }, `SendChatAction`);
+        }, 2, 3800, `SendChatAction`);
     },
     SendAnimation: async (msg, path, isSilent = false, hasSpoiler = false) => {
         // await delay(100);
@@ -117,7 +117,7 @@ const tgBotDo = {
         };
         return await retryWithLogging(async () => {
             return await tgbot.editMessageText(text, form);
-        }, `EditMessageText`);
+        }, 2, 3800, `EditMessageText`);
     },
     EditMessageMedia: async (file_id, formerMsg, hasSpoiler = false, receiver = null) => {
         let form = {
@@ -135,7 +135,7 @@ const tgBotDo = {
             }, form);
             if (res) return true;
             return "Unknown Error.";
-        }, `EditMessageMedia`);
+        }, 2, 3800, `EditMessageMedia`);
     },
     SendAudio: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -145,7 +145,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendVoice(parseRecv(receiver, form), path, form, {contentType: 'audio/mp3'});
-        }, `SendAudio`);
+        }, 2, 3800, `SendAudio`);
     },
     SendLocation: async (receiver = null, latitude, longitude) => {
         let form = {
@@ -153,7 +153,7 @@ const tgBotDo = {
         };
         return await retryWithLogging(async () => {
             return await tgbot.sendLocation(parseRecv(receiver, form), latitude, longitude, form);
-        }, `SendLocation`);
+        }, 2, 3800, `SendLocation`);
     },
     SendDocument: async (receiver = null, msg, path, isSilent = false) => {
         let form = {
@@ -173,7 +173,7 @@ const tgBotDo = {
         if (isSilent) form.disable_notification = true;
         return await retryWithLogging(async () => {
             return await tgbot.sendVideo(parseRecv(receiver, form), path, form, {contentType: 'video/mp4'});
-        }, `SendVideo`);
+        }, 2, 3800, `SendVideo`);
     },
     empty: () => {
     }

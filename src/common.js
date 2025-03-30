@@ -24,7 +24,7 @@ log4js.configure({
                 pattern: logger_pattern
             },
         },
-        "dated_warn": {
+        "dated_warn_out": {
             type: "dateFile",
             filename: "log/warn",
             pattern: "yy-MM-dd.log",
@@ -33,6 +33,10 @@ log4js.configure({
                 type: "pattern",
                 pattern: logger_pattern
             },
+        },
+        "dated_warn": {
+            type: "logLevelFilter",
+            appender: "dated_warn_out",
             level: "warn",
         },
         "wxMsgDetail_dated": {
@@ -54,10 +58,10 @@ log4js.configure({
     categories: {
         "default": {appenders: ["dated"], level: "debug"},
         "con": {appenders: ["console"], level: "trace"},
-        "ct": {appenders: ["dated", "debug_to_con"], level: "trace"},
-        "wx": {appenders: ["dated", "debug_to_con"], level: "trace"},
+        "ct": {appenders: ["dated", "debug_to_con", "dated_warn"], level: "trace"},
+        "wx": {appenders: ["dated", "debug_to_con", "dated_warn"], level: "trace"},
         "wxMsg": {appenders: ["wxMsgDetail_dated"], level: "info"},
-        "tg": {appenders: ["dated", "debug_to_con"], level: "trace"},
+        "tg": {appenders: ["dated", "debug_to_con", "dated_warn"], level: "trace"},
     }
 });
 

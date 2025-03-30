@@ -759,7 +759,7 @@ async function onWxMessage(msg) {
                     const url = ps.msg.appmsg[0].url[0], caption = ps.msg.appmsg[0].title[0];
                     msg.DType = DTypes.Text;
                     content = `🔗 [<a href="${url}">${caption}</a>]`
-                      + (secret.misc.showCardDescAfterUrl !== 0 ? `\n<blockquote>${ps.msg.appmsg[0].des[0].substring(0, 49)}</blockquote>` : '')
+                      + (secret.misc.showCardDescAfterUrl !== 0 ? `\n<blockquote>${ps.msg.appmsg[0]?.des[0]?.substring(0, 49)}</blockquote>` : '')
                       + (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '');
                 }
             } else {
