@@ -195,7 +195,7 @@ async function filterPhoto(path) {
 
     // Check aspect ratio --- stat 2
     const ratio = width / height;
-    if (ratio > 3 || ratio < 1 / 3) {
+    if (ratio > 4 || ratio < 1 / 4) {
 
         defLogger.debug(`Photo [${width}x${height}, ${ratio.toFixed(2)}] exceeds ratio limit 3. Sending as file instead.`);
         return {stat: 2, stream: fs.createReadStream(path)};
