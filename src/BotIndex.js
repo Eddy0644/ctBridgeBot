@@ -8,7 +8,7 @@ const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./data/sticker_l4.json");
 const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger, errorLog,
-    CommonData, STypes, downloader, processor, delay, nil
+    CommonData, STypes, downloader, processor, nil, util
 } = require('./common')();
 //
 const msgMappings = [];
@@ -617,7 +617,7 @@ async function onWxMessage(msg) {
                 }
                 {   // filter duplicate-in-period sticker
                     let filtered = false;
-                    if (processor.isTimeValid(state.lastEmotion.ts, 10) && md5 === state.lastEmotion.md5) {
+                    if (util.isTimeValid(state.lastEmotion.ts, 10) && md5 === state.lastEmotion.md5) {
                         // Got duplicate and continuous Sticker, skipping and CONDEMN that!
                         wxLogger.debug(`${contact} sent a duplicate emotion, Skipped.`);
                         filtered = true;
@@ -672,7 +672,7 @@ async function onWxMessage(msg) {
         // Real Images
         if (msg.type() === wxbot.Message.Type.Image) try {
             const fBox = await msg.toFileBox();
-            const fname = processor.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}-${alias}.jpg`);
+            const fname = util.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}-${alias}.jpg`);
             let photoPath = `./downloaded/photo/${fname}`;
             if (fs.existsSync(photoPath)) photoPath = photoPath.replace(".jpg", `_${(Math.random() * 100).toFixed(0)}.jpg`);
             await fBox.toFile(photoPath);
@@ -694,7 +694,7 @@ async function onWxMessage(msg) {
         if (msg.type() === wxbot.Message.Type.Audio) try {
             tgBotDo.SendChatAction("record_voice", msg.receiver).then(nil);
             const fBox = await msg.toFileBox();
-            let audioPath = `./downloaded/audio/${processor.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}`)}-${alias}.mp3`;
+            let audioPath = `./downloaded/audio/${util.filterFilename(`${dayjs().format("YYMMDD-HHmmss")}`)}-${alias}.mp3`;
             if (fs.existsSync(audioPath)) audioPath = audioPath.replace(".mp3", `_${(Math.random() * 100).toFixed(0)}.mp3`);
             await fBox.toFile(audioPath);
             if (!fs.existsSync(audioPath)) throw new Error("save file error");
@@ -1484,7 +1484,7 @@ async function getC2CPeer(pair) {
     if (process.uptime() < 20) {
         // start additional process for delivery-before-program-run
         // Not using !wxbot.logonoff()
-        while (process.uptime() < 20) await delay(2500);
+        while (process.uptime() < 20) await util.delay(2500);
         ctLogger.debug(`Running delayed C2C peer find operation...`);
     }
     const p = pair.p;
@@ -1532,7 +1532,7 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
 async function continueDeliverFileFromWx(msg, tmplc) {
     const filePath = msg.nowPath, dname = msg.dname || msg.payload.wcfraw.sender;
     try {
-        await delay(500);
+        await util.delay(500);
         if (msg.vd) await msg.toFileBox().catch(() => wxLogger.info(`wcf reported a video download failure.`));
         await (async () => {
             for (let cnt = 0; cnt * 2 < 18; cnt++) {
@@ -1541,7 +1541,7 @@ async function continueDeliverFileFromWx(msg, tmplc) {
                     wxLogger.info(`File not exist after 6000ms, invoking wcf downloadAttach().`);
                     msg.toFileBox().catch(() => wxLogger.debug(`wcf reported a file download failure. Just skip...`));
                 }
-                await delay(2000);
+                await util.delay(2000);
             }
             //TODO edit to add timeout hint on message itself
             throw new Error(`download file timeout.`);
