@@ -2,6 +2,7 @@ const log4js = require('log4js'), fs = require("fs"), dayjs = require("dayjs"), 
   agentEr = require("https-proxy-agent");
 const proxy = require((fs.existsSync('data/proxy.js')) ? '../data/proxy.js' : '../proxy.js');
 const logger_pattern = "[%d{hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
+const logger_pattern_month = "[%d{yyMMdd/hh:mm:ss.SSS}] %3.3c:[%5.5p] %m";
 const logger_pattern_console = "%[[%d{dd/hh:mm:ss}] %1.1p/%c%] %m";
 
 process.env.TZ = 'Asia/Shanghai';
@@ -27,11 +28,11 @@ log4js.configure({
         "dated_warn_out": {
             type: "dateFile",
             filename: "log/warn",
-            pattern: "yy-MM-dd.log",
+            pattern: "yy-MM.log",
             alwaysIncludePattern: true,
             layout: {
                 type: "pattern",
-                pattern: logger_pattern
+                pattern: logger_pattern_month
             },
         },
         "dated_warn": {
