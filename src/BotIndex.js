@@ -759,7 +759,7 @@ async function onWxMessage(msg) {
                     const url = ps.msg.appmsg[0].url[0], caption = ps.msg.appmsg[0].title[0];
                     msg.DType = DTypes.Text;
                     content = `🔗 [<a href="${url}">${caption}</a>]`
-                      + (secret.misc.showCardDescAfterUrl !== 0 ? `\n<blockquote>${ps.msg.appmsg[0]?.des[0]?.substring(0, 49)}</blockquote>` : '')
+                      + (secret.misc.showCardDescAfterUrl !== 0 ? `\n<blockquote>${ps.msg.appmsg[0].des ? ps.msg.appmsg[0].des[0].substring(0, 49) : ''}</blockquote>` : '')
                       + (secret.misc.addHashCtLinkToMsg !== -1 ? `#ctLink` : '');
                 }
             } else {
@@ -828,6 +828,17 @@ async function onWxMessage(msg) {
             // }
         }
 
+        if (msg.type() === wxbot.Message.Type.Transfer) {
+            msg.DType = DTypes.Text;
+            const ps = await mod.wxMddw.parseXML(content);
+            if (ps !== false) {
+                const amount = ps.msg.appmsg[0].wcpayinfo[0]?.feedesc[0],
+                  memo = ps.msg.appmsg[0].wcpayinfo[0]?.paymemo[0];
+                content = secret.c11n.recvTransfer + ` ${amount} ${memo ? '| ' + memo : ''}`;
+            } else {
+                content = "[Transfer]";
+            }
+        }
 
         //文字消息判断:
         if (msg.DType === DTypes.Default && msg.type() === wxbot.Message.Type.Text) msg.DType = DTypes.Text;
