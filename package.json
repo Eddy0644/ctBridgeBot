@@ -1,6 +1,6 @@
 {
   "name": "ctbridgebot",
-  "version": "4.0.1",
+  "version": "4.2.0",
   "description": "Bridge messages between WeChat and Telegram. maximized customization.",
   "superagent": "src/BotIndex.js",
   "scripts": {
@@ -21,6 +21,9 @@
   "author": "Eddy0644",
   "license": "ISC",
   "dependencies": {
+    "@seald-io/nedb": "^4.1.1",
+    "@wechatferry/agent": "^0.0.26",
+    "@wechatferry/puppet": "^0.0.24",
     "cheerio": "^1.0.0-rc.12",
     "dayjs": "^1.11.10",
     "file-box": "^1.5.5",
