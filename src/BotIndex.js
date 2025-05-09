@@ -10,7 +10,7 @@ const {
     wxLogger, tgLogger, ctLogger, LogWxMsg, conLogger, errorLog,
     CommonData, STypes, downloader, processor, nil, util
 } = require('./common')();
-//
+
 const msgMappings = [];
 const state = {
     v: { // variables
@@ -1659,8 +1659,10 @@ wxbot.start()
 require('./common')("startup", {
     tgNotifier: (text, level = 1, verbose = "") => {
         if (secret.misc.deliverLogToTG < level) return;
-        if (text.includes("socket hang up") || text.includes("Client network socket")) return;
+        const ignoredErrors = ["socket hang up", "Client network socket", "Too Many Requests", "ETIMEDOUT", "⚠️ctBridgeBot"];
+        if (ignoredErrors.some(error => text.includes(error))) return;
         const added = verbose ? `<blockquote expandable>${verbose}</blockquote>` : '';
+        console.log(`tgNotifier(text=>${text}, verbose=>${verbose})`);
         tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<code>${text}</code>` + added, true, "HTML").then(nil);
     },
 });
