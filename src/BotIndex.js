@@ -3,6 +3,7 @@
 
 const secret = require('../config/confLoader');
 const fs = require("fs"), dayjs = require('dayjs'), sharp = require('sharp');
+const nedb_ds = require("@seald-io/nedb");
 const DataStorage = require('./dataStorage.api');
 const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./data/sticker_l4.json");
