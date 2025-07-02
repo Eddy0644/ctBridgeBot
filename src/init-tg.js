@@ -216,9 +216,9 @@ const retryWithLogging = async (func, maxRetries = 2, retryDelay = 4200, err_suf
         if (secret.misc.deliverLogToTG !== 0) {
             const ignoredErrors = ["socket hang up", "Client network socket", "Too Many Requests", "ETIMEDOUT", "⚠️ctBridgeBot"];
             if (ignoredErrors.some(error => text.includes(error))) return;
-        }
-        tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<blockquote expandable>${text}</blockquote>`, true, "HTML").then(() => {
+            tgBotDo.SendMessage(null, `⚠️ctBridgeBot Error\n<blockquote expandable>${text}</blockquote>`, true, "HTML").then(() => {
         });
+        }
     };
     while (retries < maxRetries) {
         try {

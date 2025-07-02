@@ -1,31 +1,31 @@
-import {setTimeout as setTimeout$1} from 'node:timers/promises';
-import {WechatferryAgent} from '@wechatferry/agent';
+import { setTimeout as setTimeout$1 } from 'node:timers/promises';
+import { WechatferryAgent } from '@wechatferry/agent';
 import * as PUPPET from 'wechaty-puppet';
-import {log} from 'wechaty-puppet';
-import {prefixStorage, createStorage} from 'unstorage';
-import {FileBox} from 'file-box';
-import {WechatMessageType, WechatAppMessageType} from '@wechatferry/core';
+import { log } from 'wechaty-puppet';
+import { prefixStorage, createStorage } from 'unstorage';
+import { FileBox } from 'file-box';
+import { WechatMessageType, WechatAppMessageType } from '@wechatferry/core';
 import xml2js from 'xml2js';
-import {existsSync} from "node:fs";
+import pRetry from 'p-retry';
 
 const name = "@wechatferry/puppet";
 const type = "module";
-const version = "0.0.24";
+const version = "0.0.26";
 const description = "wcferry puppet for wechaty";
 const author = "mrrhq <sanhua@himrr.com>";
 const license = "MIT";
 const homepage = "https://github.com/wechatferry/wechatferry#readme";
 const repository = {
-    type: "git",
-    url: "https://github.com/wechatferry/wechatferry"
+	type: "git",
+	url: "https://github.com/wechatferry/wechatferry"
 };
 const keywords = [
-    "wechat",
-    "wcferry",
-    "robot"
+	"wechat",
+	"wcferry",
+	"robot"
 ];
 const sideEffects = [
-    "./src/events/index.ts"
+	"./src/events/index.ts"
 ];
 const exports = {
     ".": {
@@ -54,7 +54,8 @@ const dependencies = {
     "@wechatferry/core": "workspace:*",
     "file-box": "^1.4.15",
     knex: "^3.1.0",
-    unstorage: "^1.10.2",
+	"p-retry": "^6.2.1",
+	unstorage: "^1.15.0",
     "wechaty-puppet": "^1.20.2",
     xml2js: "^0.6.2"
 };
@@ -197,8 +198,7 @@ var __publicField$1 = (obj, key, value) => {
     __defNormalProp$1(obj, typeof key !== "symbol" ? key + "" : key, value);
     return value;
 };
-
-class CacheManager {
+class UnstorageCacheManager {
     constructor(storage) {
         __publicField$1(this, "storage");
         __publicField$1(this, "messageCache");
@@ -273,9 +273,8 @@ class CacheManager {
         const keys = await this.contactCache.getKeys();
         return keys.length;
     }
-
-    setContactList(payload) {
-        return Promise.all(payload.map((contact) => this.contactCache.setItem(contact.userName, contact)));
+  async setContactList(payload) {
+    await Promise.all(payload.map((contact) => this.contactCache.setItem(contact.userName, contact)));
     }
 
     // #region Room
@@ -303,9 +302,8 @@ class CacheManager {
     hasRoom(roomId) {
         return this.roomCache.hasItem(roomId);
     }
-
-    setRoomList(payload) {
-        return Promise.all(payload.map((room) => this.roomCache.setItem(room.userName, room)));
+  async setRoomList(payload) {
+    await Promise.all(payload.map((room) => this.roomCache.setItem(room.userName, room)));
     }
 
     // #region Room Invitation
@@ -337,10 +335,9 @@ class CacheManager {
         const cache = this.getRoomMemberCache(roomId);
         return cache.removeItem(contactId);
     }
-
-    setRoomMemberList(roomId, payload) {
+  async setRoomMemberList(roomId, payload) {
         const cache = this.getRoomMemberCache(roomId);
-        return Promise.all(payload.map((member) => cache.setItem(member.userName, member)));
+    await Promise.all(payload.map((member) => cache.setItem(member.userName, member)));
     }
 
     getRoomMemberList(roomId) {
@@ -771,20 +768,21 @@ function rewriteMsgContent(message) {
 
 async function wechatferryMessageToWechaty(puppet, message) {
     let text = message.content;
+  const selfId = puppet.selfId();
     const roomId = message.is_group ? message.roomid : "";
-    const talkerId = message.sender;
-    const listenerId = message.sender;
+  const fromId = message.sender;
+  const toId = message.is_self ? message.roomid : selfId;
     if (roomId) {
         text = rewriteMsgContent(text);
     }
     const ret = {
         id: message.id.toString(),
         text,
-        talkerId,
-        listenerId: roomId ? "" : listenerId,
+    talkerId: fromId,
+    listenerId: roomId ? "" : toId,
         timestamp: Date.now(),
         roomId,
-        isRefer: false,
+    isRefer: false
     };
     await executeMessageParsers(puppet, message, ret);
     // ctModified
@@ -798,14 +796,16 @@ function wechatferryDBMessageToWechaty(puppet, message) {
 
 function wechatferryDBMessageToEventMessage(message) {
     const isRoom = isRoomId(message.strTalker);
+  const isSelf = message.isSender === 1;
+  const senderId = isRoom ? message.talkerWxid : isSelf ? message.talkerWxid : message.strTalker;
     return {
         content: message.strContent,
         extra: message.parsedBytesExtra.extra,
         id: `${message.msgSvrId}`,
         is_group: isRoom,
-        is_self: message.isSender === 1,
-        roomid: isRoom ? message.strTalker : "",
-        sender: `${message.talkerWxid}`,
+    is_self: isSelf,
+    roomid: message.strTalker,
+    sender: senderId,
         ts: message.createTime,
         type: message.type,
         xml: message.parsedBytesExtra.xml,
@@ -1252,7 +1252,7 @@ function resolvePuppetWcferryOptions(userOptions) {
     return {
         agent: new WechatferryAgent({keepalive: true}),
         // ctModified
-        storage: createStorage(),
+        cacheManager: new UnstorageCacheManager(createStorage()),
         ...userOptions
     };
 }
@@ -1263,10 +1263,11 @@ class WechatferryPuppet extends PUPPET.Puppet {
         __publicField(this, "agent");
         __publicField(this, "cacheManager");
         __publicField(this, "heartBeatTimer");
+    __publicField(this, "_authQrCode", "");
         __publicField(this, "lastSelfMessageId", "");
-        const {agent, storage} = resolvePuppetWcferryOptions(options);
+    const { agent, cacheManager } = resolvePuppetWcferryOptions(options);
         this.agent = agent;
-        this.cacheManager = new CacheManager(storage);
+    this.cacheManager = cacheManager;
     }
 
     name() {
@@ -1304,8 +1305,8 @@ class WechatferryPuppet extends PUPPET.Puppet {
     async onStop() {
         log.verbose("WechatferryPuppet", "onStop()");
         this.stopPuppetHeart();
+    this.agent.removeAllListeners();
         this.agent.stop();
-        this.agent.removeAllListeners();
     }
 
     async ding(data) {
@@ -1313,7 +1314,16 @@ class WechatferryPuppet extends PUPPET.Puppet {
         await setTimeout$1(1e3);
         this.emit("dong", {data: data || ""});
     }
-
+  // @ts-expect-error ignore
+  get authQrCode() {
+    if (!this._authQrCode) {
+      this._authQrCode = this.agent.wcf.refreshQrcode();
+    }
+    return this._authQrCode;
+  }
+  set authQrCode(value) {
+    this._authQrCode = this.agent.wcf.refreshQrcode();
+  }
     async onMessage(message) {
         const messageId = message.id;
         if (message.roomid && !message.sender) {
@@ -1520,10 +1530,11 @@ class WechatferryPuppet extends PUPPET.Puppet {
             case PUPPET.types.Message.Image:
                 return this.messageImage(messageId, PUPPET.types.Image.HD);
             case PUPPET.types.Message.Audio:
-                return this.agent.downloadFile(rawMessage);
+                // return this.agent.downloadFile(rawMessage);
             case PUPPET.types.Message.Video:
             case PUPPET.types.Message.Attachment:
-                return this.myDownloadAttach(rawMessage);
+                // return this.myDownloadAttach(rawMessage);
+                return this.agent.downloadFile(rawMessage);
             case PUPPET.types.Message.Emoticon: {
                 const emotionPayload = await parseEmotionMessagePayload(message);
                 const emoticonBox = FileBox.fromUrl(emotionPayload.cdnurl, {name: `message-${messageId}-emoticon.jpg`});
@@ -1537,10 +1548,7 @@ class WechatferryPuppet extends PUPPET.Puppet {
         throw new Error(
           `messageFile(${messageId}) called failed: Cannot get file from message type ${message.type}.`
         );
-    }
-
-    // ctModified
-    async myDownloadAttach(message, timeout = 10) {
+    }async myDownloadAttach(message, timeout = 10) {
         const filePath = message.thumb ? (/* Video */message.thumb.replace(/\.jpg$/, ".mp4")) : message.extra;
         let result;
         if ((result = this.agent.wcf.downloadAttach(message.id, message.thumb, message.extra)) !== 0) {
@@ -1561,6 +1569,9 @@ class WechatferryPuppet extends PUPPET.Puppet {
         }
         throw new Error(`downloadAttach(${message?.id}): download file timeout. extra='${message.extra}'`);
     }
+
+    // ctModified
+    
 
 
     async messageUrl(messageId) {
@@ -1989,9 +2000,9 @@ class WechatferryPuppet extends PUPPET.Puppet {
         return this.contactRawPayloadParser(contact);
     }
 
-    // TODO: need better way to set temp contact
     async updateContactCache(contactId, _contact) {
         log.verbose("WechatferryPuppet", `updateContactCache(${contactId})`);
+    const run = async () => {
         let contact = null;
         if (_contact) {
             contact = await wechatyContactToWechatferry(_contact);
@@ -2004,17 +2015,32 @@ class WechatferryPuppet extends PUPPET.Puppet {
         await this.cacheManager.setContact(contactId, contact);
         this.dirtyPayload(PUPPET.types.Payload.Contact, contactId);
         return contact;
+    };
+    return pRetry(run, {
+      retries: 3
+    });
     }
-
+  /**
+   *
+   * 更新群聊缓存
+   * @param roomId 群聊 id
+   */
     async updateRoomCache(roomId) {
         log.verbose("WechatferryPuppet", `updateRoomCache(${roomId})`);
+    const run = async () => {
         const room = this.agent.getChatRoomInfo(roomId);
         if (!room) {
-            return null;
+        throw new Error(
+          `updateRoomCache(${roomId}) called failed: Room not found.`
+        );
         }
         await this.cacheManager.setRoom(roomId, room);
         this.dirtyPayload(PUPPET.types.Payload.Room, roomId);
         return room;
+    };
+    return pRetry(run, {
+      retries: 3
+    });
     }
 
     /**
@@ -2026,16 +2052,26 @@ class WechatferryPuppet extends PUPPET.Puppet {
      */
     async updateRoomMemberListCache(roomId) {
         log.verbose("WechatferryPuppet", `updateRoomMemberListCache(${roomId})`);
+    const run = async () => {
         const members = this.agent.getChatRoomMembers(roomId);
         if (!members) {
             return null;
         }
         await this.cacheManager.setRoomMemberList(roomId, members);
         return members;
+    };
+    return pRetry(run, {
+      retries: 3
+    });
     }
-
+  /**
+   * 更新群聊成员缓存
+   * @param roomId 群聊 id
+   * @param contactId 联系人 id
+   */
     async updateRoomMemberCache(roomId, contactId) {
         log.verbose("WechatferryPuppet", `updateRoomMemberCache(${roomId}, ${contactId})`);
+    const run = async () => {
         const {displayNameMap = {}} = await this.roomRawPayload(roomId) ?? {};
         const [member] = this.agent.getChatRoomMembersByMemberIdList([contactId], displayNameMap);
         if (!member) {
@@ -2045,6 +2081,10 @@ class WechatferryPuppet extends PUPPET.Puppet {
         this.dirtyPayload(PUPPET.types.Payload.RoomMember, member.userName);
         await this.cacheManager.setRoomMember(roomId, contactId, member);
         return member;
+    };
+    return pRetry(run, {
+      retries: 3
+    });
     }
 
     async loadContactList() {
@@ -2089,42 +2129,4 @@ class WechatferryPuppet extends PUPPET.Puppet {
 
 __publicField(WechatferryPuppet, "VERSION", localPackageJson.version);
 
-export {
-    EventType,
-    WechatferryPuppet,
-    addEventParser,
-    buildContactCardXmlMessagePayload,
-    createPrefixStorage,
-    executeRunners,
-    friendShipParser,
-    getMentionText,
-    isContactCorporationId,
-    isContactId,
-    isContactOfficialId,
-    isIMRoomId,
-    isRoomId,
-    isRoomOps,
-    jsonToXml,
-    mentionTextParser,
-    messageParser,
-    parseAppmsgMessagePayload,
-    parseContactCardMessagePayload,
-    parseEmotionMessagePayload,
-    parseEvent,
-    parseMiniProgramMessagePayload,
-    parseTimelineMessagePayload,
-    postParser,
-    resolvePuppetWcferryOptions,
-    roomInviteParser,
-    roomJoinParser,
-    roomLeaveParser,
-    roomTopicParser,
-    wechatferryContactToWechaty,
-    wechatferryDBMessageToEventMessage,
-    wechatferryDBMessageToWechaty,
-    wechatferryMessageToWechaty,
-    wechatferryRoomMemberToWechaty,
-    wechatferryRoomToWechaty,
-    wechatyContactToWechatferry,
-    xmlToJson
-};
+export { EventType, UnstorageCacheManager, WechatferryPuppet, addEventParser, buildContactCardXmlMessagePayload, createPrefixStorage, executeRunners, friendShipParser, getMentionText, isContactCorporationId, isContactId, isContactOfficialId, isIMRoomId, isRoomId, isRoomOps, jsonToXml, mentionTextParser, messageParser, parseAppmsgMessagePayload, parseContactCardMessagePayload, parseEmotionMessagePayload, parseEvent, parseMiniProgramMessagePayload, parseTimelineMessagePayload, postParser, resolvePuppetWcferryOptions, roomInviteParser, roomJoinParser, roomLeaveParser, roomTopicParser, wechatferryContactToWechaty, wechatferryDBMessageToEventMessage, wechatferryDBMessageToWechaty, wechatferryMessageToWechaty, wechatferryRoomMemberToWechaty, wechatferryRoomToWechaty, wechatyContactToWechatferry, xmlToJson };

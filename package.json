@@ -33,6 +33,7 @@
     "node-machine-id": "^1.1.12",
     "node-schedule": "^2.1.1",
     "node-telegram-bot-api": "^0.65.1",
+    "p-retry": "^6.2.1",
     "qrcode-terminal": "^0.12.0",
     "sharp": "^0.33.3",
     "superagent": "^8.1.2",

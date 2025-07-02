@@ -1545,13 +1545,15 @@ async function continueDeliverFileFromWx(msg, tmplc) {
     const filePath = msg.nowPath, dname = msg.dname || msg.payload.wcfraw.sender;
     try {
         await util.delay(500);
+        let tmp;
         if (msg.vd) await msg.toFileBox().catch(() => wxLogger.info(`wcf reported a video download failure.`));
+        if (!filePath) wxLogger.warn(`Did not receive filePath from wcf. Errors may occur. ` + msg.content);
         await (async () => {
             for (let cnt = 0; cnt * 2 < 18; cnt++) {
-                if (fs.existsSync(filePath)) return;
+                if (filePath !== "" && fs.existsSync(filePath)) return;
                 if (cnt === 3) {
                     wxLogger.info(`File not exist after 6000ms, invoking wcf downloadAttach().`);
-                    msg.toFileBox().catch(() => wxLogger.debug(`wcf reported a file download failure. Just skip...`));
+                    tmp = await msg.toFileBox().catch(() => wxLogger.debug(`wcf reported a file download failure. Just skip...`));
                 }
                 await util.delay(2000);
             }
