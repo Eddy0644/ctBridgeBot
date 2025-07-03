@@ -35,6 +35,13 @@ const state = {
             idle_start_ts: 0,
             state: 0,
             last_resume_ts: 0,
+        },
+        // 文件列表缓存
+        fileListCache: {
+            lastUpdate: 0,
+            current: new Set(), // 当前文件列表
+            previous: new Set(), // 上一次文件列表
+            updateCounter: 0
         }
     },
     last: {},
@@ -1541,46 +1548,218 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
     ctLogger.trace(`Added temporary mapping from TG msg #${tgMsgId} to WX ${talker}`);
 }
 
+/**
+ * 在指定目录中查找匹配的文件（使用差集比较）
+ * @param {string} targetFileName - 目标文件名
+ * @param {string} downloadDir - 下载目录
+ * @param {number} timeoutSeconds - 超时时间（秒）
+ * @returns {Promise<string|null>} - 找到的文件路径或null
+ */
+async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutSeconds = 30) {
+    const startTime = Date.now();
+    
+    // 提取目标文件的basename和扩展名
+    const lastDotIndex = targetFileName.lastIndexOf('.');
+    const baseName = lastDotIndex > 0 ? targetFileName.substring(0, lastDotIndex) : targetFileName;
+    const extension = lastDotIndex > 0 ? targetFileName.substring(lastDotIndex) : '';
+    
+    wxLogger.debug(`Looking for file: baseName="${baseName}", extension="${extension}"`);
+    
+    // 获取当前的文件列表快照（即上次缓存的列表）
+    const previousFileList = new Set(state.v.fileListCache.previous);
+    wxLogger.debug(`Previous file list has ${previousFileList.size} files`);
+    
+    while (Date.now() - startTime < timeoutSeconds * 1000) {
+        try {
+            if (!fs.existsSync(downloadDir)) {
+                wxLogger.debug(`Download directory does not exist: ${downloadDir}`);
+                await util.delay(2000);
+                continue;
+            }
+            
+            // 获取当前文件列表
+            const currentFiles = fs.readdirSync(downloadDir);
+            const currentFileSet = new Set(currentFiles);
+            
+            // 计算差集：相对于previous缓冲区新增的文件
+            const newFiles = [...currentFileSet].filter(file => !previousFileList.has(file));
+            
+            if (newFiles.length > 0) {
+                wxLogger.debug(`Found ${newFiles.length} new files since last cache update: ${newFiles.join(', ')}`);
+                
+                // 在新增文件中查找匹配的文件
+                const matchingFiles = [];
+                
+                for (const file of newFiles) {
+                    const fileLastDotIndex = file.lastIndexOf('.');
+                    const fileBaseName = fileLastDotIndex > 0 ? file.substring(0, fileLastDotIndex) : file;
+                    const fileExtension = fileLastDotIndex > 0 ? file.substring(fileLastDotIndex) : '';
+                    
+                    // 检查扩展名是否匹配
+                    if (extension && fileExtension !== extension) continue;
+                    
+                    // 检查basename是否匹配（考虑数字后缀）
+                    let isMatch = false;
+                    let suffixNumber = 0; // 后缀数字，用于排序
+                    
+                    if (fileBaseName === baseName) {
+                        isMatch = true;
+                        suffixNumber = 0; // 无后缀的优先级最高
+                        wxLogger.debug(`Exact match found: ${file}`);
+                    } else {
+                        // 检查是否有数字后缀 如 filename(1), filename(2) 等
+                        const suffixPattern = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\((\\d+)\\)$`);
+                        const match = suffixPattern.exec(fileBaseName);
+                        if (match) {
+                            isMatch = true;
+                            suffixNumber = parseInt(match[1]);
+                            wxLogger.debug(`Suffix match found: ${file} (suffix: ${suffixNumber})`);
+                        }
+                    }
+                    
+                    if (isMatch) {
+                        const filePath = `${downloadDir}\\${file}`;
+                        try {
+                            const stats = fs.statSync(filePath);
+                            matchingFiles.push({
+                                path: filePath,
+                                file: file,
+                                suffixNumber: suffixNumber,
+                                createTime: stats.birthtime.getTime()
+                            });
+                            wxLogger.debug(`Valid matching file: ${file} (suffix: ${suffixNumber}, created: ${stats.birthtime.toISOString()})`);
+                        } catch (statError) {
+                            wxLogger.debug(`Error getting file stats for ${file}: ${statError.message}`);
+                        }
+                    }
+                }
+                
+                // 如果找到匹配的文件，选择后缀数字最大的那个
+                if (matchingFiles.length > 0) {
+                    // 按后缀数字排序，数字大的在前；如果后缀数字相同，按创建时间排序，新的在前
+                    matchingFiles.sort((a, b) => {
+                        if (a.suffixNumber !== b.suffixNumber) {
+                            return b.suffixNumber - a.suffixNumber; // 后缀数字大的在前
+                        }
+                        return b.createTime - a.createTime; // 创建时间新的在前
+                    });
+                    
+                    const selectedFile = matchingFiles[0];
+                    wxLogger.debug(`Selected file: ${selectedFile.file} (suffix: ${selectedFile.suffixNumber}) from ${matchingFiles.length} matches`);
+                    return selectedFile.path;
+                }
+            } else {
+                wxLogger.debug(`No new files found in current check`);
+            }
+            
+        } catch (error) {
+            wxLogger.debug(`Error reading directory ${downloadDir}: ${error.message}`);
+        }
+        
+        // 等待2秒后再次检查
+        await util.delay(2000);
+    }
+    
+    wxLogger.warn(`File "${targetFileName}" not found after ${timeoutSeconds} seconds timeout`);
+    return null;
+}
+
 async function continueDeliverFileFromWx(msg, tmplc) {
-    const filePath = msg.nowPath, dname = msg.dname || msg.payload.wcfraw.sender;
+    const dname = msg.dname || msg.payload.wcfraw.sender;
+    let filePath = null;
+    
     try {
         await util.delay(500);
-        let tmp;
-        if (msg.vd) await msg.toFileBox().catch(() => wxLogger.info(`wcf reported a video download failure.`));
-        if (!filePath) wxLogger.warn(`Did not receive filePath from wcf. Errors may occur. ` + msg.content);
-        await (async () => {
-            for (let cnt = 0; cnt * 2 < 18; cnt++) {
-                if (filePath !== "" && fs.existsSync(filePath)) return;
-                if (cnt === 3) {
-                    wxLogger.info(`File not exist after 6000ms, invoking wcf downloadAttach().`);
-                    tmp = await msg.toFileBox().catch(() => wxLogger.debug(`wcf reported a file download failure. Just skip...`));
-                }
-                await util.delay(2000);
+        
+        // 视频消息特殊处理
+        if (msg.vd) {
+            wxLogger.debug(`Processing video message from ${tmplc || dname}`);
+            
+            // 首先触发 msg.toFileBox() 来启动下载
+            try {
+                msg.toFileBox().then(nil);
+                wxLogger.debug(`Video download triggered via toFileBox()`);
+            } catch (e) {
+                wxLogger.debug(`toFileBox() call completed with: ${e.message}`);
             }
-            //TODO edit to add timeout hint on message itself
-            throw new Error(`download file timeout.`);
-        })();
-
-        wxLogger.debug(`Downloaded previous file as: ${basename(filePath)}`);
+            
+            // 从thumb路径推导视频文件路径
+            if (msg.payload && msg.payload.wcfraw && msg.payload.wcfraw.thumb) {
+                const thumbPath = msg.payload.wcfraw.thumb;
+                const videoPath = thumbPath.replace(/\.jpg$/, ".mp4");
+                
+                wxLogger.debug(`Looking for video file: ${videoPath}`);
+                
+                // 轮询视频文件是否存在（最多30秒）
+                const startTime = Date.now();
+                const timeoutMs = 30 * 1000;
+                
+                while (Date.now() - startTime < timeoutMs) {
+                    if (fs.existsSync(videoPath)) {
+                        wxLogger.debug(`Video file found: ${videoPath}`);
+                        filePath = videoPath;
+                        break;
+                    }
+                    await util.delay(1000); // 每秒检查一次
+                }
+                
+                if (!filePath) {
+                    throw new Error(`Video file not found after 30 seconds: ${videoPath}`);
+                }
+            } else {
+                throw new Error(`Cannot determine video path from thumb information`);
+            }
+        } else {
+            // 附件消息处理逻辑
+            // 获取目标文件名
+            let targetFileName = null;
+            if (msg.payload && msg.payload.filename) {
+                targetFileName = msg.payload.filename;
+            } else {
+                wxLogger.warn(`Cannot determine target filename for download`);
+                throw new Error(`Cannot determine target filename for download`);
+            }
+            
+            // 检查下载目录配置
+            if (!secret.misc.wxDownloadDir) {
+                wxLogger.error(`wxDownloadDir is not configured in secret.misc, cannot process file download`);
+                throw new Error(`wxDownloadDir configuration missing`);
+            }
+            
+            // 构建下载目录路径（硬编码路径加上当前年月）
+            const currentYearMonth = dayjs().format("YYYY-MM");
+            const downloadDir = secret.misc.wxDownloadDir + `\\${currentYearMonth}`;
+            
+            wxLogger.debug(`Searching for file "${targetFileName}" in directory: ${downloadDir}`);
+            
+            // 在下载目录中查找匹配的文件
+            filePath = await findMatchingFileInDirectory(targetFileName, downloadDir, 30);
+            
+            if (!filePath) {
+                throw new Error(`File "${targetFileName}" not found in download directory after 30 seconds timeout`);
+            }
+            
+            wxLogger.debug(`Found and using file: ${basename(filePath)}`);
+        }
+        
+        // 继续原有的文件处理流程
         tgBotDo.SendChatAction("upload_document").then(nil);
         const txt_template = `from [${tmplc || dname}], used ${(process.uptime() - msg.startTime).toFixed(1)}s`,
           tgMsg = await tgBotDo[msg.vd ? "SendVideo" : "SendDocument"](msg.receiver, txt_template, fs.createReadStream(filePath), true);
+        
         if (!tgMsg) {
             tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
             return "sendFailure";
-        } else return "Success";
+        } else {
+            return "Success";
+        }
 
     } catch (e) {
-        // if (!msg.isRetry) return setTimeout(() => {
-        //     wxLogger.debug(`Retrying file download...`);
-        //     msg.isRetry = true;
-        //     continueDeliverFileFromWx(msg);
-        // }, 4000);
-        // otherwise display error message
         errorLog(wxLogger, `{continueDeliverFileFromWx()}: ${e.message}`, e);
     }
-    wxLogger.info(`File [${basename(filePath)}] download not successful.`);
-
+    
+    wxLogger.info(`File [${msg.payload?.filename || 'video'}] download not successful.`);
+    return "downloadFailure";
 }
 
 wxbot.on('login', async user => {
@@ -1684,6 +1863,37 @@ async function timerFunction_fast() {
                 await tgBotDo.RevokeMessage(item.tgMsg.message_id, item.receiver);
             }
         }
+        
+        // 文件列表缓存更新 - 每20秒读取一次
+        const now = Date.now();
+        if (now - state.v.fileListCache.lastUpdate > 20000) { // 20秒
+            try {
+                // 检查下载目录配置
+                if (!secret.misc.wxDownloadDir) {
+                    wxLogger.error(`wxDownloadDir is not configured in secret.misc, skipping file list cache update`);
+                } else {
+                    const currentYearMonth = dayjs().format("YYYY-MM");
+                    const downloadDir = secret.misc.wxDownloadDir + `\\${currentYearMonth}`;
+                    
+                    if (fs.existsSync(downloadDir)) {
+                        const files = fs.readdirSync(downloadDir);
+                        
+                        // 双缓冲区轮换：current -> previous, new -> current
+                        state.v.fileListCache.previous = new Set(state.v.fileListCache.current);
+                        state.v.fileListCache.current = new Set(files);
+                        state.v.fileListCache.lastUpdate = now;
+                        state.v.fileListCache.updateCounter++;
+                        
+                        if (state.v.fileListCache.updateCounter % 10 === 0) { // 每200秒记录一次
+                            wxLogger.debug(`File list cache updated: ${files.length} files in directory (previous: ${state.v.fileListCache.previous.size})`);
+                        }
+                    }
+                }
+            } catch (error) {
+                wxLogger.debug(`Error updating file list cache: ${error.message}`);
+            }
+        }
+        
         // Auto Switch off /drop command
         if (state.v.msgDropState > 0) {
             if (--state.v.msgDropState === 0) {

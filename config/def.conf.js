@@ -100,6 +100,7 @@ module.exports = {
 
     },
     misc: {
+        wxDownloadDir: "", // Like C:\...\WeChat Files\wxid_*****\FileStorage\File, no trailing \
         /* ------------ [ Delivery Options ] ------------ */
 
         // s=false, no delivery
