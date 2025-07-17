@@ -129,8 +129,7 @@ const part2 = {
         TGBotHelpCmdText: (state) => `/drop_on & /drop_off : [msg drop]
 /sync_on & /sync_off : [self sync]
 /info ; /placeholder ; /try_edit 
-/reloginWX_2 ; /create_topic ; 
-/reboot ; 
+/create_topic_1 /create_topic_2 ; 
 Lock: (${state.v.targetLock}) Last: [${(state.last && state.last.name) ? state.last.name : "-"}]`,
         wxPushMsgFilterWord: [
             ["公众号", "已更改名称为", "查看详情"],

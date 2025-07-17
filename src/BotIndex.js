@@ -3,7 +3,7 @@
 
 const secret = require('../config/confLoader');
 const fs = require("fs"), dayjs = require('dayjs'), sharp = require('sharp');
-const nedb_ds = require("@seald-io/nedb");
+// const nedb_ds = require("@seald-io/nedb");
 const DataStorage = require('./dataStorage.api');
 const wx_emoji_conversions = require("../config/wx-emoji-map");
 const stickerLib = new DataStorage("./data/sticker_l4.json");
@@ -952,6 +952,64 @@ async function onWxMessage(msg) {
 
 wxbot.on('message', onWxMessage);
 
+/**
+ * 通用的创建话题函数
+ * @param {number} groupIndex - 群组索引 (1 或 2)
+ * @returns {Promise<void>}
+ */
+async function createTopicInGroup(groupIndex) {
+    const tgids = Object.keys(secret.class.C2C_generator);
+    if (tgids.length < groupIndex) {
+        await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, `No tgid specified for group ${groupIndex} in config:C2C_generator !`)
+        return;
+    }
+    const tgid = tgids[groupIndex - 1];
+    
+    if (state.last.s === STypes.Chat) {
+        const name = state.last.name;
+        const res = await tgbot.createForumTopic(tgid, name);
+        if (res.message_thread_id) {
+            // -- create topic success
+            const isGroup = !!state.last.target.member; // Only room have member().
+            const newC2C_Obj = {
+                "tgid": parseInt(tgid),
+                "threadId": res.message_thread_id,
+                "wx": [name, isGroup],
+                "flag": "",
+                "opts": {},
+            };
+            for (const propName in secret.chatOptions) if (secret.chatOptions.hasOwnProperty(propName)) {
+                // copy all in def to opts, a.k.a load defaults
+                newC2C_Obj.opts[propName] = secret.chatOptions[propName];
+            }
+            secret.class.C2C.push(newC2C_Obj);
+            // -- completed temporary add to config
+            // Send initial message to thread
+            await tgbot.sendMessage(tgid, secret.c11n.newTopicCreated(name), {
+                message_thread_id: res.message_thread_id,
+            });
+            const writeConfSuccess = (function () {
+                try {
+                    const path = "data/user.conf.js";
+                    const old = fs.readFileSync(path, "utf-8").toString();
+                    const anchorText = `/* |autoCreateTopic Anchor| -${groupIndex}- */`;
+                    if (!old.includes(anchorText)) return 1;
+                    const str = JSON.stringify([res.message_thread_id, name, isGroup ? "R" : "P", ""]);
+                    const new_str = old.replace(anchorText, `${str},\n    ${anchorText}`);
+                    fs.writeFileSync(path, new_str);
+                    return 0;
+                } catch (e) {
+                    ctLogger.error(`Failed when writing new C2C config into file:\n\t ${e.message}`);
+                    ctLogger.warn(`Please add this entry manually to your 'user.conf.js', to keep your data consistency:\n\t ${JSON.stringify(newC2C_Obj)}`);
+                    return 2;
+                }
+            })();
+            const msgText = (writeConfSuccess === 0 ? "[Write to config successful.]" : "[Could not write user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
+            await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, 0, msgText);
+        }
+    } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No available last talker.");
+}
+
 async function tgCommandHandler(tgMsg) {
     const text = tgMsg.text.replace(secret.tgbot.botName, "");
     // return 1 means not processed by this handler, continue to next steps
@@ -988,60 +1046,15 @@ async function tgCommandHandler(tgMsg) {
             return;
         }
         case "/create_topic": {
-            // This is an entry point for auto creating a new topic,
-            // in order to put new contacts (state.last) under a certain supergroup,
-            // to avoid user to modify the user.conf.js and restart program manually.
-            // We will use the first `tgid` entry in C2C_generator as the destination,
-            // so please put your most recent supergroup as the first entry.
-            const tgid = Object.keys(secret.class.C2C_generator)[0];
-            if (!tgid) {
-                await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No tgid specified in config:C2C_generator !")
-                return;
-            }
-            if (state.last.s === STypes.Chat) {
-                const name = state.last.name;
-                const res = await tgbot.createForumTopic(tgid, name);
-                if (res.message_thread_id) {
-                    // -- create topic success
-                    const isGroup = !!state.last.target.member; // Only room have member().
-                    const newC2C_Obj = {
-                        "tgid": parseInt(tgid),
-                        "threadId": res.message_thread_id,
-                        "wx": [name, isGroup],
-                        "flag": "",
-                        "opts": {},
-                    };
-                    for (const propName in secret.chatOptions) if (secret.chatOptions.hasOwnProperty(propName)) {
-                        // copy all in def to opts, a.k.a load defaults
-                        newC2C_Obj.opts[propName] = secret.chatOptions[propName];
-                    }
-                    secret.class.C2C.push(newC2C_Obj);
-                    // -- completed temporary add to config
-                    // Send initial message to thread
-                    await tgbot.sendMessage(tgid, secret.c11n.newTopicCreated(name), {
-                        message_thread_id: res.message_thread_id,
-                    });
-                    const writeConfSuccess = (function () {
-                        try {
-                            const path = "data/user.conf.js";
-                            const old = fs.readFileSync(path, "utf-8").toString();
-                            const anchor = "/* |autoCreateTopic Anchor| */";
-                            if (!old.includes(anchor)) return 1;
-                            const str = JSON.stringify([res.message_thread_id, name, isGroup ? "R" : "P", ""]);
-                            const new_str = old.replace(anchor, `${str},\n    ${anchor}`);
-                            fs.writeFileSync(path, new_str);
-                            return 0;
-                        } catch (e) {
-                            ctLogger.error(`Failed when writing new C2C config into file:\n\t ${e.message}`);
-                            ctLogger.warn(`Please add this entry manually to your 'user.conf.js', to keep your data consistency:\n\t ${JSON.stringify(newC2C_Obj)}`);
-                            return 2;
-                        }
-                    })();
-                    const msgText = (writeConfSuccess === 0 ? "[Write to config successful.]" : "[Could not write user config file.]") + `\t Name: [${name}], isGroup: [${isGroup}]`;
-                    await mod.tgProcessor.replyWithTips("autoCreateTopicSuccess", null, 0, msgText);
-                }
-            } else await mod.tgProcessor.replyWithTips("autoCreateTopicFail", null, 0, "No available last talker.");
-            return;
+            return await createTopicInGroup(1);
+        }
+        case "/create_topic_1": {
+            // 使用第一个群组创建话题
+            return await createTopicInGroup(1);
+        }
+        case "/create_topic_2": {
+            // 使用第二个群组创建话题
+            return await createTopicInGroup(2);
         }
         case "/find": {
             // This is not a recommended way to search target
@@ -1315,7 +1328,7 @@ async function softReboot(reason) {
 
 async function generateInfo() {
     const statusReport = `---state.last: <code>${JSON.stringify(state.last)}</code>\n---RunningTime: <code>${process.uptime()}</code>`;
-    const path = `./log/day.${dayjs().format("YY-MM-DD")}.log`;
+    const path = `./log/day/d.${dayjs().format("YY-MM-DD")}.log`;
     let log = (await fs.promises.readFile(path)).toString();
     const logText = (log.length > 5000) ? log.substring(log.length - 5000, log.length) : log;
     const dtInfo = {
@@ -1741,10 +1754,10 @@ wxbot.on('login', async user => {
         }
         const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +
           `?token=${ec(secret.ctToken)}&wxname=${ec(user.payload.name)}&cli_ver=${ver}`);
-        const setting = secret.misc.display_ctToken_info;
 
         return; // No verify ctToken anymore.
 
+        const setting = secret.misc.display_ctToken_info;
         if (ret[0] === 200) {   // Positive reply from server
             try {
                 // Token valid
