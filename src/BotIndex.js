@@ -1563,16 +1563,16 @@ async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutS
     const baseName = lastDotIndex > 0 ? targetFileName.substring(0, lastDotIndex) : targetFileName;
     const extension = lastDotIndex > 0 ? targetFileName.substring(lastDotIndex) : '';
     
-    wxLogger.debug(`Looking for file: baseName="${baseName}", extension="${extension}"`);
+    conLogger.debug(`Looking for file: baseName="${baseName}", extension="${extension}"`);
     
     // 获取当前的文件列表快照（即上次缓存的列表）
     const previousFileList = new Set(state.v.fileListCache.previous);
-    wxLogger.debug(`Previous file list has ${previousFileList.size} files`);
+    conLogger.debug(`Previous file list has ${previousFileList.size} files`);
     
     while (Date.now() - startTime < timeoutSeconds * 1000) {
         try {
             if (!fs.existsSync(downloadDir)) {
-                wxLogger.debug(`Download directory does not exist: ${downloadDir}`);
+                conLogger.debug(`Download directory does not exist: ${downloadDir}`);
                 await util.delay(2000);
                 continue;
             }
@@ -1605,7 +1605,7 @@ async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutS
                     if (fileBaseName === baseName) {
                         isMatch = true;
                         suffixNumber = 0; // 无后缀的优先级最高
-                        wxLogger.debug(`Exact match found: ${file}`);
+                        conLogger.debug(`Exact match found: ${file}`);
                     } else {
                         // 检查是否有数字后缀 如 filename(1), filename(2) 等
                         const suffixPattern = new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\((\\d+)\\)$`);
@@ -1613,7 +1613,7 @@ async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutS
                         if (match) {
                             isMatch = true;
                             suffixNumber = parseInt(match[1]);
-                            wxLogger.debug(`Suffix match found: ${file} (suffix: ${suffixNumber})`);
+                            conLogger.debug(`Suffix match found: ${file} (suffix: ${suffixNumber})`);
                         }
                     }
                     
@@ -1627,9 +1627,9 @@ async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutS
                                 suffixNumber: suffixNumber,
                                 createTime: stats.birthtime.getTime()
                             });
-                            wxLogger.debug(`Valid matching file: ${file} (suffix: ${suffixNumber}, created: ${stats.birthtime.toISOString()})`);
+                            conLogger.debug(`Valid matching file: ${file} (suffix: ${suffixNumber}, created: ${stats.birthtime.toISOString()})`);
                         } catch (statError) {
-                            wxLogger.debug(`Error getting file stats for ${file}: ${statError.message}`);
+                            conLogger.debug(`Error getting file stats for ${file}: ${statError.message}`);
                         }
                     }
                 }
@@ -1649,11 +1649,11 @@ async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutS
                     return selectedFile.path;
                 }
             } else {
-                wxLogger.debug(`No new files found in current check`);
+                conLogger.debug(`No new files found in current check`);
             }
             
         } catch (error) {
-            wxLogger.debug(`Error reading directory ${downloadDir}: ${error.message}`);
+            conLogger.debug(`Error reading directory ${downloadDir}: ${error.message}`);
         }
         
         // 等待2秒后再次检查
@@ -1678,7 +1678,7 @@ async function continueDeliverFileFromWx(msg, tmplc) {
             // 首先触发 msg.toFileBox() 来启动下载
             try {
                 msg.toFileBox().then(nil);
-                wxLogger.debug(`Video download triggered via toFileBox()`);
+                conLogger.debug(`Video download triggered via toFileBox()`);
             } catch (e) {
                 wxLogger.debug(`toFileBox() call completed with: ${e.message}`);
             }
@@ -1688,7 +1688,7 @@ async function continueDeliverFileFromWx(msg, tmplc) {
                 const thumbPath = msg.payload.wcfraw.thumb;
                 const videoPath = thumbPath.replace(/\.jpg$/, ".mp4");
                 
-                wxLogger.debug(`Looking for video file: ${videoPath}`);
+                conLogger.debug(`Looking for video file: ${videoPath}`);
                 
                 // 轮询视频文件是否存在（最多30秒）
                 const startTime = Date.now();
@@ -1729,9 +1729,8 @@ async function continueDeliverFileFromWx(msg, tmplc) {
             // 构建下载目录路径（硬编码路径加上当前年月）
             const currentYearMonth = dayjs().format("YYYY-MM");
             const downloadDir = secret.misc.wxDownloadDir + `\\${currentYearMonth}`;
-            
-            wxLogger.debug(`Searching for file "${targetFileName}" in directory: ${downloadDir}`);
-            
+        
+
             // 在下载目录中查找匹配的文件
             filePath = await findMatchingFileInDirectory(targetFileName, downloadDir, 30);
             
@@ -1884,8 +1883,8 @@ async function timerFunction_fast() {
                         state.v.fileListCache.lastUpdate = now;
                         state.v.fileListCache.updateCounter++;
                         
-                        if (state.v.fileListCache.updateCounter % 10 === 0) { // 每200秒记录一次
-                            wxLogger.debug(`File list cache updated: ${files.length} files in directory (previous: ${state.v.fileListCache.previous.size})`);
+                        if (state.v.fileListCache.previous.size !== files.length) { // 只在文件数量有变化时记录
+                            conLogger.debug(`File list cache updated: ${files.length} files in directory (previous: ${state.v.fileListCache.previous.size})`);
                         }
                     }
                 }
