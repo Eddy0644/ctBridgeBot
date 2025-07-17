@@ -87,7 +87,6 @@ state.poolToDelete.add = function (tgMsg, delay, receiver) {
     }
 };
 const {tgbot, tgBotDo} = require('./init-tg');
-// const {FileBox} = require("file-box");
 const {basename} = require("node:path");
 const {wxbot, DTypes} = require('./init-wx')(tgBotDo, wxLogger);
 
@@ -740,15 +739,9 @@ async function onWxMessage(msg) {
                 content = "[Video]";
                 msg.DType = DTypes.Text;
             }
-            // tgBotDo.SendChatAction("record_video", msg.receiver).then(nil);
-            // msg.videoPresent = 1;
-            // await mod.wxMddw.handleVideoMessage(msg, alias);
-            // content = `🎦(Downloading...)`;
-            // msg.autoDownload = 1;
             msgDef.isSilent = true;
             // Due to a recent change in web-wx video, method below which can get video length and playlength
             // failed to work now. Using default no-info method now.
-            // msg.DType = DTypes.File;
         }
         // 卡片链接及公众号消息类型
         if (msg.type() === wxbot.Message.Type.Url) {
@@ -819,21 +812,6 @@ async function onWxMessage(msg) {
                 msg.DType = DTypes.Text;
             }
             // below disabled, because MicroMsg will handle filename corruptions.
-
-            // if (0) {
-            //     msg.filesize = parseInt(ps.msg.appmsg[0].appattach[0].totallen[0]);
-            //     content = `📎[${msg.payload.filename}], ${(msg.filesize / 1024 / 1024).toFixed(3)}MB.\n`;
-            //     msg.nowPath = (function () {   // File Local Path Generator
-            //         const path1 = `./downloaded/file/`;
-            //         const filename = msg.payload.filename;
-            //         let rand = 0;
-            //         if (!fs.existsSync(path1 + filename)) return path1 + filename;
-            //         do rand = (Math.random() * 122).toFixed();
-            //         while (fs.existsSync(path1 + `(${rand})` + filename));
-            //         wxLogger.debug(`Renamed destination filename [${filename}] with factor ${rand} to avoid duplication.`);
-            //         return path1 + `(${rand})` + filename;
-            //     })();
-            // }
         }
 
         if (msg.type() === wxbot.Message.Type.Transfer) {
@@ -1557,14 +1535,12 @@ async function addToMsgMappings(tgMsgId, talker, wxMsg, receiver) {
  */
 async function findMatchingFileInDirectory(targetFileName, downloadDir, timeoutSeconds = 30) {
     const startTime = Date.now();
-    
     // 提取目标文件的basename和扩展名
     const lastDotIndex = targetFileName.lastIndexOf('.');
     const baseName = lastDotIndex > 0 ? targetFileName.substring(0, lastDotIndex) : targetFileName;
     const extension = lastDotIndex > 0 ? targetFileName.substring(lastDotIndex) : '';
     
     conLogger.debug(`Looking for file: baseName="${baseName}", extension="${extension}"`);
-    
     // 获取当前的文件列表快照（即上次缓存的列表）
     const previousFileList = new Set(state.v.fileListCache.previous);
     conLogger.debug(`Previous file list has ${previousFileList.size} files`);
@@ -1670,11 +1646,9 @@ async function continueDeliverFileFromWx(msg, tmplc) {
     
     try {
         await util.delay(500);
-        
         // 视频消息特殊处理
         if (msg.vd) {
             wxLogger.debug(`Processing video message from ${tmplc || dname}`);
-            
             // 首先触发 msg.toFileBox() 来启动下载
             try {
                 msg.toFileBox().then(nil);
@@ -1703,9 +1677,7 @@ async function continueDeliverFileFromWx(msg, tmplc) {
                     await util.delay(1000); // 每秒检查一次
                 }
                 
-                if (!filePath) {
-                    throw new Error(`Video file not found after 30 seconds: ${videoPath}`);
-                }
+                if (!filePath) throw new Error(`Video file not found after 30 seconds: ${videoPath}`);
             } else {
                 throw new Error(`Cannot determine video path from thumb information`);
             }
@@ -1716,7 +1688,6 @@ async function continueDeliverFileFromWx(msg, tmplc) {
             if (msg.payload && msg.payload.filename) {
                 targetFileName = msg.payload.filename;
             } else {
-                wxLogger.warn(`Cannot determine target filename for download`);
                 throw new Error(`Cannot determine target filename for download`);
             }
             
@@ -1725,19 +1696,15 @@ async function continueDeliverFileFromWx(msg, tmplc) {
                 wxLogger.error(`wxDownloadDir is not configured in secret.misc, cannot process file download`);
                 throw new Error(`wxDownloadDir configuration missing`);
             }
-            
             // 构建下载目录路径（硬编码路径加上当前年月）
             const currentYearMonth = dayjs().format("YYYY-MM");
             const downloadDir = secret.misc.wxDownloadDir + `\\${currentYearMonth}`;
-        
 
             // 在下载目录中查找匹配的文件
             filePath = await findMatchingFileInDirectory(targetFileName, downloadDir, 30);
-            
             if (!filePath) {
                 throw new Error(`File "${targetFileName}" not found in download directory after 30 seconds timeout`);
             }
-            
             wxLogger.debug(`Found and using file: ${basename(filePath)}`);
         }
         
@@ -1749,9 +1716,7 @@ async function continueDeliverFileFromWx(msg, tmplc) {
         if (!tgMsg) {
             tgLogger.warn("Got invalid TG receipt, resend wx file failed.");
             return "sendFailure";
-        } else {
-            return "Success";
-        }
+        } else return "Success";
 
     } catch (e) {
         errorLog(wxLogger, `{continueDeliverFileFromWx()}: ${e.message}`, e);
@@ -1769,8 +1734,6 @@ wxbot.on('login', async user => {
         // In order to grab user's WeChat name for metric, put this block after logging in.
         let ec = encodeURIComponent, ver;
         try {
-            // const pkgjson = await fs.promises.readFile('package.json', 'utf-8');
-            // ver = (JSON.parse(pkgjson)).version;
             ver = await fs.promises.readFile('config/ver', 'utf-8');
         } catch (e) {
             ctLogger.error("Cannot access version file! Please ensure the file is intact, and your PWD is correct. (project root rather than 'src/')");
@@ -1779,6 +1742,9 @@ wxbot.on('login', async user => {
         const ret = await downloader.httpsGet(`https://api.ctbr.ryancc.top/verify-v1` +
           `?token=${ec(secret.ctToken)}&wxname=${ec(user.payload.name)}&cli_ver=${ver}`);
         const setting = secret.misc.display_ctToken_info;
+
+        return; // No verify ctToken anymore.
+
         if (ret[0] === 200) {   // Positive reply from server
             try {
                 // Token valid
@@ -1827,14 +1793,7 @@ wxbot.start()
       state.v.wxStat.puppetDoneInitTime = process.uptime();
       wxLogger.info(`开始登录微信...\t\tpuppetDoneInitTime: ${state.v.wxStat.puppetDoneInitTime.toFixed(2)} s`);
   }).catch((e) => {
-    const conf1 = secret.misc.auto_reboot_after_error_detected;
-    if (e.toString().includes("Page crashed") && conf1) {
-        wxLogger.error(msg + `\n[auto reboot after errors] = ${conf1}; Reboot procedure initiated...\n\n\n\n`);
-        setTimeout(() => {
-            process.exit(1);
-        }, 5000);
-    } else
-        wxLogger.error(e);
+    wxLogger.error(e);
 });
 
 require('./common')("startup", {
@@ -1871,12 +1830,9 @@ async function timerFunction_fast() {
                 if (!secret.misc.wxDownloadDir) {
                     wxLogger.error(`wxDownloadDir is not configured in secret.misc, skipping file list cache update`);
                 } else {
-                    const currentYearMonth = dayjs().format("YYYY-MM");
-                    const downloadDir = secret.misc.wxDownloadDir + `\\${currentYearMonth}`;
-                    
+                    const downloadDir = secret.misc.wxDownloadDir + `\\${dayjs().format("YYYY-MM")}`;
                     if (fs.existsSync(downloadDir)) {
                         const files = fs.readdirSync(downloadDir);
-                        
                         // 双缓冲区轮换：current -> previous, new -> current
                         state.v.fileListCache.previous = new Set(state.v.fileListCache.current);
                         state.v.fileListCache.current = new Set(files);
@@ -1914,16 +1870,7 @@ async function timerFunction_slow() {
     try {
         // 'keepalive' check
         if (secret.mods.keepalive.switch === "on") await mod.keepalive.triggerCheck();
-        // Scheduled restart
-        for (const i of secret.misc.scheduled_reboot) {
-            if (dayjs().hour() === i.hour && process.uptime() > 7200) {
-                // reboot initiated
-                ctLogger.info(`Scheduled reboot at ${i.hour} o'clock. Rebooting in 60s...`);
-                setTimeout(() => {
-                    process.exit(1);
-                }, 59000);
-            }
-        }
+
     } catch (e) {
         errorLog(ctLogger, `{slow timer function}: ${e.message}`, e);
         state.v.timerData[1]--;

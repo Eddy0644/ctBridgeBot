@@ -195,18 +195,6 @@ module.exports = {
         // (I don't know if you need this, so it's off by default >_< )
         keep_help_text_after_command_received: 0,
 
-        // This option defines whether to kill the program if detected fatal error - such as WeChat-side page crashed.
-        // Please note that we're not able to restart ourselves, so
-        // [Only if you are using docker, pm2 or similar monitoring tools should you switch this to ON]
-        auto_reboot_after_error_detected: 0,
-
-        // This option allows user to schedule a restart for the program in an idle period.
-        // The program will do the same thing as /reboot then.
-        // And as usual, please ensure you have a monitoring tool to take on the start job.
-        scheduled_reboot: [
-            // {hour: 3},
-        ],
-
         // If it is 1, then these voice messages sent by you via your mobile WeChat will not be skipped.
         do_not_skip_voice_from_mobile_wx: 1,
 
@@ -230,14 +218,6 @@ module.exports = {
         // Determine whether the first item in a merged person msg should have a title of timestamp,
         // <true> be like: [11:00:00] a \n[11:00:02] b
         PutStampBeforeFirstMergedMsg: false,
-        wxMsgBufferPool: {
-            // !Not implemented; DO NOT USE now
-            switch: "on",
-            // switch pool when items exceeds __ num
-            itemTrig: 10,
-            // switch pool when time expired __s
-            timeTrig: 30,
-        },
     },
     chatOptions: {
         // this section declares default behaviors of chats when not specified in C2C flag.
